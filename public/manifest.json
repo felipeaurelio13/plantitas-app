@@ -1,0 +1,61 @@
+{
+  "name": "PlantCare - Tu Compañero de Plantas con IA",
+  "short_name": "PlantCare",
+  "description": "Cuida tus plantas con la ayuda de inteligencia artificial",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#22c55e",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/plant-icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/plant-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "utilities"],
+  "lang": "es",
+  "dir": "ltr",
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tomar foto",
+      "short_name": "Cámara",
+      "description": "Captura una foto de tu planta",
+      "url": "/camera",
+      "icons": [
+        {
+          "src": "/plant-icon.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Mis plantas",
+      "short_name": "Plantas",
+      "description": "Ver todas mis plantas",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/plant-icon.svg",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
