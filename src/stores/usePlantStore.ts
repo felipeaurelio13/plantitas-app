@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { produce } from 'immer';
 import { Plant, ChatMessage } from '../schemas';
 import { PlantService } from '../services/plantService';
-import { generatePlantResponse, analyzeImage } from '../services/aiService';
+import { analyzeImage } from '../services/aiService';
 
 // Instantiate services
 const plantService = new PlantService();

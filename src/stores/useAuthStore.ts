@@ -31,7 +31,7 @@ type AuthStore = AuthState & AuthActions;
 // The subscription is now managed internally in the store
 let authListener: { subscription: { unsubscribe: () => void } } | null = null;
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
+export const useAuthStore = create<AuthStore>((set, _get) => ({
   user: null,
   profile: null,
   session: null,

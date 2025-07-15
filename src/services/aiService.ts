@@ -9,42 +9,61 @@ import {
 } from '../schemas';
 
 const transformAIResponse = (data: any): any => {
-  if (!data || typeof data !== 'object') return data;
+  if (!data) return null;
 
-  const healthMap: Record<string, string> = { 'bueno': 'good', 'regular': 'fair', 'malo': 'poor', 'excelente': 'excellent' };
-  const requirementMap: Record<string, string> = { 'bajo': 'low', 'medio': 'medium', 'alto': 'high' };
-  const humidityMap: Record<string, string> = { 'baja': 'low', 'media': 'medium', 'alta': 'high' };
-  const communicationMap: Record<string, string> = { 'alegre': 'cheerful', 'sabio': 'wise', 'dramático': 'dramatic', 'calmado': 'calm', 'juguetón': 'playful' };
+  const translationMap: { [key: string]: string } = {
+    // overallHealth
+    'excelente': 'excellent',
+    'bueno': 'good',
+    'regular': 'fair',
+    'malo': 'poor',
+    // growthStage
+    'semillero': 'seedling',
+    'juvenil': 'juvenile',
+    'madura': 'mature',
+    'floración': 'flowering',
+    'durmiente': 'dormant',
+    // sunlightRequirement & humidityPreference
+    'bajo': 'low',
+    'medio': 'medium',
+    'alta': 'high',
+    // communicationStyle
+    'alegre': 'cheerful',
+    'sabio': 'wise',
+    'dramático': 'dramatic',
+    'calmado': 'calm',
+    'juguetón': 'playful',
+  };
 
-  const transformed = JSON.parse(JSON.stringify(data));
+  const transformed = { ...data };
+  
+  if (transformed.health) {
+    if (transformed.health.overallHealth) {
+      transformed.health.overallHealth = translationMap[transformed.health.overallHealth] || transformed.health.overallHealth;
+    }
+    if (transformed.health.growthStage) {
+      transformed.health.growthStage = translationMap[transformed.health.growthStage] || transformed.health.growthStage;
+    }
+  }
 
-  if (transformed.health?.overallHealth) {
-    transformed.health.overallHealth = healthMap[transformed.health.overallHealth] ?? transformed.health.overallHealth;
+  if (transformed.careProfile) {
+    if (transformed.careProfile.sunlightRequirement) {
+      transformed.careProfile.sunlightRequirement = translationMap[transformed.careProfile.sunlightRequirement] || transformed.careProfile.sunlightRequirement;
+    }
+    if (transformed.careProfile.humidityPreference) {
+      transformed.careProfile.humidityPreference = translationMap[transformed.careProfile.humidityPreference] || transformed.careProfile.humidityPreference;
+    }
   }
-  if (transformed.careProfile?.sunlightRequirement) {
-    transformed.careProfile.sunlightRequirement = requirementMap[transformed.careProfile.sunlightRequirement] ?? transformed.careProfile.sunlightRequirement;
-  }
-  if (transformed.careProfile?.humidityPreference) {
-    transformed.careProfile.humidityPreference = humidityMap[transformed.careProfile.humidityPreference] ?? transformed.careProfile.humidityPreference;
-  }
-  if (transformed.careProfile?.wateringFrequency) {
-    transformed.careProfile.wateringFrequency = Number(transformed.careProfile.wateringFrequency);
-  }
-  if (transformed.careProfile?.fertilizingFrequency) {
-    transformed.careProfile.fertilizingFrequency = Number(transformed.careProfile.fertilizingFrequency);
-  }
-  if (transformed.careProfile?.temperatureRange?.min) {
-    transformed.careProfile.temperatureRange.min = Number(transformed.careProfile.temperatureRange.min);
-  }
-  if (transformed.careProfile?.temperatureRange?.max) {
-    transformed.careProfile.temperatureRange.max = Number(transformed.careProfile.temperatureRange.max);
-  }
-  if (transformed.personality?.communicationStyle) {
-    transformed.personality.communicationStyle = communicationMap[transformed.personality.communicationStyle] ?? transformed.personality.communicationStyle;
+
+  if (transformed.personality) {
+    if (transformed.personality.communicationStyle) {
+      transformed.personality.communicationStyle = translationMap[transformed.personality.communicationStyle] || transformed.personality.communicationStyle;
+    }
   }
 
   return transformed;
-}
+};
+
 
 export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
   const { data, error } = await supabase.functions.invoke('analyze-image', {
@@ -64,14 +83,14 @@ export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResp
 
   console.log('Raw data from analyze-image function:', JSON.stringify(data, null, 2));
 
+  const transformedData = transformAIResponse(data);
   try {
-    const transformedData = transformAIResponse(data);
     const validatedResponse = AIAnalysisResponseSchema.parse(transformedData);
     return validatedResponse;
   } catch (validationError) {
     console.error('Validation error in analyzeImage response:', validationError);
     // For future debugging, let's log the data that failed validation.
-    console.error('Data that failed validation:', JSON.stringify(data, null, 2));
+    console.error('Data that failed validation:', JSON.stringify(transformedData, null, 2));
     throw new Error('Received invalid data from analysis function.');
   }
 };

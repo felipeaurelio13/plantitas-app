@@ -1,6 +1,7 @@
-import { Suspense } from 'react';
+import { Suspense, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePlantDetail } from '@/hooks/usePlantDetail';
+import { useInsightStore } from '@/stores/useInsightStore';
 import {
   InsightCard,
   PlantDetailHeader,
@@ -12,7 +13,7 @@ import Layout from '@/components/Layout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Zap } from 'lucide-react';
 
 const PlantDetailFallback = () => (
   <Layout>
@@ -27,7 +28,12 @@ const PlantDetailFallback = () => (
 
 const PlantDetail = () => {
   const { plantId } = useParams<{ plantId: string }>();
-  const { plant, insights, loading, error } = usePlantDetail(plantId);
+  const { plant, loading, error } = usePlantDetail(plantId);
+
+  const insights = useInsightStore(useCallback(state => plantId ? state.insights[plantId] : [], [plantId]));
+  const isLoading = useInsightStore(useCallback(state => plantId ? state.isLoading[plantId] : false, [plantId]));
+  const insightError = useInsightStore(useCallback(state => plantId ? state.error[plantId] : null, [plantId]));
+  const fetchInsights = useInsightStore(state => state.fetchInsights);
 
   if (loading) {
     return <PlantDetailFallback />;
@@ -89,18 +95,24 @@ const PlantDetail = () => {
             </TabsContent>
 
             <TabsContent value="insights" className="mt-4">
-              {insights.length > 0 ? (
+              {isLoading && <p>Generando insights...</p>}
+              {insightError && <p className="text-destructive">{insightError}</p>}
+              {insights && insights.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {insights.map((insight, index) => (
-                    <InsightCard key={index} {...insight} />
+                    <InsightCard key={index} type="info" title={`Insight ${index + 1}`} message={insight} />
                   ))}
                 </div>
               ) : (
                 <div className="mt-8 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted p-8 text-center">
                   <h3 className="text-lg font-semibold text-foreground">No hay insights aún</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Sigue cuidando de tu planta para generar nuevos análisis.
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Genera insights basados en los datos de tu planta.
                   </p>
+                  <Button onClick={() => plant && fetchInsights(plant)} disabled={isLoading}>
+                    <Zap className="mr-2 h-4 w-4" />
+                    {isLoading ? 'Generando...' : 'Generar Insights'}
+                  </Button>
                 </div>
               )}
             </TabsContent>

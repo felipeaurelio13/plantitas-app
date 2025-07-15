@@ -50,7 +50,7 @@ const fetchPlantById = async (plantId: string): Promise<Plant> => {
     
     images: plantData.plant_images.map(img => ({
       id: img.id,
-      url: img.storage_path, // Assuming storage_path is the public URL
+      url: img.url ?? '', 
       timestamp: new Date(img.created_at!),
       isProfileImage: img.is_profile_image ?? false,
       healthAnalysis: img.health_analysis as HealthAnalysis | undefined,

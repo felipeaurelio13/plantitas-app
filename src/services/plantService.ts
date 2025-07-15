@@ -9,7 +9,7 @@ import {
   PlantPersonality,
   PlantSummary,
 } from '../schemas';
-import { imageService } from './imageService';
+import { uploadImage } from './imageService';
 import { generatePlantResponse } from './aiService';
 
 type DBPlant = Tables<'plants'>;
@@ -74,7 +74,7 @@ export class PlantService {
           health_score,
           last_watered,
           care_profile,
-          plant_images ( storage_path )
+          plant_images ( * )
         `)
         .eq('user_id', userId)
         .eq('plant_images.is_profile_image', true)
@@ -90,7 +90,7 @@ export class PlantService {
         location: plant.location,
         healthScore: plant.health_score || 85,
         profileImageUrl: plant.plant_images.length > 0 
-          ? imageService.getPublicUrlForPath(plant.plant_images[0].storage_path)
+          ? plant.plant_images[0].url ?? undefined
           : undefined,
         lastWatered: plant.last_watered ? new Date(plant.last_watered) : undefined,
         wateringFrequency: (plant.care_profile as any)?.wateringFrequency,
@@ -123,7 +123,7 @@ export class PlantService {
         const plantImages: PlantImage[] = (p.plant_images || []).map(
           (img: any) => ({
             id: img.id,
-            url: imageService.getPublicUrlForPath(img.storage_path),
+            url: img.url,
             timestamp: new Date(img.created_at!),
             healthAnalysis: img.health_analysis as any,
             isProfileImage: img.is_profile_image || false,
@@ -184,7 +184,7 @@ export class PlantService {
       const plantImages: PlantImage[] = (plant.plant_images || []).map(
         (img: any) => ({
           id: img.id,
-          url: imageService.getPublicUrlForPath(img.storage_path),
+          url: img.url,
           timestamp: new Date(img.created_at!),
           healthAnalysis: img.health_analysis as any,
           isProfileImage: img.is_profile_image || false,
@@ -342,35 +342,29 @@ export class PlantService {
 
   async addPlantImage(plantId: string, image: Omit<PlantImage, 'id'>, userId: string): Promise<PlantImage> {
     try {
-      // Upload image to Supabase Storage if it's a data URL
-      let storagePath = image.url;
-      if (image.url.startsWith('data:')) {
-        storagePath = await imageService.uploadImageFromDataUrl(userId, plantId, image.url);
-      }
-
+      const imageUrl = await uploadImage(image.url, 'plant-images', `${userId}/${plantId}`);
+      
       const { data, error } = await supabase
         .from('plant_images')
         .insert({
           plant_id: plantId,
           user_id: userId,
-          storage_path: storagePath,
-          health_analysis: image.healthAnalysis as any,
+          url: imageUrl,
+          storage_path: imageUrl.split('plant-images/')[1],
           is_profile_image: image.isProfileImage,
         })
         .select()
         .single();
 
       if (error) throw error;
-
-      // Get the public URL for the image
-      const publicUrl = await imageService.getImageUrl(storagePath);
+      if (!data.url) throw new Error('Image URL not returned from database.');
 
       return {
         id: data.id,
-        url: publicUrl,
+        url: data.url,
         timestamp: new Date(data.created_at!),
-        healthAnalysis: data.health_analysis as any,
         isProfileImage: data.is_profile_image || false,
+        healthAnalysis: data.health_analysis as any,
       };
     } catch (error) {
       console.error('Error adding plant image:', error);

@@ -41,7 +41,7 @@ export const usePlantMutations = () => {
       }
       return { previousPlants };
     },
-    onError: (err, updatedPlant, context) => {
+    onError: (_err, _updatedPlant, context) => {
       if (context?.previousPlants) {
         queryClient.setQueryData(['plants', userId], context.previousPlants);
       }
@@ -72,7 +72,7 @@ export const usePlantMutations = () => {
       }
       return { previousPlants };
     },
-    onError: (err, plantId, context) => {
+    onError: (_err, _plantId, context) => {
       if (context?.previousPlants) {
         queryClient.setQueryData(['plants', userId], context.previousPlants);
       }
