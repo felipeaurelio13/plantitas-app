@@ -1,1 +1,1 @@
-if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/plantitas/sw.js', { scope: '/plantitas/' })})}
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/plantitas-app/sw.js', { scope: '/plantitas-app/' })})}
