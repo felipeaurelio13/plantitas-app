@@ -1,12 +1,12 @@
 import { supabase } from '../lib/supabase';
 import {
+  AIAnalysisResponseSchema,
   PlantResponseSchema,
   ProgressAnalysisResponseSchema,
   type AIAnalysisResponse,
   type PlantResponse,
   type Plant,
 } from '../schemas';
-import { parseError, logError } from '../lib/errorHandling';
 
 export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
   const { data, error } = await supabase.functions.invoke('analyze-image', {
@@ -15,7 +15,6 @@ export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResp
 
   if (error) {
     console.error('Error invoking analyze-image function:', error);
-    // Attempt to parse a more specific error message from the response if possible
     const message = error.context?.msg ? JSON.parse(error.context.msg).error : error.message;
     throw new Error(`Failed to analyze image: ${message}`);
   }
@@ -25,10 +24,16 @@ export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResp
     throw new Error(data.error);
   }
   
-  // Since the backend now uses the exact same schema file for validation,
-  // we can trust the data structure and just cast the type.
-  // The redundant client-side validation is removed.
-  return data as AIAnalysisResponse;
+  // The backend now validates the data, but we should parse it on the client
+  // as well to ensure the data shape is what we expect and to get typed data.
+  const validationResult = AIAnalysisResponseSchema.safeParse(data);
+
+  if (!validationResult.success) {
+    console.error('Client-side validation failed:', validationResult.error.flatten());
+    throw new Error('Received unexpected data structure from the analysis service.');
+  }
+
+  return validationResult.data;
 };
 
 export const generatePlantResponse = async (
