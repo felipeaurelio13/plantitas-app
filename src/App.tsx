@@ -61,7 +61,7 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-        <Router>
+        <Router basename="/plantitas-app">
           <Toaster position="top-center" richColors />
           <Suspense fallback={<FullScreenLoader message="Cargando página..." />}>
             <Routes>

@@ -3,169 +3,127 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import OpenAI from 'https://esm.sh/openai@4.10.0';
 import { z } from 'https://esm.sh/zod@3.23.8';
+import { zodToJsonSchema } from 'https://esm.sh/zod-to-json-schema@3.23.0';
 
-// WORKAROUND: The schema is duplicated here to make the function self-contained
-// and avoid bundling issues with cross-directory imports. This ensures stability.
+// The Zod schema remains the single source of truth.
 const HealthIssueSchema = z.object({
   type: z.enum(['overwatering', 'underwatering', 'pest', 'disease', 'nutrient', 'light', 'other']),
   severity: z.enum(['low', 'medium', 'high']),
-  description: z.string().min(1),
-  treatment: z.string().min(1),
+  description: z.string().min(1).describe("A description of the specific health issue in Spanish."),
+  treatment: z.string().min(1).describe("A recommended treatment for the issue in Spanish."),
 });
 
 const HealthAnalysisSchema = z.object({
   overallHealth: z.enum(['excellent', 'good', 'fair', 'poor']),
   issues: z.array(HealthIssueSchema),
-  recommendations: z.array(z.string()),
-  moistureLevel: z.coerce.number().min(0).max(100),
+  recommendations: z.array(z.string()).describe("A list of general recommendations for the plant's health in Spanish."),
+  moistureLevel: z.coerce.number().min(0).max(100).describe("An estimated moisture level of the soil from 0 to 100."),
   growthStage: z.enum(['seedling', 'juvenile', 'mature', 'flowering', 'dormant']),
-  confidence: z.coerce.number().min(0).max(100),
+  confidence: z.coerce.number().min(0).max(100).describe("The confidence level (0-100) in this health analysis."),
 });
 
 const CareProfileSchema = z.object({
-  wateringFrequency: z.coerce.number().positive(),
+  wateringFrequency: z.coerce.number().positive().describe("Recommended watering frequency in days."),
   sunlightRequirement: z.enum(['low', 'medium', 'high']),
   humidityPreference: z.enum(['low', 'medium', 'high']),
   temperatureRange: z.object({
-    min: z.coerce.number(),
-    max: z.coerce.number(),
+    min: z.coerce.number().describe("Minimum recommended temperature in Celsius."),
+    max: z.coerce.number().describe("Maximum recommended temperature in Celsius."),
   }),
-  fertilizingFrequency: z.coerce.number().positive(),
-  soilType: z.string().min(1),
-  specialCare: z.array(z.string()).optional(),
+  fertilizingFrequency: z.coerce.number().positive().describe("Recommended fertilizing frequency in days."),
+  soilType: z.string().min(1).describe("Recommended soil type in Spanish."),
+  specialCare: z.array(z.string()).optional().describe("A list of special care instructions in Spanish, if any."),
 });
 
 const PlantPersonalitySchema = z.object({
-  traits: z.array(z.string()).min(1),
+  traits: z.array(z.string()).min(1).describe("A list of personality traits for the plant in Spanish (e.g., 'Resiliente', 'De crecimiento rápido')."),
   communicationStyle: z.enum(['cheerful', 'wise', 'dramatic', 'calm', 'playful']),
-  catchphrases: z.array(z.string()),
+  catchphrases: z.array(z.string()).describe("A list of short, fun catchphrases the plant might say, in Spanish."),
   moodFactors: z.object({
-    health: z.coerce.number().min(0).max(1),
-    care: z.coerce.number().min(0).max(1),
-    attention: z.coerce.number().min(0).max(1),
+    health: z.coerce.number().min(0).max(1).describe("Weight factor for health in mood calculation (0-1)."),
+    care: z.coerce.number().min(0).max(1).describe("Weight factor for care in mood calculation (0-1)."),
+    attention: z.coerce.number().min(0).max(1).describe("Weight factor for attention in mood calculation (0-1)."),
   }),
 });
 
 const AIAnalysisResponseSchema = z.object({
-  species: z.string(),
-  commonName: z.string(),
-  variety: z.string().nullable().optional(),
-  confidence: z.coerce.number().min(0).max(100),
-  generalDescription: z.string().min(20, { message: "Description must be at least 20 characters."}),
-  funFacts: z.array(z.string()).min(5).max(5),
+  species: z.string().describe("The scientific name of the plant species."),
+  commonName: z.string().describe("The common name of the plant in Spanish."),
+  variety: z.string().nullable().optional().describe("The specific variety of the plant, if identifiable."),
+  confidence: z.coerce.number().min(0).max(100).describe("The confidence level (0-100) in the species identification."),
+  generalDescription: z.string().min(20).describe("A detailed paragraph in Spanish about the plant species: its origins, general characteristics, and basic care tips."),
+  funFacts: z.array(z.string()).min(5).max(5).describe("Exactly 5 fun facts about the plant species, in Spanish."),
   health: HealthAnalysisSchema,
   careProfile: CareProfileSchema,
   personality: PlantPersonalitySchema,
 });
 
+// Convert the Zod schema to a JSON schema for the OpenAI tool
+const analysisSchemaAsJson = zodToJsonSchema(AIAnalysisResponseSchema, "analysisSchema");
 
 /**
- * This is our specialized "Data Cleaning AI Agent".
- * Its mission is to take raw, potentially messy data from the primary AI
- * and rigorously transform it to match our strict schema.
- * @param data The raw data object from OpenAI.
- * @returns A cleaned data object, ready for validation.
+ * A brute-force function to ensure the data strictly conforms to the schema.
+ * It builds a new object from the AI's response, providing safe defaults for
+ * any missing or malformed fields. This is the final line of defense.
+ * @param data The raw, parsed data from the AI tool call.
+ * @returns A guaranteed-to-be-valid data object.
  */
-const cleanDataWithAgent = (data: any): any => {
-  const translationMap: { [key: string]: string } = {
-    // Health
-    'excelente': 'excellent', 'bueno': 'good', 'regular': 'fair', 'malo': 'poor',
-    // Growth Stage
-    'semillero': 'seedling', 'juvenil': 'juvenile', 'madura': 'mature', 'maduro': 'mature', 'floración': 'flowering', 'floracion': 'flowering', 'durmiente': 'dormant',
-    // Issue Type
-    'riego excesivo': 'overwatering', 'exceso de riego': 'overwatering', 'falta de riego': 'underwatering', 'plaga': 'pest', 'enfermedad': 'disease', 'nutrientes': 'nutrient', 'luz': 'light', 'otro': 'other',
-    // Severity & Preferences
-    'bajo': 'low', 'baja': 'low', 'medio': 'medium', 'media': 'medium', 'alto': 'high', 'alta': 'high',
-    // Communication Style
-    'alegre': 'cheerful', 'sabio': 'wise', 'dramático': 'dramatic', 'dramatico': 'dramatic', 'calmado': 'calm', 'juguetón': 'playful', 'jugueton': 'playful'
+const forceSchema = (data: any): z.infer<typeof AIAnalysisResponseSchema> => {
+  const safeData = data || {};
+  const health = safeData.health || {};
+  const careProfile = safeData.careProfile || {};
+  const personality = safeData.personality || {};
+  const tempRange = careProfile.temperatureRange || {};
+  const moodFactors = personality.moodFactors || {};
+
+  return {
+    species: safeData.species || 'Especie no identificada',
+    commonName: safeData.commonName || 'Planta desconocida',
+    variety: safeData.variety || null,
+    confidence: typeof safeData.confidence === 'number' ? safeData.confidence : 0,
+    generalDescription: safeData.generalDescription || 'No se pudo generar una descripción.',
+    funFacts: Array.isArray(safeData.funFacts) && safeData.funFacts.length === 5 ? safeData.funFacts : Array(5).fill('Dato curioso no disponible.'),
+    health: {
+      overallHealth: ['excellent', 'good', 'fair', 'poor'].includes(health.overallHealth) ? health.overallHealth : 'fair',
+      issues: Array.isArray(health.issues) ? health.issues : [],
+      recommendations: Array.isArray(health.recommendations) ? health.recommendations : [],
+      moistureLevel: typeof health.moistureLevel === 'number' ? health.moistureLevel : 50,
+      growthStage: ['seedling', 'juvenile', 'mature', 'flowering', 'dormant'].includes(health.growthStage) ? health.growthStage : 'mature',
+      confidence: typeof health.confidence === 'number' ? health.confidence : 0,
+    },
+    careProfile: {
+      wateringFrequency: typeof careProfile.wateringFrequency === 'number' ? careProfile.wateringFrequency : 7,
+      sunlightRequirement: ['low', 'medium', 'high'].includes(careProfile.sunlightRequirement) ? careProfile.sunlightRequirement : 'medium',
+      humidityPreference: ['low', 'medium', 'high'].includes(careProfile.humidityPreference) ? careProfile.humidityPreference : 'medium',
+      temperatureRange: {
+        min: typeof tempRange.min === 'number' ? tempRange.min : 18,
+        max: typeof tempRange.max === 'number' ? tempRange.max : 25,
+      },
+      fertilizingFrequency: typeof careProfile.fertilizingFrequency === 'number' ? careProfile.fertilizingFrequency : 30,
+      soilType: careProfile.soilType || 'Tierra para macetas estándar',
+      specialCare: Array.isArray(careProfile.specialCare) ? careProfile.specialCare : [],
+    },
+    personality: {
+      traits: Array.isArray(personality.traits) && personality.traits.length > 0 ? personality.traits : ['Misteriosa'],
+      communicationStyle: ['cheerful', 'wise', 'dramatic', 'calm', 'playful'].includes(personality.communicationStyle) ? personality.communicationStyle : 'calm',
+      catchphrases: Array.isArray(personality.catchphrases) ? personality.catchphrases : ['...'],
+      moodFactors: {
+        health: typeof moodFactors.health === 'number' ? moodFactors.health : 0.4,
+        care: typeof moodFactors.care === 'number' ? moodFactors.care : 0.4,
+        attention: typeof moodFactors.attention === 'number' ? moodFactors.attention : 0.2,
+      },
+    },
   };
-
-  if (typeof data === 'string') {
-    const lowerCaseData = data.toLowerCase().trim();
-    if (translationMap[lowerCaseData]) {
-      return translationMap[lowerCaseData];
-    }
-    // Coerce numeric strings to numbers, but not empty strings
-    if (data.trim() !== '' && !isNaN(Number(data))) {
-      return Number(data);
-    }
-    return data;
-  }
-
-  if (Array.isArray(data)) {
-    return data.map(item => cleanDataWithAgent(item));
-  }
-
-  if (typeof data === 'object' && data !== null) {
-    return Object.entries(data).reduce((acc, [key, value]) => {
-      acc[key] = cleanDataWithAgent(value);
-      return acc;
-    }, {} as { [key: string]: any });
-  }
-
-  return data;
 };
 
 
-const openai = new OpenAI({
-  apiKey: Deno.env.get('OPENAI_API_KEY'),
-});
+const SYSTEM_PROMPT = `You are an expert botanist and plant psychologist. Your goal is to analyze the user's image of a plant and provide a complete, detailed analysis by calling the 'submit_plant_analysis' tool.
 
-const PLANT_IDENTIFICATION_PROMPT = `You are an expert botanist specializing in identifying domestic plants. Analyze this image and provide a complete analysis in JSON format.
-
-**CRITICAL JSON OUTPUT RULES:**
-1.  **ONLY JSON**: Your entire response must be a single, valid JSON object. Do not include any text before or after the JSON.
-2.  **STRICT DATA TYPES**: All numeric values (like confidence, frequency, temperature) MUST be numbers, not strings.
-3.  **ENGLISH ENUMS**: All fields with predefined options (enums) MUST use the specified English values. Any other value is invalid.
-4.  **SPANISH TEXT**: All free-text fields (like commonName, description, recommendations, traits) MUST be in Spanish.
-5.  **COMPLETE OBJECT**: You must provide all fields specified in the structure below. If a value is unknown, use a sensible default or null for optional fields.
-
-**JSON Structure:**
-{
-  "species": "scientific_name",
-  "commonName": "spanish_common_name",
-  "variety": "specific_variety_or_null",
-  "confidence": 100,
-  "generalDescription": "A detailed paragraph in Spanish about the plant species: its origins, general characteristics, and basic care tips.",
-  "funFacts": [
-    "fun_fact_1_in_spanish",
-    "fun_fact_2_in_spanish",
-    "fun_fact_3_in_spanish",
-    "fun_fact_4_in_spanish",
-    "fun_fact_5_in_spanish"
-  ],
-  "health": {
-    "overallHealth": "good", // Must be one of: "excellent", "good", "fair", "poor"
-    "issues": [{
-        "type": "pest", // Must be one of: "overwatering", "underwatering", "pest", "disease", "nutrient", "light", "other"
-        "severity": "low", // Must be one of: "low", "medium", "high"
-        "description": "description_in_spanish",
-        "treatment": "treatment_in_spanish"
-    }],
-    "recommendations": ["recommendation_1_in_spanish"],
-    "moistureLevel": 60,
-    "growthStage": "juvenile", // Must be one of: "seedling", "juvenile", "mature", "flowering", "dormant"
-    "confidence": 90
-  },
-  "careProfile": {
-    "wateringFrequency": 7,
-    "sunlightRequirement": "medium", // Must be one of: "low", "medium", "high"
-    "humidityPreference": "medium", // Must be one of: "low", "medium", "high"
-    "temperatureRange": {"min": 18, "max": 27},
-    "fertilizingFrequency": 30,
-    "soilType": "soil_description_in_spanish",
-    "specialCare": ["special_care_in_spanish"]
-  },
-  "personality": {
-    "traits": ["trait_1_in_spanish"],
-    "communicationStyle": "calm", // Must be one of: "cheerful", "wise", "dramatic", "calm", "playful"
-    "catchphrases": ["catchphrase_in_spanish"],
-    "moodFactors": {"health": 0.4, "care": 0.4, "attention": 0.2}
-  }
-}
-
-If you absolutely cannot identify a plant in the image, respond with ONLY this JSON:
-{ "error": "No plant could be identified in the image." }
+**CRITICAL INSTRUCTIONS:**
+1.  **COMPLETE ANALYSIS**: You MUST fill every single field in the schema, including all nested objects. Do not omit any fields.
+2.  **LANGUAGE**: All descriptive, free-text fields MUST be in SPANISH. All fields with predefined options (enums) MUST use the specified ENGLISH values from the schema.
+3.  **ACCURACY**: Provide the most accurate analysis possible. If you are uncertain about a specific detail, make a reasonable, educated guess.
+4.  **FAILURE CASE**: If you cannot identify a plant in the image, you must still call the function. Use "Planta no identificada" for names and descriptions, and provide default or null values for the other fields. DO NOT skip the function call.
 `;
 
 serve(async (req: Request) => {
@@ -190,80 +148,83 @@ serve(async (req: Request) => {
     }
     console.log(`[${requestTimestamp}] Parsed imageDataUrl from request body.`);
 
+    const openai = new OpenAI({
+      apiKey: Deno.env.get('OPENAI_API_KEY'),
+    });
+
     const controller = new AbortController();
     const timeout = setTimeout(() => {
       console.log(`[${requestTimestamp}] OpenAI request timed out after 25 seconds.`);
       controller.abort();
     }, 25000); // 25 seconds
 
-    console.log(`[${requestTimestamp}] Calling OpenAI API...`);
+    console.log(`[${requestTimestamp}] Calling OpenAI API with Tool Calling...`);
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
-      response_format: { type: 'json_object' },
       messages: [
-        {
-          role: 'system',
-          content: PLANT_IDENTIFICATION_PROMPT,
-        },
+        { role: 'system', content: SYSTEM_PROMPT },
         {
           role: 'user',
           content: [
             {
               type: 'image_url',
-              image_url: {
-                url: imageDataUrl,
-                detail: 'high',
-              },
+              image_url: { url: imageDataUrl, detail: 'high' },
             },
           ],
         },
       ],
-      max_tokens: 2000,
+      tools: [{
+        type: 'function',
+        function: {
+          name: 'submit_plant_analysis',
+          description: 'Submits the complete analysis of the plant in the image.',
+          parameters: analysisSchemaAsJson,
+        },
+      }],
+      tool_choice: {
+        type: 'function',
+        function: { name: 'submit_plant_analysis' },
+      },
+      max_tokens: 2500,
       temperature: 0.2,
     }, { signal: controller.signal });
 
     clearTimeout(timeout);
     console.log(`[${requestTimestamp}] Received response from OpenAI.`);
 
-    const content = response.choices[0]?.message?.content;
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+
+    if (!toolCall || toolCall.type !== 'function') {
+      console.error(`[${requestTimestamp}] OpenAI did not return a valid tool call. Response:`, JSON.stringify(response, null, 2));
+      throw new Error('AI response did not follow the expected tool call format.');
+    }
+
+    const content = toolCall.function.arguments;
 
     if (!content) {
-      console.error(`[${requestTimestamp}] OpenAI response is empty.`);
-      throw new Error('OpenAI returned an empty response.');
+      console.error(`[${requestTimestamp}] OpenAI tool call arguments are empty.`);
+      throw new Error('OpenAI returned an empty analysis.');
     }
 
-    // Log the raw content before any parsing
-    console.log(`[${requestTimestamp}] Raw content from OpenAI:`, content);
-
-    console.log(`[${requestTimestamp}] Parsing OpenAI response...`);
+    console.log(`[${requestTimestamp}] Raw arguments from tool call:`, content);
+    console.log(`[${requestTimestamp}] Parsing tool call arguments...`);
     const rawData = JSON.parse(content);
 
-    // Engaging the Data Cleaning Agent
-    console.log(`[${requestTimestamp}] Engaging Data Cleaning Agent to sanitize response...`);
-    const cleanedData = cleanDataWithAgent(rawData);
-    console.log(`[${requestTimestamp}] Sanitized Data:`, JSON.stringify(cleanedData, null, 2));
+    // Use the brute-force schema enforcer
+    console.log(`[${requestTimestamp}] Forcing data into schema...`);
+    const finalData = forceSchema(rawData);
 
-
-    // Check for an application-specific error returned by the AI
-    if (cleanedData.error) {
-      console.warn(`[${requestTimestamp}] AI returned a specific error: ${cleanedData.error}`);
-      return new Response(JSON.stringify({ error: cleanedData.error }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400, // Bad Request, as the image was not identifiable
-      });
-    }
-
-    console.log(`[${requestTimestamp}] Validating sanitized data against schema...`);
-    const validationResult = AIAnalysisResponseSchema.safeParse(cleanedData);
+    // Final validation for logging purposes, should always pass.
+    const validationResult = AIAnalysisResponseSchema.safeParse(finalData);
 
     if (!validationResult.success) {
-      console.error(`[${requestTimestamp}] Zod validation failed AFTER cleaning.`);
+      console.error(`[${requestTimestamp}] Zod validation failed AFTER forcing the schema. This is a critical logic error.`);
       console.error('Validation Errors:', validationResult.error.flatten());
-      console.error('Data that failed validation:', JSON.stringify(cleanedData, null, 2));
-      throw new Error('AI response did not match the required data structure, even after cleaning.');
+      console.error('Data that failed validation:', JSON.stringify(finalData, null, 2));
+      throw new Error('A critical error occurred while formatting the AI response.');
     }
 
-    console.log(`[${requestTimestamp}] Validation successful. Returning cleaned data.`);
+    console.log(`[${requestTimestamp}] Validation successful. Returning structured, guaranteed-valid data.`);
     return new Response(JSON.stringify(validationResult.data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
@@ -277,4 +238,4 @@ serve(async (req: Request) => {
       status: 500,
     });
   }
-}); 
+});

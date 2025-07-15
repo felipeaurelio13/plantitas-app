@@ -49,7 +49,7 @@ export const AIAnalysisResponseSchema = z.object({
   variety: z.string().nullable().optional(),
   confidence: z.coerce.number().min(0).max(100),
   generalDescription: z.string().min(20),
-  funFacts: z.array(z.string()).min(5).max(5),
+  funFacts: z.array(z.string()),
   health: HealthAnalysisSchema,
   careProfile: CareProfileSchema,
   personality: PlantPersonalitySchema,

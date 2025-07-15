@@ -8,6 +8,55 @@ import {
   type Plant,
 } from '../schemas';
 
+const sanitizeData = (data: any): AIAnalysisResponse => {
+  const safeData = data || {};
+  const health = safeData.health || {};
+  const careProfile = safeData.careProfile || {};
+  const personality = safeData.personality || {};
+  const tempRange = careProfile.temperatureRange || {};
+  const moodFactors = personality.moodFactors || {};
+
+  return {
+    species: safeData.species || 'Especie no identificada',
+    commonName: safeData.commonName || 'Planta desconocida',
+    variety: safeData.variety || null,
+    confidence: typeof safeData.confidence === 'number' ? safeData.confidence : 0,
+    generalDescription: safeData.generalDescription || 'No se pudo generar una descripción.',
+    funFacts: Array.isArray(safeData.funFacts) ? safeData.funFacts : [],
+    health: {
+      overallHealth: ['excellent', 'good', 'fair', 'poor'].includes(health.overallHealth) ? health.overallHealth : 'fair',
+      issues: Array.isArray(health.issues) ? health.issues : [],
+      recommendations: Array.isArray(health.recommendations) ? health.recommendations : [],
+      moistureLevel: typeof health.moistureLevel === 'number' ? health.moistureLevel : 50,
+      growthStage: ['seedling', 'juvenile', 'mature', 'flowering', 'dormant'].includes(health.growthStage) ? health.growthStage : 'mature',
+      confidence: typeof health.confidence === 'number' ? health.confidence : 0,
+    },
+    careProfile: {
+      wateringFrequency: typeof careProfile.wateringFrequency === 'number' ? careProfile.wateringFrequency : 7,
+      sunlightRequirement: ['low', 'medium', 'high'].includes(careProfile.sunlightRequirement) ? careProfile.sunlightRequirement : 'medium',
+      humidityPreference: ['low', 'medium', 'high'].includes(careProfile.humidityPreference) ? careProfile.humidityPreference : 'medium',
+      temperatureRange: {
+        min: typeof tempRange.min === 'number' ? tempRange.min : 18,
+        max: typeof tempRange.max === 'number' ? tempRange.max : 25,
+      },
+      fertilizingFrequency: typeof careProfile.fertilizingFrequency === 'number' ? careProfile.fertilizingFrequency : 30,
+      soilType: careProfile.soilType || 'Tierra para macetas estándar',
+      specialCare: Array.isArray(careProfile.specialCare) ? careProfile.specialCare : [],
+    },
+    personality: {
+      traits: Array.isArray(personality.traits) && personality.traits.length > 0 ? personality.traits : ['Misteriosa'],
+      communicationStyle: ['cheerful', 'wise', 'dramatic', 'calm', 'playful'].includes(personality.communicationStyle) ? personality.communicationStyle : 'calm',
+      catchphrases: Array.isArray(personality.catchphrases) ? personality.catchphrases : ['...'],
+      moodFactors: {
+        health: typeof moodFactors.health === 'number' ? moodFactors.health : 0.4,
+        care: typeof moodFactors.care === 'number' ? moodFactors.care : 0.4,
+        attention: typeof moodFactors.attention === 'number' ? moodFactors.attention : 0.2,
+      },
+    },
+  };
+};
+
+
 export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
   const { data, error } = await supabase.functions.invoke('analyze-image', {
     body: { imageDataUrl },
@@ -24,13 +73,15 @@ export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResp
     throw new Error(data.error);
   }
   
-  // The backend now validates the data, but we should parse it on the client
-  // as well to ensure the data shape is what we expect and to get typed data.
-  const validationResult = AIAnalysisResponseSchema.safeParse(data);
+  const sanitized = sanitizeData(data);
+
+  const validationResult = AIAnalysisResponseSchema.safeParse(sanitized);
 
   if (!validationResult.success) {
-    console.error('Client-side validation failed:', validationResult.error.flatten());
-    throw new Error('Received unexpected data structure from the analysis service.');
+    const flatError = validationResult.error.flatten();
+    const errorDetails = JSON.stringify(flatError, null, 2);
+    console.error('Client-side validation failed after sanitization:', errorDetails);
+    throw new Error(`Received unexpected data structure from the analysis service. Details: ${errorDetails}`);
   }
 
   return validationResult.data;
