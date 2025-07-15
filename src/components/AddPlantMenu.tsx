@@ -44,7 +44,8 @@ const AddPlantMenu: React.FC = () => {
       color: 'bg-purple-500',
       action: () => handleGalleryPicker(),
     },
-    {
+    // Función de añadir manualmente temporalmente oculta - ver ROADMAP.md
+    /* {
       id: 'manual',
       icon: Plus,
       label: 'Añadir Manualmente',
@@ -53,7 +54,7 @@ const AddPlantMenu: React.FC = () => {
         setIsOpen(false);
         navigate('/add-plant/manual'); // Navigate to a future form
       },
-    },
+    }, */
   ];
 
   const handleFileSelect = useCallback(
@@ -62,12 +63,8 @@ const AddPlantMenu: React.FC = () => {
       reader.onload = (e) => {
         const imageDataUrl = e.target?.result as string;
         
-        const location = window.prompt("¿Dónde está ubicada tu planta? (Ej: Interior, Balcón, Oficina)", "Interior");
-        if (!location) {
-          toast.error("La ubicación es necesaria para continuar.");
-          setIsOpen(false);
-          return;
-        }
+        // Use default location "Interior" - user can edit it later if needed
+        const location = "Interior";
 
         const promise = new Promise((resolve, reject) => {
           createPlant({ imageDataUrl, location }, {
@@ -118,12 +115,7 @@ const AddPlantMenu: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.2)',
-              zIndex: 40
-            }}
+            className="fixed inset-0 bg-black/20 z-30"
             onClick={() => setIsOpen(false)}
           />
         )}
@@ -132,7 +124,7 @@ const AddPlantMenu: React.FC = () => {
       {/* Menu Items */}
       <AnimatePresence>
         {isOpen && (
-          <div className="absolute bottom-16 right-0 space-y-3">
+          <div className="absolute bottom-16 right-0 space-y-3 z-40">
             {menuItems.map((item, index) => (
               <motion.button
                 key={item.id}
@@ -205,36 +197,7 @@ const AddPlantMenu: React.FC = () => {
         />
       </motion.button>
 
-      {/* Desktop Helper / Loading Indicator */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            style={{
-              position: 'fixed',
-              bottom: '160px',
-              right: '16px',
-              left: '16px',
-              zIndex: 50
-            }}
-          >
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-xl border border-gray-200 dark:border-gray-700 mx-auto max-w-sm">
-              <div className="text-center">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                  {isCreatingPlant ? 'Analizando tu planta...' : 'Agregar Nueva Planta'}
-                </h3>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {isCreatingPlant
-                    ? 'Estamos identificando la especie y su estado de salud. ¡Un momento!'
-                    : 'Toma una foto o selecciona desde galería para identificar automáticamente tu planta'}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </div>
   );
 };

@@ -1,69 +1,36 @@
 import { supabase } from '../lib/supabase';
-import {
-  AIAnalysisResponseSchema,
-  PlantResponseSchema,
-  ProgressAnalysisResponseSchema,
-  type AIAnalysisResponse,
-  type PlantResponse,
-  type Plant,
-} from '../schemas';
-
-const sanitizeData = (data: any): AIAnalysisResponse => {
-  const safeData = data || {};
-  const health = safeData.health || {};
-  const careProfile = safeData.careProfile || {};
-  const personality = safeData.personality || {};
-  const tempRange = careProfile.temperatureRange || {};
-  const moodFactors = personality.moodFactors || {};
-
-  return {
-    species: safeData.species || 'Especie no identificada',
-    commonName: safeData.commonName || 'Planta desconocida',
-    variety: safeData.variety || null,
-    confidence: typeof safeData.confidence === 'number' ? safeData.confidence : 0,
-    generalDescription: safeData.generalDescription || 'No se pudo generar una descripción.',
-    funFacts: Array.isArray(safeData.funFacts) ? safeData.funFacts : [],
-    health: {
-      overallHealth: ['excellent', 'good', 'fair', 'poor'].includes(health.overallHealth) ? health.overallHealth : 'fair',
-      issues: Array.isArray(health.issues) ? health.issues : [],
-      recommendations: Array.isArray(health.recommendations) ? health.recommendations : [],
-      moistureLevel: typeof health.moistureLevel === 'number' ? health.moistureLevel : 50,
-      growthStage: ['seedling', 'juvenile', 'mature', 'flowering', 'dormant'].includes(health.growthStage) ? health.growthStage : 'mature',
-      confidence: typeof health.confidence === 'number' ? health.confidence : 0,
-    },
-    careProfile: {
-      wateringFrequency: typeof careProfile.wateringFrequency === 'number' ? careProfile.wateringFrequency : 7,
-      sunlightRequirement: ['low', 'medium', 'high'].includes(careProfile.sunlightRequirement) ? careProfile.sunlightRequirement : 'medium',
-      humidityPreference: ['low', 'medium', 'high'].includes(careProfile.humidityPreference) ? careProfile.humidityPreference : 'medium',
-      temperatureRange: {
-        min: typeof tempRange.min === 'number' ? tempRange.min : 18,
-        max: typeof tempRange.max === 'number' ? tempRange.max : 25,
-      },
-      fertilizingFrequency: typeof careProfile.fertilizingFrequency === 'number' ? careProfile.fertilizingFrequency : 30,
-      soilType: careProfile.soilType || 'Tierra para macetas estándar',
-      specialCare: Array.isArray(careProfile.specialCare) ? careProfile.specialCare : [],
-    },
-    personality: {
-      traits: Array.isArray(personality.traits) && personality.traits.length > 0 ? personality.traits : ['Misteriosa'],
-      communicationStyle: ['cheerful', 'wise', 'dramatic', 'calm', 'playful'].includes(personality.communicationStyle) ? personality.communicationStyle : 'calm',
-      catchphrases: Array.isArray(personality.catchphrases) ? personality.catchphrases : ['...'],
-      moodFactors: {
-        health: typeof moodFactors.health === 'number' ? moodFactors.health : 0.4,
-        care: typeof moodFactors.care === 'number' ? moodFactors.care : 0.4,
-        attention: typeof moodFactors.attention === 'number' ? moodFactors.attention : 0.2,
-      },
-    },
-  };
-};
-
+import type { AIAnalysisResponse } from '../schemas/ai-shared';
+import type { PlantResponse, Plant } from '../schemas';
 
 export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
+  console.log('User authenticated with valid session, calling analyze-image function...');
+  
+  // Get current session for JWT token
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError || !session) {
+    throw new Error('User must be authenticated to analyze images');
+  }
+
   const { data, error } = await supabase.functions.invoke('analyze-image', {
     body: { imageDataUrl },
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+    },
   });
 
   if (error) {
     console.error('Error invoking analyze-image function:', error);
+    
+    // Handle specific error cases
+    if (error.message?.includes('unsupported image')) {
+      throw new Error('La imagen no es válida. Por favor, asegúrate de que sea una foto clara de una planta.');
+    }
+    
+    if (error.message?.includes('OpenAI API key')) {
+      throw new Error('Servicio de análisis temporalmente no disponible. Intenta de nuevo más tarde.');
+    }
+    
     const message = error.context?.msg ? JSON.parse(error.context.msg).error : error.message;
     throw new Error(`Failed to analyze image: ${message}`);
   }
@@ -72,19 +39,9 @@ export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResp
     console.error('Image analysis failed with a specific error:', data.error);
     throw new Error(data.error);
   }
-  
-  const sanitized = sanitizeData(data);
 
-  const validationResult = AIAnalysisResponseSchema.safeParse(sanitized);
-
-  if (!validationResult.success) {
-    const flatError = validationResult.error.flatten();
-    const errorDetails = JSON.stringify(flatError, null, 2);
-    console.error('Client-side validation failed after sanitization:', errorDetails);
-    throw new Error(`Received unexpected data structure from the analysis service. Details: ${errorDetails}`);
-  }
-
-  return validationResult.data;
+  console.log('Image analysis completed successfully');
+  return data as AIAnalysisResponse;
 };
 
 export const generatePlantResponse = async (
@@ -92,8 +49,20 @@ export const generatePlantResponse = async (
   userMessage: string
 ): Promise<PlantResponse> => {
   console.log('[aiService] Invocando "generate-plant-response" con:', { plant, userMessage });
+  
+  // Obtener el JWT token del usuario autenticado
+  const { data: { session }, error: authError } = await supabase.auth.getSession();
+  
+  if (authError || !session?.access_token) {
+    console.error('User session not available:', authError);
+    throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+  }
+  
   const { data, error } = await supabase.functions.invoke('generate-plant-response', {
     body: { plant, userMessage },
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+    },
   });
 
   if (error) {
@@ -102,42 +71,56 @@ export const generatePlantResponse = async (
   }
 
   console.log('[aiService] Raw response from generate-plant-response:', data);
-
-  try {
-    const validatedResponse = PlantResponseSchema.parse(data);
-    return validatedResponse;
-  } catch (validationError) {
-    console.error('Validation error in generatePlantResponse response:', validationError);
-    // Include the problematic data in the error message for easier debugging
-    const rawData = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-    throw new Error(`Received invalid data from chat generation function. Raw data: ${rawData}`);
-  }
+  return data as PlantResponse;
 };
 
-export const analyzeProgressImages = async (
-  oldImageUrl: string,
-  newImageUrl: string,
-  daysDifference: number
+/**
+ * Completa información faltante de una planta usando IA basándose en especies y nombre
+ */
+export const completeePlantInfo = async (
+  species: string,
+  commonName?: string
 ): Promise<{
-  changes: string[];
-  healthImprovement: number;
-  recommendations: string[];
-  newHealthScore: number;
+  plantEnvironment: 'interior' | 'exterior' | 'ambos';
+  lightRequirements: 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol';
+  description?: string;
+  funFacts?: string[];
 }> => {
-  const { data, error } = await supabase.functions.invoke('analyze-progress-images', {
-    body: { oldImageUrl, newImageUrl, daysDifference },
+  console.log('🚀 [API] Iniciando llamada a complete-plant-info...');
+  console.log('📡 [API] Parámetros enviados:', { species, commonName });
+  
+  // Obtener el JWT token del usuario autenticado
+  const { data: { session }, error: authError } = await supabase.auth.getSession();
+  
+  if (authError || !session?.access_token) {
+    console.error('User session not available:', authError);
+    throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+  }
+  
+  const { data, error } = await supabase.functions.invoke('complete-plant-info', {
+    body: { species, commonName },
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+    },
   });
 
   if (error) {
-    console.error('Error calling analyze-progress-images function:', error);
-    throw new Error('Failed to analyze progress: ' + error.message);
+    console.error('💥 [API] Error en complete-plant-info function:', error);
+    throw new Error('Failed to complete plant info: ' + error.message);
   }
 
-  try {
-    const validatedResponse = ProgressAnalysisResponseSchema.parse(data);
-    return validatedResponse;
-  } catch (validationError) {
-    console.error('Validation error in analyzeProgressImages response:', validationError);
-    throw new Error('Received invalid data from progress analysis function.');
-  }
+  console.log('🎯 [API] Respuesta recibida exitosamente:', data);
+
+  // Validar que los datos recibidos sean correctos
+  const validEnvironments = ['interior', 'exterior', 'ambos'] as const;
+  const validLightRequirements = ['poca_luz', 'luz_indirecta', 'luz_directa_parcial', 'pleno_sol'] as const;
+
+  const result = {
+    plantEnvironment: validEnvironments.includes(data.plantEnvironment) ? data.plantEnvironment : 'interior',
+    lightRequirements: validLightRequirements.includes(data.lightRequirements) ? data.lightRequirements : 'luz_indirecta',
+    description: data.description || undefined,
+    funFacts: Array.isArray(data.funFacts) ? data.funFacts : undefined,
+  };
+
+  return result;
 };

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { gardenCacheService } from '../services/gardenCacheService';
 import { User } from '@supabase/supabase-js';
 import { SignInSchema, SignUpSchema } from '../schemas';
 import { z } from 'zod';
@@ -146,6 +147,10 @@ export const useAuthStore = create<AuthStore>((set, _get) => ({
 
   signOut: async () => {
     set({ isLoading: true });
+    
+    // Clear garden cache before signing out
+    gardenCacheService.clearAll();
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error);

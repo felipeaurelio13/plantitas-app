@@ -42,6 +42,9 @@ const fetchPlantById = async (plantId: string): Promise<Plant> => {
     variety: plantData.variety ?? undefined,
     nickname: plantData.nickname ?? undefined,
     location: plantData.location,
+    // Nuevos campos para ambiente y luz
+    plantEnvironment: plantData.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
+    lightRequirements: plantData.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
     dateAdded: new Date(plantData.date_added!),
     lastWatered: plantData.last_watered ? new Date(plantData.last_watered) : undefined,
     lastFertilized: plantData.last_fertilized ? new Date(plantData.last_fertilized) : undefined,

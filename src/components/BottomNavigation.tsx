@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Camera, Settings, MessageSquare } from 'lucide-react';
+import { Home, Settings, MessageSquare, Sprout } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { usePlantStore } from '../stores';
 
 const navItems = [
   { icon: Home, path: '/', label: 'Inicio' },
+  { icon: Sprout, path: '/garden-chat', label: 'Jardín IA' },
   { icon: MessageSquare, path: '/chat', label: 'Chat', requiresPlant: true },
-  { icon: Camera, path: '/camera', label: 'Cámara' },
   { icon: Settings, path: '/settings', label: 'Ajustes' },
 ];
 
@@ -27,11 +27,13 @@ const BottomNavigation: React.FC = () => {
     <nav className="fixed bottom-0 left-0 right-0 z-sticky bg-background/70 backdrop-blur-lg border-t border-border pb-safe">
       <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
-          const isChat = item.requiresPlant;
-          const isEnabled = !isChat || !!plantIdForChat;
-          const path = isChat && plantIdForChat ? `/plant/${plantIdForChat}/chat` : item.path;
+          const isPlantChat = item.requiresPlant;
+          const isEnabled = !isPlantChat || !!plantIdForChat;
+          const path = isPlantChat && plantIdForChat ? `/plant/${plantIdForChat}/chat` : item.path;
           
-          const isActive = location.pathname === path || (isChat && location.pathname.includes('/chat'));
+          const isActive = location.pathname === path || 
+            (isPlantChat && location.pathname.includes('/plant/') && location.pathname.includes('/chat')) ||
+            (item.path === '/garden-chat' && location.pathname === '/garden-chat');
 
           return (
             <motion.div

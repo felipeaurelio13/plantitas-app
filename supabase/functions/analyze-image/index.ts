@@ -53,6 +53,9 @@ const AIAnalysisResponseSchema = z.object({
   confidence: z.coerce.number().min(0).max(100).describe("The confidence level (0-100) in the species identification."),
   generalDescription: z.string().min(20).describe("A detailed paragraph in Spanish about the plant species: its origins, general characteristics, and basic care tips."),
   funFacts: z.array(z.string()).min(5).max(5).describe("Exactly 5 fun facts about the plant species, in Spanish."),
+  // Nuevos campos para ambiente y luz
+  plantEnvironment: z.enum(['interior', 'exterior', 'ambos']).describe("Indica si la planta es de interior, exterior o puede estar en ambos ambientes."),
+  lightRequirements: z.enum(['poca_luz', 'luz_indirecta', 'luz_directa_parcial', 'pleno_sol']).describe("Especifica las necesidades de luz de la planta."),
   health: HealthAnalysisSchema,
   careProfile: CareProfileSchema,
   personality: PlantPersonalitySchema,
@@ -76,13 +79,30 @@ const forceSchema = (data: any): z.infer<typeof AIAnalysisResponseSchema> => {
   const tempRange = careProfile.temperatureRange || {};
   const moodFactors = personality.moodFactors || {};
 
+  // For generalDescription, only use fallback if completely missing or empty
+  let description = safeData.generalDescription;
+  if (!description || description.trim().length === 0) {
+    // Try to generate a basic description from available data
+    const plantName = safeData.commonName || safeData.species || 'Esta planta';
+    description = `${plantName} es una especie que requiere cuidados específicos. Se caracteriza por sus necesidades particulares de riego, luz y temperatura. Es importante mantener un ambiente adecuado para su crecimiento saludable.`;
+  }
+
   return {
     species: safeData.species || 'Especie no identificada',
     commonName: safeData.commonName || 'Planta desconocida',
     variety: safeData.variety || null,
     confidence: typeof safeData.confidence === 'number' ? safeData.confidence : 0,
-    generalDescription: safeData.generalDescription || 'No se pudo generar una descripción.',
-    funFacts: Array.isArray(safeData.funFacts) && safeData.funFacts.length === 5 ? safeData.funFacts : Array(5).fill('Dato curioso no disponible.'),
+    generalDescription: description,
+    funFacts: Array.isArray(safeData.funFacts) && safeData.funFacts.length === 5 ? safeData.funFacts : [
+      'Es una planta que requiere cuidados específicos.',
+      'Su crecimiento depende de las condiciones ambientales.',
+      'La luz y el agua son factores clave para su desarrollo.',
+      'Puede adaptarse a diferentes tipos de suelo.',
+      'Su mantenimiento regular asegura un crecimiento saludable.'
+    ],
+    // Nuevos campos para ambiente y luz con valores por defecto
+    plantEnvironment: ['interior', 'exterior', 'ambos'].includes(safeData.plantEnvironment) ? safeData.plantEnvironment : 'interior',
+    lightRequirements: ['poca_luz', 'luz_indirecta', 'luz_directa_parcial', 'pleno_sol'].includes(safeData.lightRequirements) ? safeData.lightRequirements : 'luz_indirecta',
     health: {
       overallHealth: ['excellent', 'good', 'fair', 'poor'].includes(health.overallHealth) ? health.overallHealth : 'fair',
       issues: Array.isArray(health.issues) ? health.issues : [],
@@ -123,7 +143,12 @@ const SYSTEM_PROMPT = `You are an expert botanist and plant psychologist. Your g
 1.  **COMPLETE ANALYSIS**: You MUST fill every single field in the schema, including all nested objects. Do not omit any fields.
 2.  **LANGUAGE**: All descriptive, free-text fields MUST be in SPANISH. All fields with predefined options (enums) MUST use the specified ENGLISH values from the schema.
 3.  **ACCURACY**: Provide the most accurate analysis possible. If you are uncertain about a specific detail, make a reasonable, educated guess.
-4.  **FAILURE CASE**: If you cannot identify a plant in the image, you must still call the function. Use "Planta no identificada" for names and descriptions, and provide default or null values for the other fields. DO NOT skip the function call.
+4.  **DETAILED DESCRIPTION**: The 'generalDescription' field MUST contain a comprehensive paragraph (minimum 50 words) in Spanish describing the plant species, its origins, natural habitat, general characteristics, and basic care overview. NEVER leave this field empty or use placeholder text.
+5.  **FUN FACTS**: Provide exactly 5 interesting, educational facts about the plant species in Spanish. These should be specific and informative.
+6.  **PLANT ENVIRONMENT & LIGHT**: MANDATORY fields to analyze:
+    - plantEnvironment: Determine if this plant species is best suited for 'interior' (indoor houseplant), 'exterior' (outdoor garden plant), or 'ambos' (can thrive in both environments)
+    - lightRequirements: Specify light needs as 'poca_luz' (low light, shade-tolerant), 'luz_indirecta' (bright indirect light), 'luz_directa_parcial' (partial direct sunlight), or 'pleno_sol' (full sun requirements)
+7.  **FAILURE CASE**: If you cannot identify a plant in the image, you must still call the function. Use "Planta no identificada" for names and descriptions, and provide default or null values for the other fields. DO NOT skip the function call.
 `;
 
 serve(async (req: Request) => {

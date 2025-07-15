@@ -50,6 +50,9 @@ export const AIAnalysisResponseSchema = z.object({
   confidence: z.coerce.number().min(0).max(100),
   generalDescription: z.string().min(20),
   funFacts: z.array(z.string()),
+  // Nuevos campos para ambiente y luz
+  plantEnvironment: z.enum(['interior', 'exterior', 'ambos']),
+  lightRequirements: z.enum(['poca_luz', 'luz_indirecta', 'luz_directa_parcial', 'pleno_sol']),
   health: HealthAnalysisSchema,
   careProfile: CareProfileSchema,
   personality: PlantPersonalitySchema,
@@ -61,4 +64,13 @@ export const InsightSchema = z.object({
   message: z.string(),
 });
 
-export const InsightResponseSchema = z.array(InsightSchema); 
+export const InsightResponseSchema = z.array(InsightSchema);
+
+// Export the inferred types
+export type HealthIssue = z.infer<typeof HealthIssueSchema>;
+export type HealthAnalysis = z.infer<typeof HealthAnalysisSchema>;
+export type CareProfile = z.infer<typeof CareProfileSchema>;
+export type PlantPersonality = z.infer<typeof PlantPersonalitySchema>;
+export type AIAnalysisResponse = z.infer<typeof AIAnalysisResponseSchema>;
+export type Insight = z.infer<typeof InsightSchema>;
+export type InsightResponse = z.infer<typeof InsightResponseSchema>; 
