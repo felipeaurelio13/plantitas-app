@@ -37,6 +37,9 @@ const transformDBPlantToPlant = (
     description: p.description || undefined,
     funFacts: (p.fun_facts as string[]) || [],
     location: p.location,
+    // Nuevos campos para ambiente y luz
+    plantEnvironment: p.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
+    lightRequirements: p.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
     dateAdded: new Date(p.date_added!),
     lastWatered: p.last_watered ? new Date(p.last_watered) : undefined,
     lastFertilized: p.last_fertilized ? new Date(p.last_fertilized) : undefined,
@@ -60,6 +63,8 @@ export class PlantService {
           nickname,
           species,
           location,
+          plant_environment,
+          light_requirements,
           health_score,
           last_watered,
           care_profile,
@@ -77,6 +82,9 @@ export class PlantService {
         nickname: plant.nickname || undefined,
         species: plant.species,
         location: plant.location,
+        // Nuevos campos para ambiente y luz
+        plantEnvironment: plant.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
+        lightRequirements: plant.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
         healthScore: plant.health_score || 85,
         profileImageUrl: plant.plant_images.length > 0 
           ? plant.plant_images[0].url ?? undefined
@@ -211,93 +219,183 @@ export class PlantService {
     location: string
   ): Promise<Plant> {
     try {
-      // 1. Get AI analysis from the image
+      // Step 1: Get AI analysis (can be slow)
       const analysis = await analyzeImage(imageDataUrl);
 
-      // 2. Create the initial plant object from the analysis
-      const plantToCreate: Omit<Plant, 'id'> = {
+      // Step 2: Create the initial plant object to insert in DB
+      const plantToCreate: Omit<Plant, 'id' | 'images' | 'chatHistory' | 'notifications'> = {
         name: analysis.commonName,
         species: analysis.species,
         description: analysis.generalDescription,
         funFacts: analysis.funFacts,
         variety: analysis.variety ?? undefined,
-        nickname: analysis.commonName, // Default nickname to common name
-        location: location,
+        nickname: analysis.commonName,
+        location,
+        // Incluir los nuevos campos desde el análisis de IA
+        plantEnvironment: analysis.plantEnvironment,
+        lightRequirements: analysis.lightRequirements,
         dateAdded: new Date(),
         healthScore: analysis.health.confidence,
         careProfile: analysis.careProfile,
         personality: analysis.personality,
-        images: [],
-        chatHistory: [],
-        notifications: [],
       };
-      
-      // 3. Create the plant record in the database
+
+      // Step 3: Create the plant record in the database
       const newPlant = await this.createPlant(plantToCreate, userId);
 
-      // This is where funFacts was missing from the returned object.
-      // The createPlant returns a transformed object that was missing funFacts.
-      // After adding it to transformDBPlantToPlant, we need to ensure it's
-      // correctly passed on. The `plantToCreate` object already has it, but the
-      // `newPlant` object is what's returned from the DB.
-      // Let's ensure the `newPlant` object is complete.
-      // The fix in `transformDBPlantToPlant` should be enough. Let's double check.
-      // The `createPlant` calls `transformDBPlantToPlant`, so `newPlant` *should*
-      // now have `funFacts`.
-
-      // Let's re-add it from the source of truth (`analysis`) just in case, to be robust.
-      newPlant.funFacts = analysis.funFacts;
-
-
-      // 4. Create the plant image record (this will also upload it)
-      const plantImage: Omit<PlantImage, 'id'> = {
-        url: imageDataUrl, // Pass the Data URL to be uploaded
-        timestamp: new Date(),
-        isProfileImage: true,
-        healthAnalysis: analysis.health,
-      };
-
-      const savedImage = await this.addPlantImage(newPlant.id, plantImage, userId);
+      // Step 4: Return the plant to the UI immediately.
+      // The rest of the operations will happen in the background.
       
-      // Return the full plant object with its first image
-      newPlant.images.push(savedImage);
-      return newPlant;
+      // Fire-and-forget background tasks
+      (async () => {
+        try {
+          // Step 5 (background): Upload the image and get URL
+          const imageUrl = await uploadImage(
+            imageDataUrl, 
+            'plant-images', // bucket
+            `${userId}/${newPlant.id}/${Date.now()}.png` // path
+          );
+          
+          // Step 6 (background): Add image record to the database
+          await this.addPlantImage(newPlant.id, {
+            url: imageUrl,
+            timestamp: new Date(),
+            isProfileImage: true,
+            healthAnalysis: analysis.health,
+          }, userId);
 
+          // Note: The UI will get the images through the plant queries that refetch data
+
+          // Step 7 (background): Generate initial greeting from the plant
+          const greetingResponse = await generatePlantResponse(newPlant, "¡Hola! Acabo de llegar. ¿Cómo te llamas?");
+          
+          // Step 8 (background): Add greeting to the database
+          await this.addChatMessage(newPlant.id, {
+            sender: 'plant',
+            content: greetingResponse.content,
+            timestamp: new Date(),
+            emotion: greetingResponse.emotion,
+          }, userId);
+          
+          console.log(`[PlantService] Background tasks for plant ${newPlant.id} completed successfully.`);
+
+        } catch (backgroundError) {
+          console.error(`[PlantService] Error during background tasks for plant ${newPlant.id}:`, backgroundError);
+          // Here, you could potentially update the plant record with an error state
+          // or send a notification to the user. For now, we just log it.
+        }
+      })();
+
+      return newPlant;
     } catch (error) {
       console.error('Error adding plant from analysis:', error);
-      // Here you might want to handle cleanup, e.g., delete the uploaded image if the DB insert fails
+      // Ensure the original error is re-thrown so the mutation fails
       throw new Error('Failed to create plant from image analysis.');
     }
   }
 
-  async createPlant(plantData: Omit<Plant, 'id'>, userId: string): Promise<Plant> {
+  async createPlant(
+    plantData: Omit<Plant, 'id' | 'images' | 'chatHistory' | 'notifications'>,
+    userId: string
+  ): Promise<Plant> {
     try {
-      const { data, error } = await supabase
+      const dbPlant: Omit<DBPlant, 'id' | 'created_at'> = {
+        user_id: userId,
+        name: plantData.name,
+        species: plantData.species,
+        variety: plantData.variety || null,
+        nickname: plantData.nickname || null,
+        description: plantData.description || null,
+        fun_facts: plantData.funFacts || null,
+        location: plantData.location,
+        // Nuevos campos para ambiente y luz
+        plant_environment: plantData.plantEnvironment || null,
+        light_requirements: plantData.lightRequirements || null,
+        date_added: plantData.dateAdded.toISOString(),
+        last_watered: null,
+        last_fertilized: null,
+        health_score: plantData.healthScore,
+        care_profile: plantData.careProfile as any,
+        personality: plantData.personality as any,
+        updated_at: null,
+      };
+
+      const { data: newDbPlant, error } = await supabase
         .from('plants')
-        .insert({
-          user_id: userId,
-          name: plantData.name,
-          species: plantData.species,
-          description: plantData.description,
-          fun_facts: plantData.funFacts,
-          variety: plantData.variety,
-          nickname: plantData.nickname,
-          location: plantData.location,
-          health_score: plantData.healthScore,
-          care_profile: plantData.careProfile as any,
-          personality: plantData.personality as any,
-          date_added: plantData.dateAdded.toISOString(),
-          last_watered: plantData.lastWatered?.toISOString(),
-          last_fertilized: plantData.lastFertilized?.toISOString(),
-        })
-        .select()
+        .insert(dbPlant)
+        .select('*')
         .single();
+      
+      if (error) {
+        console.error('Supabase error:', {
+          message: error.message,
+          details: error.details,
+          code: error.code,
+        });
+        throw new Error(`Supabase error creating plant: ${error.message}`);
+      }
 
-      if (error) throw error;
-
-      return transformDBPlantToPlant(data, [], [], []);
+      if (!newDbPlant) {
+        throw new Error('Failed to create plant in the database, no data returned.');
+      }
+      
+      return transformDBPlantToPlant(newDbPlant, [], [], []);
     } catch (error) {
       console.error('Error creating plant:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualiza información específica de una planta (como ambiente y luz)
+   */
+  async updatePlantInfo(
+    plantId: string,
+    userId: string,
+    updates: {
+      plantEnvironment?: 'interior' | 'exterior' | 'ambos';
+      lightRequirements?: 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol';
+      description?: string;
+      funFacts?: string[];
+    }
+  ): Promise<Plant> {
+    try {
+      const updateData: any = {};
+      
+      if (updates.plantEnvironment !== undefined) {
+        updateData.plant_environment = updates.plantEnvironment;
+      }
+      if (updates.lightRequirements !== undefined) {
+        updateData.light_requirements = updates.lightRequirements;
+      }
+      if (updates.description !== undefined) {
+        updateData.description = updates.description;
+      }
+      if (updates.funFacts !== undefined) {
+        updateData.fun_facts = updates.funFacts;
+      }
+
+      const { data: updatedPlant, error } = await supabase
+        .from('plants')
+        .update(updateData)
+        .eq('id', plantId)
+        .eq('user_id', userId)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Supabase error updating plant:', error);
+        throw new Error(`Error updating plant: ${error.message}`);
+      }
+
+      if (!updatedPlant) {
+        throw new Error('Plant not found or not updated.');
+      }
+
+      // Retornar la planta actualizada (sin imágenes, chat, etc. para simplificar)
+      return transformDBPlantToPlant(updatedPlant, [], [], []);
+    } catch (error) {
+      console.error('Error updating plant info:', error);
       throw error;
     }
   }
@@ -309,6 +407,8 @@ export class PlantService {
         species: plant.species,
         variety: plant.variety,
         nickname: plant.nickname,
+        description: plant.description,
+        fun_facts: plant.funFacts,
         location: plant.location,
         health_score: plant.healthScore,
         care_profile: plant.careProfile as any,
@@ -409,17 +509,30 @@ export class PlantService {
 
   async addPlantImage(plantId: string, image: Omit<PlantImage, 'id'>, userId: string): Promise<PlantImage> {
     try {
-      // The `image.url` coming in here is the base64 data URL
-      const imagePath = `${userId}/${plantId}/${crypto.randomUUID()}.jpg`;
-      const imageUrl = await uploadImage(image.url, 'plant-images', imagePath);
+      // The `image.url` is already the uploaded URL from Supabase Storage
+      const imageUrl = image.url;
       
-      const { data, error } = await supabase
+      // Extract the storage path from the URL if available
+      let storagePath = '';
+      try {
+        const url = new URL(imageUrl);
+        const pathParts = url.pathname.split('/');
+        const objectIndex = pathParts.findIndex(part => part === 'object');
+        if (objectIndex !== -1 && objectIndex + 2 < pathParts.length) {
+          storagePath = pathParts.slice(objectIndex + 2).join('/');
+        }
+      } catch (error) {
+        console.warn('Could not extract storage path from URL:', imageUrl);
+        storagePath = `${userId}/${plantId}/${Date.now()}.jpg`;
+      }
+      
+              const { data, error } = await supabase
         .from('plant_images')
         .insert({
           plant_id: plantId,
           user_id: userId,
           url: imageUrl, // This is the public URL from storage
-          storage_path: imagePath,
+          storage_path: storagePath,
           is_profile_image: image.isProfileImage,
           health_analysis: image.healthAnalysis as any,
         })

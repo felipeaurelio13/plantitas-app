@@ -8,6 +8,7 @@ import {
 import { useAuthStore } from './stores/useAuthStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
+import { ToastProvider } from './components/ui/Toast';
 
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -19,6 +20,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const AuthPage = lazy(() => import('./pages/Auth'));
 const CameraPage = lazy(() => import('./pages/Camera'));
 const ChatPage = lazy(() => import('./pages/Chat'));
+const GardenChatPage = lazy(() => import('./pages/GardenChat'));
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,7 @@ const App: React.FC = () => {
           <Route index element={<PlantDetail />} />
           <Route path="chat" element={<ChatPage />} />
         </Route>
+        <Route path="garden-chat" element={<GardenChatPage />} />
         <Route path="settings" element={<Settings />} />
         <Route path="camera" element={<CameraPage />} />
         <Route path="*" element={<Navigate to="/" />} />
@@ -60,10 +63,11 @@ const App: React.FC = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
-        <Router basename="/plantitas-app">
-          <Toaster position="top-center" richColors />
-          <Suspense fallback={<FullScreenLoader message="Cargando página..." />}>
+      <ToastProvider>
+        <ErrorBoundary>
+          <Router basename="/plantitas-app">
+            <Toaster position="top-center" richColors />
+            <Suspense fallback={<FullScreenLoader message="Cargando página..." />}>
             <Routes>
               <Route
                 path="/auth"
@@ -77,6 +81,7 @@ const App: React.FC = () => {
           </Suspense>
         </Router>
       </ErrorBoundary>
+      </ToastProvider>
     </QueryClientProvider>
   );
 };

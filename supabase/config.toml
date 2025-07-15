@@ -1,4 +1,24 @@
 
+# Función para análisis de imágenes de plantas - acceso público
+[functions.analyze-image]
+verify_jwt = false
+
+# Función para completar información de plantas
+[functions.complete-plant-info]
+verify_jwt = false
+
+# Función para respuesta de plantas en chat
+[functions.generate-plant-response]
+verify_jwt = false
+
+# Función para análisis de progreso de imágenes
+[functions.analyze-progress-images]
+verify_jwt = false
+
+# Función para chat de jardín - requiere autenticación
+[functions.garden-ai-chat]
+verify_jwt = true
+
 [functions.generate-plant-insights]
 enabled = true
 verify_jwt = true

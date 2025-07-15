@@ -48,7 +48,7 @@ const Settings: React.FC = () => {
                 key={item.id}
                 icon={IconComponent}
                 label={item.label}
-                value={item.value || undefined}
+                value={(item as any).value || undefined}
                 onClick={item.action}
                 isLast={isLast}
                 type="button"

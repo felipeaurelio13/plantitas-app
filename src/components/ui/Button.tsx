@@ -11,6 +11,8 @@ const buttonVariants = cva(
         primary: 'bg-primary-500 text-white hover:bg-primary-600',
         secondary: 'bg-gray-600 text-white hover:bg-gray-700',
         ghost: 'bg-transparent text-white hover:bg-white/10',
+        outline: 'border border-border bg-transparent hover:bg-accent hover:text-accent-foreground',
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
       },
       size: {
         default: 'h-11 px-4 py-2',

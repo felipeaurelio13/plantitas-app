@@ -275,6 +275,7 @@
 | 3 | Performance & Optimización | 🟡 Alta | ✅ Completada |
 | 4 | Revisión Funcional (QA) | 🔴 Crítica | ⏳ Pendiente |
 | 5 | Refinamiento UX/UI | 🟢 Media | ✅ Completada |
+| 6 | Funciones Pendientes | 🟡 Alta | ⏳ Pendiente |
 
 ---
 
@@ -323,6 +324,92 @@
 
 ---
 
+## 🚧 Fase 6: Funciones Pendientes de Desarrollo
+
+> **Objetivo**: Implementar funcionalidades que están identificadas pero aún no desarrolladas
+
+### 🛠️ 6.1 Funciones de Gestión de Plantas
+**Tiempo estimado**: 3-4 días
+
+- [ ] **Edición de Plantas**
+  - Formulario para editar información de plantas existentes
+  - Campos: nombre, especie, ubicación, descripción personalizada
+  - Validaciones y manejo de errores
+  - Interfaz accesible desde el menú de acciones de PlantDetail
+
+- [ ] **Añadir Plantas Manualmente**
+  - Formulario completo sin necesidad de imagen
+  - Campos obligatorios: nombre/especie, ubicación
+  - Campos opcionales: descripción, características
+  - Integración con el menú AddPlantMenu
+
+- [ ] **Sistema de Recordatorios**
+  - Recordatorios de riego, fertilización, poda
+  - Notificaciones push/locales
+  - Calendario de cuidados
+  - Interfaz para gestionar recordatorios desde PlantDetail
+
+### 🗃️ 6.2 Funciones de Soporte y Ayuda
+**Tiempo estimado**: 2-3 días
+
+- [ ] **Página de Ayuda y FAQ**
+  - Preguntas frecuentes sobre uso de la app
+  - Guías de cuidado de plantas
+  - Resolución de problemas comunes
+  - Navegación desde Settings
+
+- [ ] **Política de Privacidad**
+  - Documento completo de política de privacidad
+  - Información sobre manejo de datos
+  - Enlaces a términos y condiciones
+  - Modal o página dedicada
+
+- [ ] **Modal "Acerca de"**
+  - Información sobre la aplicación
+  - Versión actual (dinámica)
+  - Créditos y reconocimientos
+  - Enlaces a redes sociales/contacto
+
+### 📋 6.3 Mejoras de Funcionalidades Existentes
+**Tiempo estimado**: 2-3 días
+
+- [ ] **Mejora del Sistema de Exportación**
+  - Exportar datos en múltiples formatos (JSON, CSV)
+  - Incluir imágenes en la exportación
+  - Opciones de filtrado para exportación selectiva
+
+- [ ] **Versión Dinámica en Settings**
+  - Obtener versión desde package.json
+  - Mostrar información de build/commit
+  - Verificación de actualizaciones disponibles
+
+### 🎯 Priorización de Desarrollo
+
+| Función | Prioridad | Impacto Usuario | Complejidad |
+|---------|-----------|-----------------|-------------|
+| Edición de Plantas | 🔴 Alta | Alto | Media |
+| Sistema de Recordatorios | 🟡 Media | Alto | Alta |
+| Añadir Manualmente | 🟡 Media | Medio | Baja |
+| Ayuda y FAQ | 🟢 Baja | Medio | Baja |
+| Política de Privacidad | 🟢 Baja | Bajo | Baja |
+| Modal "Acerca de" | 🟢 Baja | Bajo | Baja |
+
+### 📅 Cronograma Sugerido
+
+- **Semana 1**: Edición de Plantas + Añadir Manualmente
+- **Semana 2**: Sistema de Recordatorios (Fase 1 - básico)
+- **Semana 3**: Funciones de Soporte (Ayuda, Privacidad, Acerca de)
+- **Semana 4**: Mejoras y pulimiento de funcionalidades
+
+### 🔧 Notas Técnicas
+
+- **Funciones temporalmente ocultas**: Los botones correspondientes están comentados en el código con referencias a este roadmap
+- **Rutas pendientes**: `/add-plant/manual`, `/help`, `/privacy` necesitan implementación
+- **Componentes a crear**: `PlantEditForm`, `ReminderManager`, `HelpPage`, `PrivacyPolicy`, `AboutModal`
+- **Servicios a extender**: `plantService` para edición, `notificationService` para recordatorios
+
+---
+
 ## 📝 Notas de Implementación
 
 1. **Comenzar con Fase 1** - La modernización tecnológica es base para todo lo demás
@@ -330,6 +417,7 @@
 3. **User feedback** - Validar cambios de UI con usuarios reales
 4. **Performance budget** - No sacrificar performance por features
 5. **Mobile-first** - Todas las decisiones con mobile como prioridad
+6. **Funciones ocultas** - Reactivar botones conforme se implementen las funciones en Fase 6
 
 ---
 

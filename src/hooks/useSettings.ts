@@ -132,28 +132,31 @@ export const useSettings = () => {
     {
       title: 'Soporte',
       items: [
+        // Funciones de soporte temporalmente ocultas - ver ROADMAP.md
+        /* 
         {
           id: 'help',
           icon: 'HelpCircle',
           label: 'Ayuda y FAQ',
-          action: () => { /* Navigate to help page */ },
+          action: () => { console.log('Navigate to help page'); },
           type: 'button' as const,
         },
         {
           id: 'privacy',
           icon: 'Shield',
           label: 'Política de Privacidad',
-          action: () => { /* Navigate to privacy page */ },
+          action: () => { console.log('Navigate to privacy page'); },
           type: 'button' as const,
         },
         {
-            id: 'about',
-            icon: 'Info',
-            label: 'Acerca de Plantitas',
-            value: 'v1.0.0', // This should be dynamic
-            action: () => { /* Show about modal */ },
-            type: 'button' as const,
+          id: 'about',
+          icon: 'Info',
+          label: 'Acerca de Plantitas',
+          value: 'v1.0.0', // This should be dynamic
+          action: () => { console.log('Show about modal'); },
+          type: 'button' as const,
         }
+        */
       ],
     },
   ], [isDark, notificationsEnabled, profile, handleSignOut, toggleTheme, handleNotificationToggle]);

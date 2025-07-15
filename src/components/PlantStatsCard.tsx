@@ -15,14 +15,44 @@ const PlantStatsCard: React.FC<PlantStatsCardProps> = ({ plant, className = '' }
     ? differenceInDays(new Date(), plant.lastWatered)
     : null;
 
-  const getHealthTrend = () => {
-    // In production, this would compare with historical data
-    const trend = Math.random() > 0.5 ? 'up' : 'down';
-    const change = Math.floor(Math.random() * 10) + 1;
-    return { trend, change };
-  };
+  // const getHealthTrend = () => {
+  //   // Calculate real trend based on health analysis from plant images
+  //   if (!plant.images || plant.images.length < 2) {
+  //     return null; // No trend data available
+  //   }
 
-  const { trend, change } = getHealthTrend();
+  //   const imagesWithHealth = plant.images
+  //     .filter(img => img.healthAnalysis)
+  //     .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+  //   if (imagesWithHealth.length < 2) {
+  //     return null;
+  //   }
+
+  //   // Compare the last two health analyses
+  //   const latest = imagesWithHealth[imagesWithHealth.length - 1];
+  //   const previous = imagesWithHealth[imagesWithHealth.length - 2];
+
+  //   const latestScore = getHealthScore(latest.healthAnalysis?.overallHealth);
+  //   const previousScore = getHealthScore(previous.healthAnalysis?.overallHealth);
+    
+  //   const change = Math.abs(latestScore - previousScore);
+  //   const trend = latestScore > previousScore ? 'up' : latestScore < previousScore ? 'down' : 'stable';
+    
+  //   return { trend, change };
+  // };
+
+  // const getHealthScore = (health: string | undefined): number => {
+  //   const healthMap = {
+  //     'excellent': 95,
+  //     'good': 80,
+  //     'fair': 60,
+  //     'poor': 30
+  //   };
+  //   return healthMap[health as keyof typeof healthMap] || plant.healthScore;
+  // };
+
+  // const healthTrend = getHealthTrend();
 
   const stats = [
     {
@@ -33,8 +63,8 @@ const PlantStatsCard: React.FC<PlantStatsCardProps> = ({ plant, className = '' }
              plant.healthScore >= 60 ? 'text-yellow-500' : 'text-red-500',
       bgColor: plant.healthScore >= 80 ? 'bg-green-100 dark:bg-green-900' : 
                plant.healthScore >= 60 ? 'bg-yellow-100 dark:bg-yellow-900' : 'bg-red-100 dark:bg-red-900',
-      trend: trend === 'up' ? `+${change}%` : `-${change}%`,
-      trendColor: trend === 'up' ? 'text-green-500' : 'text-red-500',
+      trend: undefined,
+      trendColor: undefined,
     },
     {
       icon: Droplets,

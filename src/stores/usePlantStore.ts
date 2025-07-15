@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { produce } from 'immer';
 import { Plant, ChatMessage } from '../schemas';
 import { PlantService } from '../services/plantService';
+import { gardenCacheService } from '../services/gardenCacheService';
 
 // Instantiate services
 const plantService = new PlantService();
@@ -83,6 +84,10 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
           state.plants.unshift(newPlant);
         })
       );
+
+      // Invalidate garden cache since we added a new plant
+      gardenCacheService.invalidateOnPlantChange(userId);
+
       return newPlant;
     } catch (e) {
       console.error(e);
@@ -103,6 +108,9 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
           // state.isLoading = false; // Removed
         })
       );
+
+      // Invalidate garden cache since plant data changed
+      gardenCacheService.invalidateOnPlantChange(userId);
     } catch (e) {
       // const error = e instanceof Error ? e.message : 'Failed to update plant';
       // set({ error, isLoading: false }); // Removed
@@ -121,6 +129,9 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
           // state.isLoading = false; // Removed
         })
       );
+
+      // Invalidate garden cache since we deleted a plant
+      gardenCacheService.invalidateOnPlantChange(userId);
     } catch (e) {
       // const error = e instanceof Error ? e.message : 'Failed to delete plant';
       // set({ error, isLoading: false }); // Removed
