@@ -1,104 +1,77 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useAuthStore, usePlantStore, initializeAuth, initializeTheme } from './stores';
+import React, { Suspense, lazy, useEffect } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
+import { useAuthStore } from './stores/useAuthStore';
+
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import PlantDetail from './pages/PlantDetail';
-import Camera from './pages/Camera';
-import Chat from './pages/Chat';
-import Settings from './pages/Settings';
-import AuthPage from './pages/Auth';
 import ErrorBoundary from './components/ErrorBoundary';
-import OfflineIndicator from './components/OfflineIndicator';
+import { Leaf } from 'lucide-react';
 
-// Main App Content that needs auth
-const AppContent: React.FC = () => {
-  const { user, loading } = useAuthStore();
-  const loadPlants = usePlantStore((state) => state.loadPlants);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const PlantDetail = lazy(() => import('./pages/PlantDetail'));
+const Settings = lazy(() => import('./pages/Settings'));
+const AuthPage = lazy(() => import('./pages/Auth'));
+const CameraPage = lazy(() => import('./pages/Camera'));
+const ChatPage = lazy(() => import('./pages/Chat'));
 
-  // Load plants when user changes
+const FullScreenLoader: React.FC<{ message: string }> = ({ message }) => (
+  <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
+    <Leaf className="w-12 h-12 text-green-500 animate-bounce mb-4" />
+    <p className="text-lg text-muted-foreground">{message}</p>
+  </div>
+);
+
+const App: React.FC = () => {
+  const { session, isInitialized, initialize } = useAuthStore();
+
   useEffect(() => {
-    if (user) {
-      loadPlants(user.id);
-    }
-  }, [user, loadPlants]);
+    // The initialize function is now async and handles its own lifecycle.
+    initialize();
+    // No cleanup function is needed here anymore because the subscription
+    // is managed entirely within the Zustand store.
+  }, [initialize]); // Depend on initialize to re-run if the function itself changes (unlikely for Zustand).
 
-  // Add timeout for loading state to detect infinite loading
-  useEffect(() => {
-    if (loading) {
-      const timeout = setTimeout(() => {
-        setLoadingTimeout(true);
-      }, 10000); // 10 seconds timeout
-
-      return () => clearTimeout(timeout);
-    } else {
-      setLoadingTimeout(false);
-    }
-  }, [loading]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="text-center max-w-md mx-4">
-          <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400 mb-2">
-            {loadingTimeout ? 'Reconectando...' : 'Cargando...'}
-          </p>
-          {loadingTimeout && (
-            <div className="text-sm text-gray-500 dark:text-gray-500">
-              <p className="mb-2">Si esto toma demasiado tiempo, intenta:</p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
-              >
-                Recargar página
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  if (!isInitialized) {
+    return <FullScreenLoader message="Inicializando..." />;
   }
 
-  if (!user) {
-    return <AuthPage mode={authMode} onModeChange={setAuthMode} />;
-  }
-
-  return (
-    <Router
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <OfflineIndicator />
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/plant/:id" element={<PlantDetail />} />
-          <Route path="/camera" element={<Camera />} />
-          <Route path="/chat/:id" element={<Chat />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </Layout>
-    </Router>
+  const PrivateRoutes = () => (
+    <Layout>
+      <Routes>
+        <Route index element={<Dashboard />} />
+        <Route path="plant/:plantId">
+          <Route index element={<PlantDetail />} />
+          <Route path="chat" element={<ChatPage />} />
+        </Route>
+        <Route path="settings" element={<Settings />} />
+        <Route path="camera" element={<CameraPage />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Layout>
   );
-};
-
-function App() {
-  // Initialize stores on app start
-  useEffect(() => {
-    initializeAuth();
-    initializeTheme();
-  }, []);
 
   return (
     <ErrorBoundary>
-      <AppContent />
+      <Router>
+        <Suspense fallback={<FullScreenLoader message="Cargando página..." />}>
+          <Routes>
+            <Route
+              path="/auth"
+              element={!session ? <AuthPage /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/*"
+              element={session ? <PrivateRoutes /> : <Navigate to="/auth" />}
+            />
+          </Routes>
+        </Suspense>
+      </Router>
     </ErrorBoundary>
   );
-}
+};
 
 export default App;

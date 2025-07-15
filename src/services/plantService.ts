@@ -7,8 +7,10 @@ import {
   PlantNotification,
   CareProfile,
   PlantPersonality,
+  PlantSummary,
 } from '../schemas';
 import { imageService } from './imageService';
+import { generatePlantResponse } from './aiService';
 
 type DBPlant = Tables<'plants'>;
 type DBPlantInsert = TablesInsert<'plants'>;
@@ -28,10 +30,10 @@ const transformDBPlantToPlant = (
   id: dbPlant.id,
   name: dbPlant.name,
   species: dbPlant.species,
-  variety: dbPlant.variety || undefined,
-  nickname: dbPlant.nickname || undefined,
+  variety: dbPlant.variety ?? undefined,
+  nickname: dbPlant.nickname ?? undefined,
   location: dbPlant.location,
-  dateAdded: new Date(dbPlant.date_added || dbPlant.created_at!),
+  dateAdded: new Date(dbPlant.date_added ?? dbPlant.created_at!),
   lastWatered: dbPlant.last_watered ? new Date(dbPlant.last_watered) : undefined,
   lastFertilized: dbPlant.last_fertilized ? new Date(dbPlant.last_fertilized) : undefined,
   images,
@@ -59,78 +61,98 @@ const transformPlantToDBPlant = (plant: Plant, userId: string): DBPlantInsert =>
 });
 
 export class PlantService {
+  async getUserPlantSummaries(userId: string): Promise<PlantSummary[]> {
+    try {
+      const { data: dbPlants, error } = await supabase
+        .from('plants')
+        .select(`
+          id,
+          name,
+          nickname,
+          species,
+          location,
+          health_score,
+          last_watered,
+          care_profile,
+          plant_images ( storage_path )
+        `)
+        .eq('user_id', userId)
+        .eq('plant_images.is_profile_image', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      const summaries: PlantSummary[] = dbPlants.map(plant => ({
+        id: plant.id,
+        name: plant.name,
+        nickname: plant.nickname || undefined,
+        species: plant.species,
+        location: plant.location,
+        healthScore: plant.health_score || 85,
+        profileImageUrl: plant.plant_images.length > 0 
+          ? imageService.getPublicUrlForPath(plant.plant_images[0].storage_path)
+          : undefined,
+        lastWatered: plant.last_watered ? new Date(plant.last_watered) : undefined,
+        wateringFrequency: (plant.care_profile as any)?.wateringFrequency,
+      }));
+
+      return summaries;
+
+    } catch (error) {
+      console.error('Error fetching plant summaries:', error);
+      throw error;
+    }
+  }
+
   async getUserPlants(userId: string): Promise<Plant[]> {
     try {
-      // Get plants with associated data
-      const { data: plants, error } = await supabase
+      const { data: dbPlants, error } = await supabase
         .from('plants')
-        .select('*')
+        .select(`
+          *,
+          plant_images ( * ),
+          chat_messages ( * ),
+          plant_notifications ( * )
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Get images for all plants
-      const plantIds = plants.map(p => p.id);
-      const { data: images } = await supabase
-        .from('plant_images')
-        .select('*')
-        .in('plant_id', plantIds)
-        .order('created_at', { ascending: false });
-
-      // Get chat messages for all plants
-      const { data: messages } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .in('plant_id', plantIds)
-        .order('created_at', { ascending: true });
-
-      // Get notifications for all plants
-      const { data: notifications } = await supabase
-        .from('plant_notifications')
-        .select('*')
-        .in('plant_id', plantIds)
-        .order('scheduled_for', { ascending: true });
-
-      // Group data by plant
-      const plantsWithData = await Promise.all(plants.map(async plant => {
-        const plantImages: PlantImage[] = await Promise.all(
-          (images || [])
-            .filter(img => img.plant_id === plant.id)
-            .map(async img => ({
-              id: img.id,
-              url: await imageService.getImageUrl(img.storage_path),
-              timestamp: new Date(img.created_at!),
-              healthAnalysis: img.health_analysis as any,
-              isProfileImage: img.is_profile_image || false,
-            }))
+      const plantsWithData = dbPlants.map((p) => {
+        const plantImages: PlantImage[] = (p.plant_images || []).map(
+          (img: any) => ({
+            id: img.id,
+            url: imageService.getPublicUrlForPath(img.storage_path),
+            timestamp: new Date(img.created_at!),
+            healthAnalysis: img.health_analysis as any,
+            isProfileImage: img.is_profile_image || false,
+          })
         );
 
-        const chatHistory: ChatMessage[] = (messages || [])
-          .filter(msg => msg.plant_id === plant.id)
-          .map(msg => ({
+        const chatHistory: ChatMessage[] = (p.chat_messages || []).map(
+          (msg: any) => ({
             id: msg.id,
-            sender: msg.sender as 'user' | 'plant',
+            sender: msg.sender,
             content: msg.content,
             timestamp: new Date(msg.created_at!),
-            emotion: msg.emotion as any,
-          }));
+            emotion: msg.emotion,
+          })
+        );
 
-        const plantNotifications: PlantNotification[] = (notifications || [])
-          .filter(notif => notif.plant_id === plant.id)
-          .map(notif => ({
+        const plantNotifications: PlantNotification[] = (p.plant_notifications || []).map((notif: any) => ({
             id: notif.id,
-            type: notif.type as any,
+            type: notif.type,
             title: notif.title,
             message: notif.message,
-            priority: notif.priority as any || 'medium',
+            priority: notif.priority || 'medium',
             scheduledFor: new Date(notif.scheduled_for),
             completed: notif.completed || false,
           }));
 
-        return transformDBPlantToPlant(plant, plantImages, chatHistory, plantNotifications);
-      }));
-
+        return transformDBPlantToPlant(p, plantImages, chatHistory, plantNotifications);
+      });
+      
       return plantsWithData;
     } catch (error) {
       console.error('Error fetching plants:', error);
@@ -142,66 +164,54 @@ export class PlantService {
     try {
       const { data: plant, error } = await supabase
         .from('plants')
-        .select('*')
+        .select(`
+          *,
+          plant_images ( * ),
+          chat_messages ( * ),
+          plant_notifications ( * )
+        `)
         .eq('id', plantId)
         .eq('user_id', userId)
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') return null;
+        if (error.code === 'PGRST116') return null; // Not found
         throw error;
       }
+      
+      if (!plant) return null;
 
-      // Get associated data
-      const [imagesResult, messagesResult, notificationsResult] = await Promise.all([
-        supabase
-          .from('plant_images')
-          .select('*')
-          .eq('plant_id', plantId)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('chat_messages')
-          .select('*')
-          .eq('plant_id', plantId)
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('plant_notifications')
-          .select('*')
-          .eq('plant_id', plantId)
-          .order('scheduled_for', { ascending: true })
-      ]);
-
-      const images: PlantImage[] = await Promise.all(
-        (imagesResult.data || []).map(async img => ({
+      const plantImages: PlantImage[] = (plant.plant_images || []).map(
+        (img: any) => ({
           id: img.id,
-          url: await imageService.getImageUrl(img.storage_path),
+          url: imageService.getPublicUrlForPath(img.storage_path),
           timestamp: new Date(img.created_at!),
           healthAnalysis: img.health_analysis as any,
           isProfileImage: img.is_profile_image || false,
-        }))
+        })
       );
-
-      const chatHistory: ChatMessage[] = (messagesResult.data || []).map(msg => ({
+      
+      const chatHistory: ChatMessage[] = (plant.chat_messages || []).map((msg: any) => ({
         id: msg.id,
-        sender: msg.sender as 'user' | 'plant',
+        sender: msg.sender,
         content: msg.content,
         timestamp: new Date(msg.created_at!),
-        emotion: msg.emotion as any,
+        emotion: msg.emotion,
       }));
 
-      const notifications: PlantNotification[] = (notificationsResult.data || []).map(notif => ({
+      const plantNotifications: PlantNotification[] = (plant.plant_notifications || []).map((notif: any) => ({
         id: notif.id,
-        type: notif.type as any,
+        type: notif.type,
         title: notif.title,
         message: notif.message,
-        priority: notif.priority as any || 'medium',
+        priority: notif.priority || 'medium',
         scheduledFor: new Date(notif.scheduled_for),
         completed: notif.completed || false,
       }));
 
-      return transformDBPlantToPlant(plant, images, chatHistory, notifications);
+      return transformDBPlantToPlant(plant, plantImages, chatHistory, plantNotifications);
     } catch (error) {
-      console.error('Error fetching plant:', error);
+      console.error('Error fetching plant by ID:', error);
       throw error;
     }
   }
@@ -270,6 +280,26 @@ export class PlantService {
       console.error('Error deleting plant:', error);
       throw error;
     }
+  }
+
+  async sendChatMessageAndGetResponse(plant: Plant, userMessage: Omit<ChatMessage, 'id'>, userId: string): Promise<[ChatMessage, ChatMessage]> {
+    // 1. Save the user's message
+    const savedUserMessage = await this.addChatMessage(plant.id, userMessage, userId);
+
+    // 2. Generate the plant's response
+    const plantResponse = await generatePlantResponse(plant, userMessage.content);
+    
+    // 3. Save the plant's response
+    const plantChatMessage: Omit<ChatMessage, 'id'> = {
+      sender: 'plant',
+      content: plantResponse.content,
+      emotion: plantResponse.emotion,
+      timestamp: new Date(),
+    };
+    const savedPlantMessage = await this.addChatMessage(plant.id, plantChatMessage, userId);
+    
+    // 4. Return both persisted messages
+    return [savedUserMessage, savedPlantMessage];
   }
 
   async addChatMessage(plantId: string, message: Omit<ChatMessage, 'id'>, userId: string): Promise<ChatMessage> {

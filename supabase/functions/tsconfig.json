@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "strict": true,
+    "noImplicitAny": true,
+    "types": ["https://esm.sh/@supabase/functions-js@2.4.1/src/edge-runtime.d.ts"]
+  },
+  "include": ["./**/*.ts"]
+} 

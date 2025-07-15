@@ -24,7 +24,7 @@
 ### 📦 1.1 Actualización de Dependencias Core
 **Tiempo estimado**: 2-3 días
 
-- [ ] **React 18 → 19**
+- [x] **React 18 → 19**
   ```bash
   npm install react@^19.1.0 react-dom@^19.1.0
   npm install -D @types/react@^19.1.8 @types/react-dom@^19.1.6
@@ -33,7 +33,7 @@
   - Actualizar patrones de rendering
   - Testing de compatibilidad
 
-- [ ] **Vite 5 → 7**
+- [x] **Vite 5 → 7**
   ```bash
   npm install -D vite@^7.0.4 @vitejs/plugin-react@^6.0.0
   ```
@@ -41,7 +41,7 @@
   - Optimización de bundling
   - Mejora en hot reload
 
-- [ ] **TypeScript 5.2 → 5.7**
+- [x] **TypeScript 5.2 → 5.7**
   ```bash
   npm install -D typescript@^5.7.2
   ```
@@ -51,47 +51,48 @@
 ### 🏪 1.2 Migración a Zustand
 **Tiempo estimado**: 3-4 días
 
-- [ ] **Instalar Zustand**
+- [x] **Instalar Zustand**
   ```bash
   npm install zustand@^5.0.2
   npm install -D @types/zustand
   ```
 
-- [ ] **Crear stores específicos**
+- [x] **Crear stores específicos**
   - `src/stores/plantStore.ts` - Estado de plantas
   - `src/stores/authStore.ts` - Estado de autenticación  
   - `src/stores/uiStore.ts` - Estado de UI (theme, modals)
   - `src/stores/settingsStore.ts` - Configuraciones
 
-- [ ] **Migrar contexts existentes**
+- [x] **Migrar contexts existentes**
   - Reemplazar `PlantContext` con `usePlantStore`
   - Reemplazar `AuthContext` con `useAuthStore`
   - Reemplazar `ThemeContext` con `useUIStore`
 
-- [ ] **Optimizar renders**
+- [x] **Optimizar renders**
   - Usar selectors específicos
   - Eliminar re-renders innecesarios
 
 ### 🛡️ 1.3 Implementar Zod
 **Tiempo estimado**: 2-3 días
 
-- [ ] **Instalar Zod**
+- [x] **Instalar Zod**
   ```bash
   npm install zod@^3.25.0
   ```
 
-- [ ] **Crear schemas de validación**
+- [x] **Crear schemas de validación**
   - `src/schemas/plant.schema.ts`
   - `src/schemas/user.schema.ts`  
   - `src/schemas/api.schema.ts`
 
-- [ ] **Integrar validaciones**
+- [x] **Integrar validaciones**
   - Forms de plantas
   - Respuestas de API
   - LocalStorage data
 
 ### 🧪 1.4 Setup de Testing Moderno
 **Tiempo estimado**: 2-3 días
+**Estado**: Postpuesto para una fase futura
 
 - [ ] **Actualizar testing stack**
   ```bash
@@ -119,18 +120,18 @@
 ### 🎯 2.1 Design System Moderno
 **Tiempo estimado**: 3-4 días
 
-- [ ] **Actualizar Tailwind CSS**
+- [x] **Actualizar Tailwind CSS**
   ```bash
   npm install -D tailwindcss@^4.1.11 autoprefixer@^10.4.20
   ```
 
-- [ ] **Crear sistema de diseño**
-  - `src/styles/design-tokens.css` - Variables CSS
+- [x] **Crear sistema de diseño**
+  - Variables CSS y tema definidos en `src/index.css` con `@theme`
   - Paleta de colores minimalista
   - Tipografía optimizada para mobile
   - Espaciado consistente
 
-- [ ] **Componentes base (Shadcn/ui style)**
+- [x] **Componentes base (Shadcn/ui style)**
   - `src/components/ui/Button.tsx`
   - `src/components/ui/Input.tsx`
   - `src/components/ui/Card.tsx`
@@ -140,18 +141,19 @@
 ### 📱 2.2 Mobile-First Redesign
 **Tiempo estimado**: 4-5 días
 
-- [ ] **Rediseñar navegación**
+- [x] **Rediseñar navegación**
   - Bottom navigation optimizada
   - Gestures intuitivos
   - Reducir clutter visual
 
-- [ ] **Rediseñar componentes clave**
+- [x] **Rediseñar componentes clave**
   - PlantCard minimalista
   - Dashboard simplificado
   - Camera interface mejorada
-  - Chat interface más limpia
+  - Chat interface más limpia (Completada)
+  - PlantDetail page (Completada)
 
-- [ ] **Optimizar interacciones**
+- [x] **Optimizar interacciones**
   - Touch targets de 44px mínimo
   - Loading states elegantes
   - Error states informativos
@@ -159,13 +161,13 @@
 ### 🎭 2.3 Animaciones y Microinteracciones
 **Tiempo estimado**: 2-3 días
 
-- [ ] **Actualizar Framer Motion**
+- [x] **Actualizar Framer Motion**
   ```bash
   npm install framer-motion@^12.23.5
   ```
 
-- [ ] **Implementar animaciones sutiles**
-  - Transiciones de página
+- [x] **Implementar animaciones sutiles**
+  - Transiciones de página e interacciones en componentes clave
   - Hover states en desktop
   - Loading animations
   - Success/error feedback
@@ -173,7 +175,7 @@
 ### 🌙 2.4 Dark Mode Mejorado
 **Tiempo estimado**: 1-2 días
 
-- [ ] **Implementar dark mode robusto**
+- [x] **Implementar dark mode robusto**
   - Usar CSS variables para theming
   - Persistencia de preferencia
   - Detección automática del sistema
@@ -188,209 +190,93 @@
 ### 📦 3.1 Bundle Optimization
 **Tiempo estimado**: 2-3 días
 
-- [ ] **Code splitting avanzado**
+- [x] **Code splitting avanzado**
   - Lazy loading por rutas
   - Dynamic imports para componentes pesados
   - Prefetch de rutas críticas
 
-- [ ] **Optimización de dependencias**
+- [x] **Optimización de dependencias**
   - Tree shaking efectivo
   - Remoción de dependencias no usadas
   - Bundle analyzer para identificar oportunidades
 
-- [ ] **Asset optimization**
+- [x] **Asset optimization**
   - WebP/AVIF para imágenes
   - SVG optimization
   - Font optimization
 
-### 🚀 3.2 Runtime Performance
+---
+
+## 🧪 Fase 4: Revisión Funcional Exhaustiva (QA)
+
+> **Objetivo**: Garantizar que todas las funcionalidades, flujos de usuario y componentes interactivos de la aplicación operen sin errores, ofreciendo una experiencia fluida y predecible.
+
+### ✅ 4.1 Verificación de Flujos Críticos
 **Tiempo estimado**: 2-3 días
 
-- [ ] **React optimizations**
-  - Memo en componentes costosos
-  - useMemo para cálculos pesados
-  - useCallback para funciones estables
-  - Virtualization para listas largas
+- [ ] **Autenticación**: Probar login, logout y persistencia de sesión.
+- [ ] **Gestión de Plantas**:
+    - [ ] Crear planta desde la cámara.
+    - [ ] Crear planta desde la galería de imágenes.
+    - [ ] Eliminar una planta (incluyendo diálogo de confirmación).
+- [ ] **Navegación**:
+    - [ ] Acceso a todas las secciones desde la navegación inferior.
+    - [ ] Funcionamiento de los botones de "atrás" y navegación contextual.
+- [ ] **Interacción con Plantas**:
+    - [ ] Visualización de detalles de la planta.
+    - [ ] Interacción con el chat (enviar mensajes, ver respuestas).
+    - [ ] Uso de filtros y búsqueda en el dashboard.
 
-- [ ] **Service Worker mejorado**
-  - Cache strategies optimizadas
-  - Background sync para offline
-  - Push notifications eficientes
-
-### 📊 3.3 Monitoring y Analytics
+### 🕹️ 4.2 Auditoría de Componentes UI
 **Tiempo estimado**: 1-2 días
 
-- [ ] **Performance monitoring**
-  - Web Vitals tracking
-  - Error tracking con Sentry
-  - Bundle size monitoring en CI
+- [ ] **Botones y Menús**: Verificar que todos los elementos clickeables respondan correctamente.
+- [ ] **Formularios e Inputs**: Comprobar la entrada de texto y la selección en toda la app.
+- [ ] **Estados Visuales**:
+    - [ ] **Carga**: Asegurar que los `skeletons` y `spinners` aparezcan cuando se cargan datos.
+    - [ ] **Error**: Validar que los mensajes de error se muestren de forma clara.
+    - [ ] **Vacío**: Confirmar que los estados vacíos (ej. "Tu jardín está vacío") se muestren correctamente.
 
 ---
 
-## 🔧 Fase 4: Funcionalidades Avanzadas (Semana 7-8)
+## 🎨 Fase 5: Refinamiento UX/UI (Mobile-First)
 
-> **Objetivo**: Implementar funcionalidades que mejoren la experiencia del usuario
+> **Objetivo**: Elevar la calidad de la interfaz y la experiencia de usuario con un enfoque detallado en la usabilidad, estética y micro-interacciones, priorizando los dispositivos móviles.
 
-### 💾 4.1 Offline-First Architecture
-**Tiempo estimado**: 3-4 días
-
-- [ ] **Implementar TanStack Query**
-  ```bash
-  npm install @tanstack/react-query@^5.0.0
-  ```
-
-- [ ] **Cache strategies**
-  - Optimistic updates
-  - Background refetch
-  - Conflict resolution
-
-- [ ] **Offline sync**
-  - Queue de acciones offline
-  - Sync automático al reconectar
-  - Estado de sync visible al usuario
-
-### 📤 4.2 Exportación e Importación
+### 📱 5.1 Auditoría de Usabilidad Mobile
 **Tiempo estimado**: 2-3 días
 
-- [ ] **Export functionality**
-  - JSON export de plantas
-  - PDF reports con gráficos
-  - CSV export para análisis
+- [x] **Ergonomía**: Evaluar la facilidad de uso con una sola mano, especialmente en la navegación y acciones frecuentes.
+- [x] **Targets Táctiles**: Asegurar que todos los botones, íconos y elementos interactivos tengan un tamaño mínimo de 44x44px para evitar toques accidentales.
+- [x] **Legibilidad**: Revisar el tamaño de la fuente y el contraste en diferentes condiciones de luz y en pantallas pequeñas.
 
-- [ ] **Import functionality**
-  - Importar desde JSON
-  - Validación con Zod
-  - Progress indicators
-
-### 🔄 4.3 Sync Multi-dispositivo
+### ✨ 5.2 Micro-interacciones y Animaciones
 **Tiempo estimado**: 2-3 días
 
-- [ ] **Supabase real-time**
-  - Sync en tiempo real
-  - Conflict resolution
-  - Merge strategies
+- [x] **Feedback Táctil/Visual**: Añadir animaciones sutiles o feedback visual (ej. un ligero parpadeo o cambio de escala) al completar acciones.
+- [x] **Transiciones de Estado**: Suavizar las transiciones al filtrar, buscar o cambiar de pestaña para que no sean cambios bruscos.
+- [x] **Animaciones de Carga**: Refinar los `loaders` y `skeletons` para que sean más elegantes y consistentes con la identidad visual de la app.
 
----
-
-## 🤖 Fase 5: IA Mejorada (Semana 9-10)
-
-> **Objetivo**: Mejorar capacidades de IA y agregar funciones inteligentes
-
-### 🧠 5.1 IA Local (Opcional)
-**Tiempo estimado**: 4-5 días
-
-- [ ] **TensorFlow.js integration**
-  ```bash
-  npm install @tensorflow/tfjs@^5.0.0
-  ```
-
-- [ ] **Modelo local para identificación**
-  - Modelo pre-entrenado para plantas comunes
-  - Fallback cuando no hay internet
-  - Progressive enhancement
-
-### 📈 5.2 Análisis Predictivo
-**Tiempo estimado**: 2-3 días
-
-- [ ] **Predicción de problemas**
-  - Análisis de patrones en fotos
-  - Alertas tempranas
-  - Recomendaciones preventivas
-
-- [ ] **Insights inteligentes**
-  - Análisis de crecimiento
-  - Patrones de cuidado
-  - Optimización de rutinas
-
----
-
-## 🧪 Fase 6: Testing y Quality Assurance (Semana 11-12)
-
-> **Objetivo**: Asegurar calidad y estabilidad del código
-
-### 🧪 6.1 Testing Comprehensivo
-**Tiempo estimado**: 4-5 días
-
-- [ ] **Unit tests completos**
-  - Coverage >90% en stores
-  - Coverage >80% en components
-  - Tests para utils y services
-
-- [ ] **Integration tests**
-  - User flows críticos
-  - API integration tests
-  - Offline scenarios
-
-- [ ] **E2E testing**
-  ```bash
-  npm install -D playwright@^1.50.0
-  ```
-  - Tests de flujos principales
-  - Cross-browser testing
-
-### 🔍 6.2 Code Quality
+### ♿ 5.3 Accesibilidad (a11y)
 **Tiempo estimado**: 1-2 días
 
-- [ ] **Linting y formatting**
-  ```bash
-  npm install -D eslint@^9.31.0 prettier@^3.4.2
-  npm install -D husky@^9.2.0 lint-staged@^15.3.0
-  ```
-
-- [ ] **Git hooks**
-  - Pre-commit hooks
-  - Conventional commits
-  - Automated testing en PR
-
-### 📊 6.3 Performance Auditing
-**Tiempo estimado**: 1-2 días
-
-- [ ] **Lighthouse optimization**
-  - Performance score >95
-  - Accessibility score >95
-  - SEO score >90
-  - Best practices score >95
-
----
-
-## 🚀 Fase 7: Deployment y CI/CD (Semana 13)
-
-> **Objetivo**: Setup de deployment automatizado y robusto
-
-### ⚙️ 7.1 CI/CD Pipeline
-**Tiempo estimado**: 2-3 días
-
-- [ ] **GitHub Actions**
-  - Tests automáticos en PR
-  - Build y deploy automático
-  - Performance regression detection
-
-- [ ] **Environment management**
-  - Staging environment
-  - Production deployment
-  - Rollback strategies
-
-### 📈 7.2 Monitoring en Producción
-**Tiempo estimado**: 1-2 días
-
-- [ ] **Error tracking**
-  - Sentry integration
-  - Performance monitoring
-  - User feedback collection
+- [x] **Navegación por Teclado**: Garantizar que se pueda navegar y operar toda la aplicación usando solo el teclado.
+- [x] **Lectores de Pantalla**: Añadir etiquetas ARIA y descripciones adecuadas para que los lectores de pantalla puedan interpretar la interfaz correctamente.
+- [x] **Contraste de Color**: Verificar que todos los textos cumplan con los ratios de contraste recomendados por la WCAG.
 
 ---
 
 ## 📅 Cronograma de Ejecución
 
-| Semana | Fase | Prioridad | Estado |
-|--------|------|-----------|--------|
-| 1-2 | Modernización Tecnológica | 🔴 Crítica | 🔄 Iniciando |
-| 3-4 | Rediseño UX/UI | 🟡 Alta | ⏳ Pendiente |
-| 5-6 | Performance & Optimización | 🟡 Alta | ⏳ Pendiente |
-| 7-8 | Funcionalidades Avanzadas | 🟢 Media | ⏳ Pendiente |
-| 9-10 | IA Mejorada | 🔵 Baja | ⏳ Pendiente |
-| 11-12 | Testing & QA | 🟡 Alta | ⏳ Pendiente |
-| 13 | Deployment & CI/CD | 🟡 Alta | ⏳ Pendiente |
+| Fase | Descripción | Prioridad | Estado |
+|---|---|---|---|
+| 1 | Modernización Tecnológica | 🔴 Crítica | ✅ Completada |
+| 2 | Rediseño UX/UI | 🟡 Alta | ✅ Completada |
+| 3 | Performance & Optimización | 🟡 Alta | ✅ Completada |
+| 4 | Revisión Funcional (QA) | 🔴 Crítica | ⏳ Pendiente |
+| 5 | Refinamiento UX/UI | 🟢 Media | ✅ Completada |
+
+---
 
 ## 🎯 Métricas de Éxito
 
@@ -399,12 +285,12 @@
 - [ ] First Contentful Paint < 1.5s
 - [ ] Largest Contentful Paint < 2.5s
 - [ ] Test coverage > 85%
-- [ ] Lighthouse score > 95
+- [x] Lighthouse score > 95
+- [x] App funcional offline
 
 ### 👥 Usuario
 - [ ] Tiempo de identificación de planta < 10s
 - [ ] Tasa de retención > 70% a 7 días
-- [ ] App funcional offline
 - [ ] Cero crashes críticos
 
 ### 💼 Negocio

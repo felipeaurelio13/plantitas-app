@@ -2,16 +2,15 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MessageCircle, Droplets, Sun, AlertTriangle } from 'lucide-react';
-import { Plant } from '../schemas';
-import { formatDistanceToNow } from 'date-fns';
+import { PlantSummary } from '../schemas';
+import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 import { es } from 'date-fns/locale';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/Card';
 import LazyImage from './LazyImage';
 import { Button } from './ui/Button';
-import { cn } from '../lib/utils';
 
 interface PlantCardProps {
-  plant: Plant;
+  plant: PlantSummary;
   index: number;
 }
 
@@ -39,16 +38,15 @@ const PlantHealthIndicator: React.FC<{ score: number }> = ({ score }) => {
 
 const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
   const navigate = useNavigate();
-  const profileImage = plant.images?.find(img => img.isProfileImage) || plant.images?.[0];
   
-  const needsWatering = plant.lastWatered && plant.careProfile
-    ? new Date().getTime() - new Date(plant.lastWatered).getTime() > plant.careProfile.wateringFrequency * 24 * 60 * 60 * 1000
-    : true;
+  const needsWatering = plant.lastWatered && plant.wateringFrequency
+    ? new Date().getTime() - new Date(plant.lastWatered).getTime() > plant.wateringFrequency * 24 * 60 * 60 * 1000
+    : !plant.lastWatered;
 
   const handleCardClick = () => navigate(`/plant/${plant.id}`);
   const handleChatClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/chat/${plant.id}`);
+    navigate(`/plant/${plant.id}/chat`);
   };
 
   return (
@@ -66,9 +64,9 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
       >
         <div className="flex items-start p-4 space-x-4">
           <div className="w-20 h-20 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800 flex-shrink-0">
-            {profileImage ? (
+            {plant.profileImageUrl ? (
               <LazyImage
-                src={profileImage.url}
+                src={plant.profileImageUrl}
                 alt={plant.name}
                 className="w-full h-full object-cover"
               />
@@ -118,9 +116,8 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
               size="sm"
               variant="ghost"
               onClick={handleChatClick}
-              icon={<MessageCircle size={14} />}
             >
-              Chatear
+              <MessageCircle size={14} />
             </Button>
           </div>
         </CardFooter>

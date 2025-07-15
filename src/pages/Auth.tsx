@@ -1,49 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff, Leaf } from 'lucide-react';
-import { useAuthStore } from '../stores';
-import { SignUpSchema, SignInSchema } from '../schemas';
+import { useAuthStore } from '../stores/useAuthStore';
 
-interface AuthPageProps {
-  mode: 'login' | 'signup';
-  onModeChange: (mode: 'login' | 'signup') => void;
-}
-
-const AuthPage: React.FC<AuthPageProps> = ({ mode, onModeChange }) => {
+const AuthPage: React.FC = () => {
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  const { signIn, signUp } = useAuthStore();
+  // Use the store for state and actions
+  const { signIn, signUp, isLoading, error, clearError } = useAuthStore();
+
+  const handleModeChange = (newMode: 'login' | 'signup') => {
+    setMode(newMode);
+    clearError(); // Clear errors when switching modes
+  };
+  
+  // Clear errors when the component unmounts or mode changes
+  useEffect(() => {
+    return () => {
+      clearError();
+    };
+  }, [mode, clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
     try {
       if (mode === 'login') {
-        // Validate login data
-        const validatedData = SignInSchema.parse({ email, password });
-        await signIn(validatedData.email, validatedData.password);
+        await signIn({ email, password });
       } else {
-        // Validate signup data
-        const validatedData = SignUpSchema.parse({ email, password, fullName });
-        await signUp(validatedData.email, validatedData.password, validatedData.fullName);
+        await signUp({ email, password, fullName });
+        // Optionally show a "Check your email" message here
       }
-    } catch (err: any) {
-      if (err.name === 'ZodError') {
-        // Handle validation errors
-        const firstError = err.errors[0];
-        setError(firstError.message);
-      } else {
-        setError(err.message || 'Ocurrió un error inesperado');
-      }
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      // The store now handles the error state, so we just catch to prevent unhandled promise rejections.
+      // The error is already set in the store.
+      console.error(err);
     }
   };
 
@@ -64,7 +58,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode, onModeChange }) => {
             <Leaf className="w-8 h-8 text-white" />
           </motion.div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            PlantCare
+            Plantitas
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             {mode === 'login' 
@@ -165,10 +159,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode, onModeChange }) => {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             >
-              {loading ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                   Procesando...
@@ -184,7 +178,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode, onModeChange }) => {
             <p className="text-gray-600 dark:text-gray-400">
               {mode === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
               <button
-                onClick={() => onModeChange(mode === 'login' ? 'signup' : 'login')}
+                onClick={() => handleModeChange(mode === 'login' ? 'signup' : 'login')}
                 className="ml-1 text-green-500 hover:text-green-600 font-medium"
               >
                 {mode === 'login' ? 'Regístrate' : 'Inicia sesión'}
@@ -196,7 +190,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode, onModeChange }) => {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Al continuar, aceptas nuestros términos y condiciones
+            Al continuar, aceptas nuestros Términos y Condiciones
           </p>
         </div>
       </motion.div>

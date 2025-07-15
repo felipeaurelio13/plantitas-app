@@ -1,7 +1,22 @@
 import { supabase } from '../lib/supabase';
+import { supabaseUrl } from '../lib/supabase';
 
 export class ImageService {
   private bucketName = 'plant-images';
+
+  /**
+   * Constructs the public URL for a given file path in Supabase Storage.
+   * This is a performant, synchronous operation.
+   * @param path The path to the file in the storage bucket.
+   * @returns The full public URL for the image.
+   */
+  getPublicUrlForPath(path: string): string {
+    // If the path is already a full URL, return it directly.
+    if (path.startsWith('http')) {
+      return path;
+    }
+    return `${supabaseUrl}/storage/v1/object/public/${this.bucketName}/${path}`;
+  }
 
   async uploadImage(userId: string, plantId: string, file: File): Promise<string> {
     try {
@@ -42,6 +57,9 @@ export class ImageService {
     }
   }
 
+  /**
+   * @deprecated Use `getPublicUrlForPath` for better performance. This method makes an unnecessary API call.
+   */
   async getImageUrl(path: string): Promise<string> {
     try {
       const { data } = await supabase.storage

@@ -1,15 +1,29 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera, Image } from 'lucide-react';
-import { usePlantStore, useAuthStore } from '../stores';
-import { analyzeImage } from '../services/aiService';
+import { Plus, Camera, Image, LoaderCircle } from 'lucide-react';
+import { usePlantMutations } from '../hooks/usePlantMutations';
 
 const AddPlantMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { createPlant, refreshPlants } = usePlantStore();
-  const user = useAuthStore((state) => state.user);
+  const { createPlant, isCreatingPlant } = usePlantMutations();
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
 
   const menuItems = [
     {
@@ -20,84 +34,58 @@ const AddPlantMenu: React.FC = () => {
       action: () => {
         setIsOpen(false);
         navigate('/camera');
-      }
+      },
     },
     {
       id: 'gallery',
       icon: Image,
       label: 'Galería',
       color: 'bg-purple-500',
-      action: () => handleGalleryPicker()
-    }
+      action: () => handleGalleryPicker(),
+    },
+    {
+      id: 'manual',
+      icon: Plus,
+      label: 'Añadir Manualmente',
+      color: 'bg-green-500',
+      action: () => {
+        setIsOpen(false);
+        navigate('/add-plant/manual'); // Navigate to a future form
+      },
+    },
   ];
 
-  const handleGalleryPicker = useCallback(() => {
+  const handleFileSelect = useCallback(
+    (file: File) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageDataUrl = e.target?.result as string;
+        // The hook now handles success/error feedback, so we just call mutate.
+        createPlant(imageDataUrl);
+        setIsOpen(false);
+      };
+      reader.readAsDataURL(file);
+    },
+    [createPlant]
+  );
+
+  const handleGalleryPicker = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        try {
-          setIsOpen(false);
-          
-          // Convert file to data URL
-          const reader = new FileReader();
-          reader.onload = async (event) => {
-            try {
-              const dataUrl = event.target?.result as string;
-              
-              // Analyze image with AI
-              const analysis = await analyzeImage(dataUrl);
-              
-                             // Create new plant
-               const newPlant = {
-                 name: analysis.species || 'Nueva Planta',
-                 species: analysis.species,
-                 variety: analysis.variety,
-                 location: 'Por definir',
-                 dateAdded: new Date(),
-                 images: [{
-                   id: `img-${Date.now()}`,
-                   url: dataUrl,
-                   timestamp: new Date(),
-                   healthAnalysis: analysis.health,
-                   isProfileImage: true
-                 }],
-                healthScore: analysis.health.confidence || 85,
-                careProfile: analysis.careProfile,
-                personality: analysis.personality,
-                chatHistory: [],
-                notifications: []
-              };
-              
-              if (user) {
-                await createPlant(newPlant, user.id);
-                await refreshPlants(user.id);
-              }
-              
-              // Navigate to new plant detail
-              // Note: We'll need to get the ID from the added plant
-              navigate('/');
-              
-            } catch (error) {
-              console.error('Error analyzing image:', error);
-              alert('Error al analizar la imagen. Intenta de nuevo.');
-            }
-          };
-          
-          reader.readAsDataURL(file);
-        } catch (error) {
-          console.error('Error processing file:', error);
-          alert('Error al procesar el archivo.');
-        }
+    input.onchange = (e) => {
+      const target = e.target as HTMLInputElement;
+      if (target.files && target.files[0]) {
+        handleFileSelect(target.files[0]);
       }
     };
     input.click();
-  }, [createPlant, navigate, refreshPlants, user]);
+  };
+
+  const IconComponent = isCreatingPlant ? LoaderCircle : Plus;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-20 right-4 z-50">
       {/* Backdrop */}
       <AnimatePresence>
         {isOpen && (
@@ -124,18 +112,18 @@ const AddPlantMenu: React.FC = () => {
               <motion.button
                 key={item.id}
                 initial={{ scale: 0, opacity: 0 }}
-                animate={{ 
-                  scale: 1, 
-                  opacity: 1, 
-                  transition: { delay: index * 0.1 } 
+                animate={{
+                  scale: 1,
+                  opacity: 1,
+                  transition: { delay: index * 0.1 },
                 }}
-                exit={{ 
-                  scale: 0, 
-                  opacity: 0, 
-                  transition: { delay: (menuItems.length - index) * 0.05 } 
+                exit={{
+                  scale: 0,
+                  opacity: 0,
+                  transition: { delay: (menuItems.length - index) * 0.05 },
                 }}
                 onClick={item.action}
-                disabled={false}
+                disabled={isCreatingPlant}
                 style={{
                   backgroundColor: item.color.includes('blue') ? '#3b82f6' : '#8b5cf6',
                   color: 'white',
@@ -146,8 +134,8 @@ const AddPlantMenu: React.FC = () => {
                   alignItems: 'center',
                   gap: '8px',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer',
-                  minWidth: '140px'
+                  cursor: isCreatingPlant ? 'not-allowed' : 'pointer',
+                  minWidth: '140px',
                 }}
               >
                 <item.icon size={20} />
@@ -160,8 +148,15 @@ const AddPlantMenu: React.FC = () => {
 
       {/* Main Button */}
       <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={false}
+        aria-label={
+          isCreatingPlant
+            ? 'Agregando planta'
+            : isOpen
+            ? 'Cerrar menú'
+            : 'Agregar planta'
+        }
+        onClick={() => !isCreatingPlant && setIsOpen(!isOpen)}
+        disabled={isCreatingPlant}
         style={{
           backgroundColor: '#22c55e',
           color: 'white',
@@ -173,16 +168,19 @@ const AddPlantMenu: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'center',
           boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.1)',
-          cursor: 'pointer'
+          cursor: isCreatingPlant ? 'not-allowed' : 'pointer',
         }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: isCreatingPlant ? 1 : 1.05 }}
+        whileTap={{ scale: isCreatingPlant ? 1 : 0.95 }}
         animate={{ rotate: isOpen ? 45 : 0 }}
       >
-        <Plus size={24} />
+        <IconComponent
+          size={24}
+          className={isCreatingPlant ? 'animate-spin' : ''}
+        />
       </motion.button>
 
-      {/* Desktop Helper */}
+      {/* Desktop Helper / Loading Indicator */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -200,10 +198,12 @@ const AddPlantMenu: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-xl border border-gray-200 dark:border-gray-700 mx-auto max-w-sm">
               <div className="text-center">
                 <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                  Agregar Nueva Planta
+                  {isCreatingPlant ? 'Analizando tu planta...' : 'Agregar Nueva Planta'}
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Toma una foto o selecciona desde galería para identificar automáticamente tu planta
+                  {isCreatingPlant
+                    ? 'Estamos identificando la especie y su estado de salud. ¡Un momento!'
+                    : 'Toma una foto o selecciona desde galería para identificar automáticamente tu planta'}
                 </p>
               </div>
             </div>

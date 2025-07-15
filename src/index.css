@@ -1,40 +1,141 @@
-@import './styles/design-tokens.css';
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-body {
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
-  font-family: var(--font-family-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* 
+  Definición del tema y design tokens de la aplicación.
+  Tailwind v4 es "CSS-first", por lo que las personalizaciones
+  se definen aquí en lugar de en un archivo .js.
+*/
+@theme {
+  /* Colores Primarios (Verdes) */
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-300: #86efac;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  --color-primary-800: #166534;
+  --color-primary-900: #14532d;
+  --color-primary-950: #052e16;
+
+  /* Grises Neutrales */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-neutral-950: #0a0a0a;
+
+  /* Tipografía */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace;
+
+  /* Tamaños de Fuente */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  /* Radios de Borde */
+  --radius-sm: 0.125rem;
+  --radius-base: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-base: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
-/* Scrollbar styles */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: var(--color-background-subtle);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-subtle);
+/* 
+  Definición de la variante para el dark mode.
+  Esto le dice a Tailwind que genere variantes `dark:*`
+  cuando el elemento `html` tenga el atributo `data-theme="dark"`.
+*/
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Estilos base globales para la aplicación */
+@layer base {
+  :root {
+    /* Colores semánticos para el tema claro (light mode) */
+    --color-background: var(--color-neutral-50);
+    --color-surface: var(--color-neutral-0);
+    --color-text-primary: var(--color-neutral-900);
+    --color-text-secondary: var(--color-neutral-600);
+    --color-text-muted: var(--color-neutral-500);
+    --color-border: var(--color-neutral-200);
+    --color-border-subtle: var(--color-neutral-100);
+
+    /* Transiciones suaves por defecto */
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --duration-150: 150ms;
+  }
+
+  [data-theme="dark"] {
+    /* Colores semánticos para el tema oscuro (dark mode) */
+    --color-background: var(--color-neutral-950);
+    --color-surface: var(--color-neutral-900);
+    --color-text-primary: var(--color-neutral-50);
+    --color-text-secondary: var(--color-neutral-400);
+    --color-text-muted: var(--color-neutral-500);
+    --color-border: var(--color-neutral-700);
+    --color-border-subtle: var(--color-neutral-800);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
+/* Componentes personalizados o overrides */
+@layer components {
+  /* Estilos para un focus ring accesible */
+  .focus-ring {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+
+  .focus-ring:focus-visible {
+    outline-color: var(--color-primary-500);
+  }
+
+  /* Scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-subtle);
+  }
 }
 
-.safe-area-top {
-  padding-top: env(safe-area-inset-top);
-}
-
+/* Clases de utilidad para safe area en iOS */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
 }

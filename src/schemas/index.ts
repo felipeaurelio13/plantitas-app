@@ -13,9 +13,9 @@ export const HealthAnalysisSchema = z.object({
   overallHealth: z.enum(['excellent', 'good', 'fair', 'poor']),
   issues: z.array(HealthIssueSchema),
   recommendations: z.array(z.string()),
-  moistureLevel: z.number().min(0).max(100),
+  moistureLevel: z.coerce.number().min(0).max(100),
   growthStage: z.enum(['seedling', 'juvenile', 'mature', 'flowering', 'dormant']),
-  confidence: z.number().min(0).max(100),
+  confidence: z.coerce.number().min(0).max(100),
 });
 
 // Plant Image Schema
@@ -29,16 +29,16 @@ export const PlantImageSchema = z.object({
 
 // Care Profile Schema
 export const CareProfileSchema = z.object({
-  wateringFrequency: z.number().positive('Watering frequency must be positive'),
+  wateringFrequency: z.coerce.number().positive('Watering frequency must be positive'),
   sunlightRequirement: z.enum(['low', 'medium', 'high']),
   humidityPreference: z.enum(['low', 'medium', 'high']),
   temperatureRange: z.object({
-    min: z.number(),
-    max: z.number(),
+    min: z.coerce.number(),
+    max: z.coerce.number(),
   }).refine(data => data.max > data.min, {
     message: 'Maximum temperature must be greater than minimum',
   }),
-  fertilizingFrequency: z.number().positive('Fertilizing frequency must be positive'),
+  fertilizingFrequency: z.coerce.number().positive('Fertilizing frequency must be positive'),
   soilType: z.string().min(1, 'Soil type is required'),
   specialCare: z.array(z.string()).optional(),
 });
@@ -58,10 +58,10 @@ export const PlantPersonalitySchema = z.object({
 // Chat Message Schema
 export const ChatMessageSchema = z.object({
   id: z.string().min(1, 'Message ID is required'),
-  sender: z.enum(['user', 'plant']),
+  sender: z.enum(['user', 'plant', 'system']),
   content: z.string().min(1, 'Message content cannot be empty'),
   timestamp: z.date(),
-  emotion: z.enum(['happy', 'sad', 'excited', 'worried', 'grateful', 'neutral']).optional(),
+  emotion: z.enum(['alegre', 'triste', 'enojado', 'neutral', 'juguetón', 'agradecido', 'happy', 'sad', 'excited', 'worried', 'grateful']).optional(),
 });
 
 // Plant Notification Schema
@@ -94,6 +94,20 @@ export const PlantSchema = z.object({
   notifications: z.array(PlantNotificationSchema),
 });
 
+// Plant Summary Schema for list views
+export const PlantSummarySchema = z.object({
+  id: z.string().min(1, 'Plant ID is required'),
+  name: z.string().min(1, 'Plant name is required'),
+  nickname: z.string().optional(),
+  species: z.string().min(1, 'Species is required'),
+  location: z.string().min(1, 'Location is required'),
+  healthScore: z.number().min(0).max(100),
+  profileImageUrl: z.string().url().optional(),
+  lastWatered: z.date().optional(),
+  wateringFrequency: z.number().positive().optional(),
+});
+
+
 // Room Schema
 export const RoomSchema = z.object({
   id: z.string().min(1, 'Room ID is required'),
@@ -118,7 +132,9 @@ export const SignInSchema = z.object({
 // API Response Schemas
 export const AIAnalysisResponseSchema = z.object({
   species: z.string(),
-  variety: z.string().optional(),
+  commonName: z.string(),
+  variety: z.string().nullable().optional(),
+  confidence: z.coerce.number().min(0).max(100),
   health: HealthAnalysisSchema,
   careProfile: CareProfileSchema,
   personality: PlantPersonalitySchema,
@@ -126,8 +142,15 @@ export const AIAnalysisResponseSchema = z.object({
 
 export const PlantResponseSchema = z.object({
   content: z.string(),
-  emotion: z.enum(['happy', 'sad', 'excited', 'worried', 'grateful', 'neutral']),
+  emotion: z.enum(['alegre', 'triste', 'enojado', 'neutral', 'juguetón', 'agradecido', 'happy', 'sad', 'excited', 'worried', 'grateful']),
   mood: z.string().optional(),
+});
+
+export const ProgressAnalysisResponseSchema = z.object({
+  changes: z.array(z.string()),
+  healthImprovement: z.number(),
+  recommendations: z.array(z.string()),
+  newHealthScore: z.number().min(0).max(100),
 });
 
 // Form Validation Schemas
@@ -162,6 +185,7 @@ export type PlantPersonality = z.infer<typeof PlantPersonalitySchema>;
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export type PlantNotification = z.infer<typeof PlantNotificationSchema>;
 export type Plant = z.infer<typeof PlantSchema>;
+export type PlantSummary = z.infer<typeof PlantSummarySchema>;
 export type Room = z.infer<typeof RoomSchema>;
 export type SignUpData = z.infer<typeof SignUpSchema>;
 export type SignInData = z.infer<typeof SignInSchema>;

@@ -1,207 +1,241 @@
 import { create } from 'zustand';
-import { Plant, PlantSchema, type PlantImage, type ChatMessage } from '../schemas';
-import { plantService } from '../services/plantService';
-import { notificationService } from '../services/notificationService';
+import { produce } from 'immer';
+import { Plant, ChatMessage } from '../schemas';
+import { PlantService } from '../services/plantService';
+import { generatePlantResponse, analyzeImage } from '../services/aiService';
+
+// Instantiate services
+const plantService = new PlantService();
 
 interface PlantState {
   plants: Plant[];
-  selectedPlant: Plant | null;
-  loading: boolean;
+  isLoading: boolean;
   error: string | null;
+  selectedPlantId: string | null; // Keep UI state
 }
 
 interface PlantActions {
-  setPlants: (plants: Plant[]) => void;
-  setSelectedPlant: (plant: Plant | null) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  addPlant: (plant: Plant) => void;
-  updatePlant: (plant: Plant) => void;
-  deletePlant: (plantId: string) => void;
-  addPlantImage: (plantId: string, image: PlantImage) => void;
-  addChatMessage: (plantId: string, message: ChatMessage) => void;
-  
-  // Async actions
-  loadPlants: (userId: string) => Promise<void>;
-  createPlant: (plantData: Omit<Plant, 'id'>, userId: string) => Promise<void>;
-  updatePlantAsync: (plant: Plant, userId: string) => Promise<void>;
-  deletePlantAsync: (plantId: string, userId: string) => Promise<void>;
-  addPlantImageAsync: (plantId: string, imageData: Omit<PlantImage, 'id'>, userId: string) => Promise<void>;
-  addChatMessageAsync: (plantId: string, messageData: Omit<ChatMessage, 'id'>, userId: string) => Promise<void>;
-  getPlantById: (id: string) => Plant | undefined;
-  refreshPlants: (userId: string) => Promise<void>;
+  // loadPlants: (userId: string) => Promise<void>; // Removed
+  getPlantById: (plantId: string) => Plant | undefined;
+  createPlantFromImage: (
+    imageDataUrl: string,
+    userId: string
+  ) => Promise<Plant | undefined>;
+  updatePlant: (plant: Plant, userId: string) => Promise<void>;
+  deletePlant: (plantId: string, userId: string) => Promise<void>;
+  addChatMessage: (
+    plantId: string,
+    userMessage: string,
+    userId: string
+  ) => Promise<void>;
+  addPlantImage: (
+    plantId: string,
+    imageDataUrl: string,
+    userId: string
+  ) => Promise<void>;
+  selectPlant: (id: string | null) => void;
+  setPlant: (plant: Plant) => void;
+  clearError: () => void;
+  clearPlants: () => void;
 }
 
 type PlantStore = PlantState & PlantActions;
 
-// Helper function to validate plant data
-const validatePlant = (plant: any): Plant => {
-  try {
-    return PlantSchema.parse(plant);
-  } catch (error) {
-    console.error('Plant validation error:', error);
-    throw new Error('Invalid plant data');
-  }
-};
-
-// Helper function to validate plant array
-const validatePlants = (plants: any[]): Plant[] => {
-  return plants.map(validatePlant);
-};
-
 export const usePlantStore = create<PlantStore>((set, get) => ({
-  // Initial state
   plants: [],
-  selectedPlant: null,
-  loading: false,
+  isLoading: false,
   error: null,
+  selectedPlantId: null,
 
-  // Sync actions
-  setPlants: (plants) => set({ plants }),
-  setSelectedPlant: (plant) => set({ selectedPlant: plant }),
-  setLoading: (loading) => set({ loading }),
-  setError: (error) => set({ error }),
-  
-  addPlant: (plant) => 
-    set((state) => ({ 
-      plants: [...state.plants, plant] 
-    })),
-  
-  updatePlant: (updatedPlant) =>
-    set((state) => ({
-      plants: state.plants.map(plant =>
-        plant.id === updatedPlant.id ? updatedPlant : plant
-      ),
-      selectedPlant: state.selectedPlant?.id === updatedPlant.id ? updatedPlant : state.selectedPlant,
-    })),
-  
-  deletePlant: (plantId) =>
-    set((state) => ({
-      plants: state.plants.filter(plant => plant.id !== plantId),
-      selectedPlant: state.selectedPlant?.id === plantId ? null : state.selectedPlant,
-    })),
-  
-  addPlantImage: (plantId, image) =>
-    set((state) => ({
-      plants: state.plants.map(plant =>
-        plant.id === plantId
-          ? { ...plant, images: [...plant.images, image] }
-          : plant
-      ),
-      selectedPlant: state.selectedPlant?.id === plantId
-        ? { ...state.selectedPlant, images: [...state.selectedPlant.images, image] }
-        : state.selectedPlant,
-    })),
-  
-  addChatMessage: (plantId, message) =>
-    set((state) => ({
-      plants: state.plants.map(plant =>
-        plant.id === plantId
-          ? { ...plant, chatHistory: [...plant.chatHistory, message] }
-          : plant
-      ),
-      selectedPlant: state.selectedPlant?.id === plantId
-        ? { ...state.selectedPlant, chatHistory: [...state.selectedPlant.chatHistory, message] }
-        : state.selectedPlant,
-    })),
+  // loadPlants: async (userId) => { ... }, // Removed
 
-  // Async actions
-  loadPlants: async (userId: string) => {
-    set({ loading: true, error: null });
-    
-    try {
-      const rawPlants = await plantService.getUserPlants(userId);
-      const validatedPlants = validatePlants(rawPlants);
-      set({ plants: validatedPlants, loading: false });
-    } catch (error: any) {
-      console.error('Error loading plants:', error);
-      set({ 
-        error: error.message || 'Error loading plants',
-        loading: false 
-      });
-    }
+  getPlantById: (plantId) => {
+    console.log('[usePlantStore] Solicitando planta con ID:', plantId);
+    console.log('[usePlantStore] Estado actual de `plants`:', get().plants);
+    return get().plants.find((p) => p.id === plantId);
   },
 
-  createPlant: async (plantData: Omit<Plant, 'id'>, userId: string) => {
-    set({ loading: true, error: null });
-    
+  setPlant: (plant) => {
+    set(
+      produce((state: PlantState) => {
+        const index = state.plants.findIndex((p) => p.id === plant.id);
+        if (index !== -1) {
+          // If plant exists, update it
+          state.plants[index] = plant;
+        } else {
+          // If plant doesn't exist, add it
+          state.plants.push(plant);
+        }
+      })
+    );
+  },
+
+  createPlantFromImage: async (imageDataUrl, userId) => {
+    // set({ isLoading: true, error: null }); // Removed
     try {
-      const rawNewPlant = await plantService.createPlant(plantData, userId);
-      const validatedPlant = validatePlant(rawNewPlant);
-      get().addPlant(validatedPlant);
+      const analysis = await analyzeImage(imageDataUrl);
+
+      // Create a new plant object from the analysis
+      const newPlantData: Omit<Plant, 'id'> = {
+        name: analysis.commonName || 'Nueva Planta',
+        species: analysis.species,
+        variety: analysis.variety ?? undefined,
+        nickname: `Mi ${analysis.commonName || 'Planta'}`,
+        location: 'Interior',
+        dateAdded: new Date(),
+        healthScore: analysis.health.confidence,
+        careProfile: analysis.careProfile,
+        personality: analysis.personality,
+        images: [],
+        chatHistory: [],
+        notifications: [],
+      };
+
+      const createdPlant = await plantService.createPlant(newPlantData, userId);
       
-      // Schedule initial notifications
-      try {
-        await notificationService.init();
-        await notificationService.scheduleWateringReminder(validatedPlant);
-        await notificationService.scheduleHealthCheckReminder(validatedPlant);
-      } catch (notifError) {
-        console.warn('Could not schedule notifications:', notifError);
-      }
-      
-      set({ loading: false });
-    } catch (error: any) {
-      console.error('Error adding plant:', error);
-      set({ 
-        error: error.message || 'Error adding plant',
-        loading: false 
-      });
-      throw error;
+      // Add image to the created plant
+      const imageUrl = await plantService.addPlantImage(
+        createdPlant.id,
+        { url: imageDataUrl, timestamp: new Date(), isProfileImage: true },
+        userId
+      );
+      createdPlant.images.push(imageUrl);
+
+      set(
+        produce((state: PlantState) => {
+          state.plants.unshift(createdPlant);
+          // state.isLoading = false; // Removed
+        })
+      );
+      return createdPlant;
+    } catch (e) {
+      const error = e instanceof Error ? e.message : 'Failed to create plant';
+      // set({ error, isLoading: false }); // Removed
+      console.error(error);
+      // We should probably re-throw the error so TanStack Query's useMutation can catch it
+      throw e;
     }
   },
 
-  updatePlantAsync: async (plant: Plant, userId: string) => {
+  updatePlant: async (plantToUpdate, userId) => {
+    // set({ isLoading: true, error: null }); // Removed
     try {
-      // Validate input plant
-      const validatedInput = validatePlant(plant);
-      const rawUpdatedPlant = await plantService.updatePlant(validatedInput, userId);
-      const validatedUpdatedPlant = validatePlant(rawUpdatedPlant);
-      get().updatePlant(validatedUpdatedPlant);
-    } catch (error: any) {
-      console.error('Error updating plant:', error);
-      set({ error: error.message || 'Error updating plant' });
-      throw error;
+      const updatedPlant = await plantService.updatePlant(plantToUpdate, userId);
+      set(
+        produce((state: PlantState) => {
+          const index = state.plants.findIndex((p) => p.id === updatedPlant.id);
+          if (index !== -1) {
+            state.plants[index] = updatedPlant;
+          }
+          // state.isLoading = false; // Removed
+        })
+      );
+    } catch (e) {
+      // const error = e instanceof Error ? e.message : 'Failed to update plant';
+      // set({ error, isLoading: false }); // Removed
+      console.error(e);
+      throw e;
     }
   },
 
-  deletePlantAsync: async (plantId: string, userId: string) => {
+  deletePlant: async (plantId, userId) => {
+    // set({ isLoading: true, error: null }); // Removed
     try {
       await plantService.deletePlant(plantId, userId);
-      get().deletePlant(plantId);
-    } catch (error: any) {
-      console.error('Error deleting plant:', error);
-      set({ error: error.message || 'Error deleting plant' });
-      throw error;
+      set(
+        produce((state: PlantState) => {
+          state.plants = state.plants.filter((p) => p.id !== plantId);
+          // state.isLoading = false; // Removed
+        })
+      );
+    } catch (e) {
+      // const error = e instanceof Error ? e.message : 'Failed to delete plant';
+      // set({ error, isLoading: false }); // Removed
+      console.error(e);
+      throw e;
     }
   },
 
-  addPlantImageAsync: async (plantId: string, imageData: Omit<PlantImage, 'id'>, userId: string) => {
+  addChatMessage: async (plantId, userMessageContent, userId) => {
+    set({ isLoading: true, error: null });
+    const plant = get().getPlantById(plantId);
+    if (!plant) {
+      set({ isLoading: false, error: 'Plant not found to add message' });
+      return;
+    }
+
+    const tempUserMessage: ChatMessage = {
+      id: `temp-user-${Date.now()}`,
+      sender: 'user',
+      content: userMessageContent,
+      timestamp: new Date(),
+    };
+
+    // Optimistic update
+    set(produce((state: PlantState) => {
+      state.plants.find(p => p.id === plantId)?.chatHistory.push(tempUserMessage);
+    }));
+
     try {
-      const newImage = await plantService.addPlantImage(plantId, imageData, userId);
-      get().addPlantImage(plantId, newImage);
-    } catch (error: any) {
-      console.error('Error adding plant image:', error);
-      set({ error: error.message || 'Error adding image' });
-      throw error;
+      const [savedUserMessage, savedPlantMessage] = await plantService.sendChatMessageAndGetResponse(
+        plant,
+        {
+          sender: 'user',
+          content: userMessageContent,
+          timestamp: tempUserMessage.timestamp
+        },
+        userId
+      );
+
+      // Replace optimistic update with real data
+      set(produce((state: PlantState) => {
+        const targetPlant = state.plants.find(p => p.id === plantId);
+        if (targetPlant) {
+          // Remove temp message and add persisted ones
+          targetPlant.chatHistory = [
+            ...targetPlant.chatHistory.filter(m => m.id !== tempUserMessage.id),
+            savedUserMessage,
+            savedPlantMessage
+          ];
+        }
+        state.isLoading = false;
+      }));
+    } catch (e) {
+      const error = e instanceof Error ? e.message : 'Failed to send message';
+      console.error(error);
+      set({ isLoading: false, error });
+      // Optionally revert optimistic update or show error in chat
     }
   },
-
-  addChatMessageAsync: async (plantId: string, messageData: Omit<ChatMessage, 'id'>, userId: string) => {
+  
+  addPlantImage: async (plantId, imageDataUrl, userId) => {
+    // set({ isLoading: true, error: null }); // Removed
     try {
-      const newMessage = await plantService.addChatMessage(plantId, messageData, userId);
-      get().addChatMessage(plantId, newMessage);
-    } catch (error: any) {
-      console.error('Error adding chat message:', error);
-      set({ error: error.message || 'Error adding message' });
-      throw error;
+      const newImage = await plantService.addPlantImage(
+        plantId,
+        { url: imageDataUrl, timestamp: new Date(), isProfileImage: false },
+        userId
+      );
+      set(
+        produce((state: PlantState) => {
+          const plant = state.plants.find(p => p.id === plantId);
+          if(plant) {
+            plant.images.push(newImage);
+          }
+          // state.isLoading = false; // Removed
+        })
+      );
+    } catch (e) {
+      // const error = e instanceof Error ? e.message : 'Failed to add image';
+      // set({ error, isLoading: false }); // Removed
+      console.error(e);
+      throw e;
     }
   },
 
-  getPlantById: (id: string) => {
-    return get().plants.find(plant => plant.id === id);
-  },
+  selectPlant: (id) => set({ selectedPlantId: id }),
+  
+  clearError: () => { /* This can be removed or do nothing */ },
 
-  refreshPlants: async (userId: string) => {
-    await get().loadPlants(userId);
-  },
+  clearPlants: () => set({ plants: [], selectedPlantId: null }), // isLoading removed
 })); 

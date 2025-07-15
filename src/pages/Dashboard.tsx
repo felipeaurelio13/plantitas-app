@@ -1,12 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { usePlantStore } from '../stores';
-import PlantCard from '../components/PlantCard';
-import AddPlantMenu from '../components/AddPlantMenu';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
-import { Plus, Search, Wind, Leaf, Droplets } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Plus, Wind, Leaf, Droplets } from 'lucide-react';
+
+import { usePlantsQuery } from '@/hooks/usePlantsQuery'; // Import the new hook
+import { PlantSummary } from '@/schemas';
+
+import PlantCard from '@/components/PlantCard';
+import PlantCardSkeleton from '@/components/PlantCardSkeleton';
+import AddPlantMenu from '@/components/AddPlantMenu';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type SortByType = 'name' | 'health' | 'lastWatered';
 
@@ -26,11 +31,11 @@ const EmptyState: React.FC = () => {
         transition={{ duration: 1, ease: 'easeInOut' }}
       >
         <Wind className="absolute top-0 left-0 w-8 h-8 text-sky-400 opacity-60" />
-        <Leaf className="w-24 h-24 text-primary-400" />
+        <Leaf className="w-24 h-24 text-green-500" />
         <Droplets className="absolute bottom-0 right-0 w-10 h-10 text-blue-400 opacity-70" />
       </motion.div>
-      <h2 className="text-2xl font-bold text-text-primary mb-2">Tu jardín está vacío</h2>
-      <p className="text-text-secondary max-w-sm mb-6">
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Tu jardín está vacío</h2>
+      <p className="text-gray-600 dark:text-gray-400 max-w-sm mb-6">
         Añade tu primera planta para empezar a monitorizar su salud y cuidados.
       </p>
       <Button size="lg" onClick={() => navigate('/camera')}>
@@ -42,82 +47,109 @@ const EmptyState: React.FC = () => {
 };
 
 const Dashboard: React.FC = () => {
-  const plants = usePlantStore((state) => state.plants);
+  const { data: plants = [], isLoading, error: plantError } = usePlantsQuery(); // Use the new hook
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortByType>('name');
 
   const filteredAndSortedPlants = useMemo(() => {
-    return plants
-      .filter(plant =>
-        (plant.nickname || plant.name).toLowerCase().includes(searchQuery.toLowerCase()) ||
+    return [...plants]
+      .filter((plant: PlantSummary) =>
+        plant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         plant.species.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      .sort((a, b) => {
+      .sort((a: PlantSummary, b: PlantSummary) => {
         switch (sortBy) {
           case 'health':
-            return b.healthScore - a.healthScore;
+            return (b.healthScore || 0) - (a.healthScore || 0);
           case 'lastWatered':
-            const aTime = a.lastWatered ? new Date(a.lastWatered).getTime() : 0;
-            const bTime = b.lastWatered ? new Date(b.lastWatered).getTime() : 0;
-            return aTime - bTime;
+            return (b.lastWatered?.getTime() || 0) - (a.lastWatered?.getTime() || 0);
           default:
-            return (a.nickname || a.name).localeCompare(b.nickname || b.name);
+            return a.name.localeCompare(b.name);
         }
       });
   }, [plants, searchQuery, sortBy]);
 
+  if (isLoading) { // Simplified loading state
+    return (
+      <div className="p-4 sm:p-6 space-y-6">
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Mi Jardín</h1>
+            <p className="text-gray-600 dark:text-gray-400">Buscando tus plantas...</p>
+          </div>
+          <Skeleton className="h-10 w-10 rounded-full" />
+        </header>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <PlantCardSkeleton key={index} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (plantError) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-xl text-red-500 text-center">
+          <p>Ocurrió un error al cargar tus plantas:</p>
+          <p className="text-sm mt-2">{plantError.message}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-text-primary">Mis Plantas</h1>
-          <p className="text-text-secondary">{plants.length} en tu colección</p>
+        <header className="flex items-center justify-between">
+            <div>
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Mi Jardín</h1>
+                <p className="text-gray-600 dark:text-gray-400">{plants.length} {plants.length === 1 ? 'planta' : 'plantas'} en tu colección</p>
+            </div>
+            <AddPlantMenu />
+        </header>
+
+        <div className="flex flex-col sm:flex-row gap-4">
+            <Input
+                type="text"
+                placeholder="Buscar por nombre o especie..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-grow"
+            />
+            <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortByType)}
+                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 h-10 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-green-500"
+            >
+                <option value="name">Ordenar por Nombre</option>
+                <option value="health">Ordenar por Salud</option>
+                <option value="lastWatered">Ordenar por Riego</option>
+            </select>
         </div>
-        <AddPlantMenu />
-      </header>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Input
-          type="text"
-          placeholder="Buscar por nombre o especie..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          icon={<Search size={18} />}
-          className="flex-grow"
-        />
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as SortByType)}
-          className="bg-surface border border-default rounded-lg px-4 py-2 h-10 text-text-primary focus-ring"
-        >
-          <option value="name">Ordenar por Nombre</option>
-          <option value="health">Ordenar por Salud</option>
-          <option value="lastWatered">Ordenar por Riego</option>
-        </select>
-      </div>
-
-      <AnimatePresence>
-        {filteredAndSortedPlants.length > 0 ? (
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              visible: {
-                transition: {
-                  staggerChildren: 0.1,
-                },
-              },
-            }}
-          >
-            {filteredAndSortedPlants.map((plant, index) => (
-              <PlantCard key={plant.id} plant={plant} index={index} />
-            ))}
-          </motion.div>
-        ) : (
-          <EmptyState />
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+            {filteredAndSortedPlants.length > 0 ? (
+                <motion.div
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                        visible: {
+                            transition: {
+                                staggerChildren: 0.05,
+                            },
+                        },
+                    }}
+                >
+                    {filteredAndSortedPlants.map((plant: PlantSummary, index: number) => (
+                        <PlantCard key={plant.id} plant={plant} index={index} />
+                    ))}
+                </motion.div>
+            ) : (
+                <EmptyState />
+            )}
+        </AnimatePresence>
     </div>
   );
 };

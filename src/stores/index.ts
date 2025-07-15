@@ -1,3 +1,3 @@
-export { useAuthStore, initializeAuth } from './useAuthStore';
+export { useAuthStore } from './useAuthStore';
 export { usePlantStore } from './usePlantStore';
-export { useThemeStore, initializeTheme } from './useThemeStore'; 
+export { useThemeStore } from './useThemeStore'; 

@@ -1,171 +1,161 @@
 import { create } from 'zustand';
-import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { User, Session } from '@supabase/supabase-js';
 import { Tables } from '../lib/database.types';
+import { SignInSchema, SignUpSchema } from '../schemas';
+import { z } from 'zod';
 
 type Profile = Tables<'profiles'>;
+type SignInCredentials = z.infer<typeof SignInSchema>;
+type SignUpCredentials = z.infer<typeof SignUpSchema>;
 
 interface AuthState {
   user: User | null;
   profile: Profile | null;
   session: Session | null;
-  loading: boolean;
-  initialized: boolean;
+  isLoading: boolean;
+  error: string | null;
+  isInitialized: boolean;
 }
 
 interface AuthActions {
-  setUser: (user: User | null) => void;
-  setProfile: (profile: Profile | null) => void;
-  setSession: (session: Session | null) => void;
-  setLoading: (loading: boolean) => void;
-  setInitialized: (initialized: boolean) => void;
-  signUp: (email: string, password: string, fullName?: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  initialize: () => Promise<void>; // Now returns a Promise
+  signIn: (credentials: SignInCredentials) => Promise<void>;
+  signUp: (credentials: SignUpCredentials) => Promise<void>;
   signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<Profile>) => Promise<void>;
-  fetchProfile: (userId: string) => Promise<void>;
-  initialize: () => Promise<void>;
+  clearError: () => void;
 }
 
 type AuthStore = AuthState & AuthActions;
 
+// The subscription is now managed internally in the store
+let authListener: { subscription: { unsubscribe: () => void } } | null = null;
+
 export const useAuthStore = create<AuthStore>((set, get) => ({
-  // Initial state
   user: null,
   profile: null,
   session: null,
-  loading: true,
-  initialized: false,
+  isLoading: false,
+  error: null,
+  isInitialized: false,
 
-  // Actions
-  setUser: (user) => set({ user }),
-  setProfile: (profile) => set({ profile }),
-  setSession: (session) => set({ session }),
-  setLoading: (loading) => set({ loading }),
-  setInitialized: (initialized) => set({ initialized }),
+  initialize: async () => {
+    // 1. Unsubscribe from any existing listener
+    if (authListener?.subscription) {
+      authListener.subscription.unsubscribe();
+    }
+    
+    // 2. Check for an existing session on startup
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw new Error('Error al obtener la sesión inicial.');
+      
+      set({ session, user: session?.user ?? null });
 
-  signUp: async (email: string, password: string, fullName?: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
+      if (session?.user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        if (profileError) throw profileError;
+        set({ profile });
+      } else {
+        set({ profile: null });
+      }
+    } catch (e: any) {
+      console.error('Error durante la inicialización:', e.message);
+      set({ error: 'Error durante la inicialización.' });
+    } finally {
+      // 3. Mark as initialized AFTER the initial check is complete
+      set({ isInitialized: true });
+    }
 
-    if (error) throw error;
+    // 4. Set up the real-time listener for subsequent auth changes
+    const { data } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        set({ session, user: session?.user ?? null, isLoading: false });
+
+        if (event === 'SIGNED_OUT') {
+          set({ profile: null });
+          return;
+        }
+
+        if (session?.user) {
+          try {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+
+            if (error) throw error;
+            set({ profile });
+          } catch (error) {
+            console.error('Error fetching profile on auth change:', error);
+            // Don't set a global error here, as it might be a transient issue
+          }
+        }
+      }
+    );
+    
+    authListener = data;
   },
 
-  signIn: async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  signIn: async (credentials) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { email, password } = SignInSchema.parse(credentials);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // onAuthStateChange will handle the rest
+    } catch (e: any) {
+      const errorMessage = e.message.includes('Invalid login credentials') 
+        ? 'Credenciales inválidas.'
+        : 'Error al iniciar sesión.';
+      set({ error: errorMessage });
+      console.error(e);
+      throw e;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
-    if (error) throw error;
+  signUp: async (credentials) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { email, password, fullName } = SignUpSchema.parse(credentials);
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } },
+      });
+      if (error) throw error;
+      // onAuthStateChange will handle the rest
+      // You might want to show a "Check your email" message
+    } catch (e: any) {
+      const errorMessage = e.message.includes('already registered')
+        ? 'El usuario ya está registrado.'
+        : 'Error al registrarse.';
+      set({ error: errorMessage });
+      console.error(e);
+      throw e;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   signOut: async () => {
+    set({ isLoading: true });
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) {
+      console.error('Error signing out:', error);
+      set({ error: 'Error al cerrar sesión.', isLoading: false });
+    }
+    // onAuthStateChange will clear user, session, and profile
+    // We manually clear state here for a faster UI response
+    set({ session: null, user: null, profile: null, isLoading: false });
   },
 
-  updateProfile: async (updates: Partial<Profile>) => {
-    const { user } = get();
-    if (!user) throw new Error('No user logged in');
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
-
-    if (error) throw error;
-
-    // Refresh profile
-    await get().fetchProfile(user.id);
-  },
-
-  fetchProfile: async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      set({ profile: data });
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  },
-
-  initialize: async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Error getting session:', error);
-        return;
-      }
-
-      set({
-        session,
-        user: session?.user ?? null,
-        loading: false,
-        initialized: true,
-      });
-
-      // Fetch profile if user exists
-      if (session?.user) {
-        await get().fetchProfile(session.user.id);
-      }
-    } catch (error) {
-      console.error('Error initializing auth:', error);
-      set({
-        loading: false,
-        initialized: true,
-      });
-    }
-  },
-}));
-
-// Auto-initialize auth and set up auth listener
-let authListenerInitialized = false;
-
-export const initializeAuth = () => {
-  if (authListenerInitialized) return;
-  authListenerInitialized = true;
-
-  // Initialize auth state
-  useAuthStore.getState().initialize();
-
-  // Listen for auth changes
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    console.log('Auth state changed:', event, session?.user?.id);
-    
-    const { setSession, setUser, setLoading, setInitialized, fetchProfile, initialized } = useAuthStore.getState();
-    
-    setSession(session);
-    setUser(session?.user ?? null);
-    
-    // Only set loading to false if we haven't initialized yet
-    if (!initialized) {
-      setLoading(false);
-      setInitialized(true);
-    }
-
-    // Fetch profile for new user or clear profile for signed out user
-    if (session?.user) {
-      await fetchProfile(session.user.id);
-    } else {
-      useAuthStore.setState({ profile: null });
-    }
-  });
-}; 
+  clearError: () => set({ error: null }),
+})); 
