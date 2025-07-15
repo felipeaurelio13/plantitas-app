@@ -213,16 +213,12 @@ export class PlantService {
       // 1. Get AI analysis from the image
       const analysis = await analyzeImage(imageDataUrl);
 
-      // 2. Upload the captured image to storage
-      // We do this early so we can associate it with the plant record
-      const imagePath = `${userId}/${crypto.randomUUID()}.jpg`;
-      const imageUrl = await uploadImage(imageDataUrl, 'plant-images', imagePath);
-
-      // 3. Create the initial plant object from the analysis
+      // 2. Create the initial plant object from the analysis
       const plantToCreate: Omit<Plant, 'id'> = {
         name: analysis.commonName,
         species: analysis.species,
         description: analysis.generalDescription,
+        funFacts: analysis.funFacts,
         variety: analysis.variety ?? undefined,
         nickname: analysis.commonName, // Default nickname to common name
         location: location,
@@ -235,12 +231,12 @@ export class PlantService {
         notifications: [],
       };
       
-      // 4. Create the plant record in the database
+      // 3. Create the plant record in the database
       const newPlant = await this.createPlant(plantToCreate, userId);
 
-      // 5. Create the plant image record and associate it with the plant
+      // 4. Create the plant image record (this will also upload it)
       const plantImage: Omit<PlantImage, 'id'> = {
-        url: imageUrl,
+        url: imageDataUrl, // Pass the Data URL to be uploaded
         timestamp: new Date(),
         isProfileImage: true,
         healthAnalysis: analysis.health,
@@ -268,6 +264,7 @@ export class PlantService {
           name: plantData.name,
           species: plantData.species,
           description: plantData.description,
+          fun_facts: plantData.funFacts,
           variety: plantData.variety,
           nickname: plantData.nickname,
           location: plantData.location,
@@ -397,15 +394,17 @@ export class PlantService {
 
   async addPlantImage(plantId: string, image: Omit<PlantImage, 'id'>, userId: string): Promise<PlantImage> {
     try {
-      const imageUrl = await uploadImage(image.url, 'plant-images', `${userId}/${plantId}`);
+      // The `image.url` coming in here is the base64 data URL
+      const imagePath = `${userId}/${plantId}/${crypto.randomUUID()}.jpg`;
+      const imageUrl = await uploadImage(image.url, 'plant-images', imagePath);
       
       const { data, error } = await supabase
         .from('plant_images')
         .insert({
           plant_id: plantId,
           user_id: userId,
-          url: imageUrl,
-          storage_path: imageUrl.split('plant-images/')[1],
+          url: imageUrl, // This is the public URL from storage
+          storage_path: imagePath,
           is_profile_image: image.isProfileImage,
           health_analysis: image.healthAnalysis as any,
         })
@@ -417,14 +416,14 @@ export class PlantService {
 
       return {
         id: data.id,
-        url: data.url,
+        url: data.url, // Return the public URL
         timestamp: new Date(data.created_at!),
         isProfileImage: data.is_profile_image || false,
         healthAnalysis: data.health_analysis as any,
       };
     } catch (error) {
       console.error('Error adding plant image:', error);
-      throw error;
+      throw new Error(`Image upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

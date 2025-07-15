@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Camera, Image, LoaderCircle } from 'lucide-react';
 import { usePlantMutations } from '../hooks/usePlantMutations';
+import { toast } from 'sonner';
 
 const AddPlantMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -60,13 +61,37 @@ const AddPlantMenu: React.FC = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageDataUrl = e.target?.result as string;
-        // The hook now handles success/error feedback, so we just call mutate.
-        createPlant(imageDataUrl);
+        
+        const location = window.prompt("¿Dónde está ubicada tu planta? (Ej: Interior, Balcón, Oficina)", "Interior");
+        if (!location) {
+          toast.error("La ubicación es necesaria para continuar.");
+          setIsOpen(false);
+          return;
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          createPlant({ imageDataUrl, location }, {
+            onSuccess: (newPlant) => {
+              if (newPlant?.id) {
+                navigate(`/plant/${newPlant.id}`);
+              }
+              resolve(newPlant);
+            },
+            onError: (error) => reject(error),
+          });
+        });
+
+        toast.promise(promise, {
+          loading: 'Analizando imagen...',
+          success: (data: any) => `¡Planta "${data.name}" creada con éxito!`,
+          error: (err) => `Error: ${err.message}`,
+        });
+
         setIsOpen(false);
       };
       reader.readAsDataURL(file);
     },
-    [createPlant]
+    [createPlant, navigate]
   );
 
   const handleGalleryPicker = () => {

@@ -38,6 +38,7 @@ const fetchPlantById = async (plantId: string): Promise<Plant> => {
     name: plantData.name,
     species: plantData.species,
     description: plantData.description ?? undefined,
+    funFacts: (plantData.fun_facts as string[] | undefined) ?? undefined,
     variety: plantData.variety ?? undefined,
     nickname: plantData.nickname ?? undefined,
     location: plantData.location,

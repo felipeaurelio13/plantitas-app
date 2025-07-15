@@ -52,6 +52,7 @@ const AIAnalysisResponseSchema = z.object({
   variety: z.string().nullable().optional(),
   confidence: z.coerce.number().min(0).max(100),
   generalDescription: z.string().min(20, { message: "Description must be at least 20 characters."}),
+  funFacts: z.array(z.string()).min(5).max(5),
   health: HealthAnalysisSchema,
   careProfile: CareProfileSchema,
   personality: PlantPersonalitySchema,
@@ -126,6 +127,13 @@ const PLANT_IDENTIFICATION_PROMPT = `You are an expert botanist specializing in 
   "variety": "specific_variety_or_null",
   "confidence": 100,
   "generalDescription": "A detailed paragraph in Spanish about the plant species: its origins, general characteristics, and basic care tips.",
+  "funFacts": [
+    "fun_fact_1_in_spanish",
+    "fun_fact_2_in_spanish",
+    "fun_fact_3_in_spanish",
+    "fun_fact_4_in_spanish",
+    "fun_fact_5_in_spanish"
+  ],
   "health": {
     "overallHealth": "good", // Must be one of: "excellent", "good", "fair", "poor"
     "issues": [{

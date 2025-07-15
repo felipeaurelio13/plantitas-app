@@ -34,8 +34,17 @@ const CameraPage: React.FC = () => {
   const analyzeAndSave = () => {
     if (!capturedImage) return;
 
+    // TEMPORARY: Use a simple prompt to get the location.
+    // This should be replaced with a proper UI element in the future.
+    const location = window.prompt("¿Dónde está ubicada tu planta? (Ej: Interior, Balcón, Oficina)", "Interior");
+
+    if (!location) {
+      toast.error("La ubicación es necesaria para continuar.");
+      return;
+    }
+
     const promise = new Promise((resolve, reject) => {
-      createPlant(capturedImage, {
+      createPlant({ imageDataUrl: capturedImage, location }, {
         onSuccess: (newPlant) => {
           // We navigate to the new plant's detail page on success.
           if (newPlant?.id) {

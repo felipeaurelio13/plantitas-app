@@ -46,6 +46,7 @@ export const PlantSchema = z.object({
   variety: z.string().optional(),
   nickname: z.string().optional(),
   description: z.string().optional(),
+  funFacts: z.array(z.string()).optional(),
   location: z.string(),
   dateAdded: z.date(),
   lastWatered: z.date().optional(),

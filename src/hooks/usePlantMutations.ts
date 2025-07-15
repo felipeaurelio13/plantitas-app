@@ -10,10 +10,9 @@ export const usePlantMutations = () => {
   const userId = user?.id;
 
   const createPlantMutation = useMutation({
-    mutationFn: (imageDataUrl: string) => {
+    mutationFn: (variables: { imageDataUrl: string; location: string }) => {
       if (!userId) throw new Error('User not authenticated');
-      // TODO: Get location from the UI instead of hardcoding
-      const location = 'Interior';
+      const { imageDataUrl, location } = variables;
       return addPlant(imageDataUrl, location, userId);
     },
     onSuccess: (_newPlant) => {
