@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lightbulb, AlertTriangle, Droplets } from 'lucide-react';
+import { Lightbulb, AlertTriangle, Droplets, AlertOctagon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type InsightType = 'tip' | 'warning' | 'info';
+type InsightType = 'tip' | 'warning' | 'info' | 'alert';
 
 interface InsightCardProps {
   type: InsightType;
@@ -16,6 +16,7 @@ const iconMap: Record<InsightType, React.ElementType> = {
   tip: Lightbulb,
   warning: AlertTriangle,
   info: Droplets,
+  alert: AlertOctagon,
 };
 
 const colorMap: Record<InsightType, { bg: string; text: string; icon: string }> = {
@@ -33,6 +34,11 @@ const colorMap: Record<InsightType, { bg: string; text: string; icon: string }> 
     bg: 'bg-gray-50 dark:bg-gray-700/50',
     text: 'text-gray-800 dark:text-gray-200',
     icon: 'text-gray-500',
+  },
+  alert: {
+    bg: 'bg-red-50 dark:bg-red-900/20',
+    text: 'text-red-800 dark:text-red-200',
+    icon: 'text-red-500',
   },
 };
 

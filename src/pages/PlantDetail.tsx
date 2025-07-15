@@ -6,14 +6,14 @@ import {
   InsightCard,
   PlantDetailHeader,
   PlantProgressChart,
-  PlantStatsCard,
   ImageGallery,
+  PlantCharacteristics,
 } from '@/components/PlantDetail';
 import Layout from '@/components/Layout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
-import { AlertCircle, Zap } from 'lucide-react';
+import { AlertCircle, BookOpen, Zap } from 'lucide-react';
 
 const PlantDetailFallback = () => (
   <Layout>
@@ -80,18 +80,19 @@ const PlantDetail = () => {
         />
         <main className="p-4">
           <Tabs defaultValue="progress" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="progress">Progreso</TabsTrigger>
-              <TabsTrigger value="stats">Estadísticas</TabsTrigger>
+              <TabsTrigger value="characteristics">Características</TabsTrigger>
               <TabsTrigger value="insights">Insights</TabsTrigger>
+              <TabsTrigger value="description">Descripción</TabsTrigger>
             </TabsList>
             
             <TabsContent value="progress" className="mt-4">
               <PlantProgressChart plant={plant} />
             </TabsContent>
             
-            <TabsContent value="stats" className="mt-4">
-              <PlantStatsCard plant={plant} />
+            <TabsContent value="characteristics" className="mt-4">
+              <PlantCharacteristics plant={plant} />
             </TabsContent>
 
             <TabsContent value="insights" className="mt-4">
@@ -100,7 +101,7 @@ const PlantDetail = () => {
               {insights && insights.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {insights.map((insight, index) => (
-                    <InsightCard key={index} type="info" title={`Insight ${index + 1}`} message={insight} />
+                    <InsightCard key={index} type={insight.type} title={insight.title} message={insight.message} />
                   ))}
                 </div>
               ) : (
@@ -115,6 +116,18 @@ const PlantDetail = () => {
                   </Button>
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="description" className="mt-4">
+              <div className="bg-card text-card-foreground rounded-lg border p-6 shadow-sm">
+                <h3 className="flex items-center text-lg font-semibold mb-4">
+                  <BookOpen className="mr-2 h-5 w-5" />
+                  Acerca de {plant.species}
+                </h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {plant.description || 'No hay una descripción disponible para esta planta.'}
+                </p>
+              </div>
             </TabsContent>
           </Tabs>
           

@@ -23,12 +23,12 @@ export const uploadImage = async (
   bucket: string,
   path: string
 ): Promise<string> => {
-  try {
+    try {
     const blob = dataURLtoBlob(imageDataUrl);
     const fileExt = blob.type.split('/')[1];
     const fileName = `${path}/${uuidv4()}.${fileExt}`;
 
-    const { error } = await supabase.storage
+      const { error } = await supabase.storage
       .from(bucket)
       .upload(fileName, blob, {
         cacheControl: '3600',
@@ -50,7 +50,7 @@ export const uploadImage = async (
     }
 
     return publicUrlData.publicUrl;
-  } catch (error) {
+    } catch (error) {
     console.error('Failed to upload image:', error);
     if (error instanceof Error) {
       throw new Error(`Image upload failed: ${error.message}`);

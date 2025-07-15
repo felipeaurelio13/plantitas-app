@@ -1,13 +1,49 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
-// Setup type definitions for built-in Supabase Runtime APIs
+/// <reference types="https://esm.sh/@supabase/functions-js@2/src/edge-runtime.d.ts" />
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { OpenAI } from "https://deno.land/x/openai/mod.ts";
+import OpenAI from 'https://esm.sh/openai@4.10.0';
+import { z } from 'https://esm.sh/zod@3.23.8';
 
-const openai = new OpenAI(Deno.env.get('OPENAI_API_KEY'));
+// WORKAROUND: Schema is duplicated here to make the function self-contained.
+const InsightSchema = z.object({
+  type: z.enum(['info', 'warning', 'tip', 'alert']),
+  title: z.string(),
+  message: z.string(),
+});
+const InsightResponseSchema = z.array(InsightSchema);
+
+
+const openai = new OpenAI({
+  apiKey: Deno.env.get('OPENAI_API_KEY'),
+});
+
+const getInsightAgentPrompt = (plant: any) => `
+You are an expert botanist and data analyst agent. Your mission is to provide actionable, data-driven insights about a houseplant.
+Analyze the provided plant data and generate 3-5 key insights.
+
+**CRITICAL JSON OUTPUT RULES:**
+1.  **ONLY JSON**: Your response must be a single, valid JSON array. Do not include any text before or after it.
+2.  **Strict Schema**: Each object in the array must conform to this structure: { "type": string, "title": string, "message": string }
+3.  **Insight Types**: The "type" field MUST be one of: "info", "warning", "tip", "alert".
+    - "alert": For critical issues needing immediate attention (e.g., severe health decline, pests).
+    - "warning": For potential problems that are not yet critical.
+    - "tip": For proactive advice and care improvements.
+    - "info": For interesting observations or positive reinforcement.
+4.  **Actionable & Data-Driven**: Every insight must be concise, easy to understand, and directly related to the provided data.
+
+**Plant Data to Analyze:**
+- Species: ${plant.species} (${plant.name})
+- Health Score: ${plant.healthScore}/100
+- Location: ${plant.location}
+- Care Profile:
+  - Watering: Every ${plant.careProfile.wateringFrequency} days
+  - Sunlight: ${plant.careProfile.sunlightRequirement}
+  - Humidity: ${plant.careProfile.humidityPreference}
+- Recent Chat History: ${plant.chatHistory.slice(-3).map((m: any) => m.content).join('; ')}
+- Latest Health Analysis: ${JSON.stringify(plant.images?.[0]?.healthAnalysis)}
+
+Based on this data, generate the JSON array of insights.
+`;
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -24,65 +60,48 @@ serve(async (req: Request) => {
       });
     }
 
-    const prompt = `
-      Analyze the following plant data and generate 3-5 actionable, data-driven insights.
-      Focus on potential improvements, warnings, or interesting correlations in the data.
-      Each insight should be a short, clear statement.
+    const prompt = getInsightAgentPrompt(plant);
 
-      Plant Data:
-      - Species: ${plant.species} (${plant.name})
-      - Health Score: ${plant.healthScore}/100
-      - Location: ${plant.location}
-      - Care Profile:
-        - Watering: Every ${plant.careProfile.wateringFrequency} days
-        - Sunlight: ${plant.careProfile.sunlightRequirement}
-        - Humidity: ${plant.careProfile.humidityPreference}
-      - Recent Chat Messages: ${plant.chatHistory.slice(-3).map((m: { content: string }) => m.content).join('; ')}
-
-      Example Insights:
-      - "Your plant's health has been trending down. Consider checking for pests."
-      - "You mentioned 'yellow leaves' in a recent chat. This could be a sign of overwatering."
-      - "This plant prefers high humidity, but your room is listed as 'low'. Misting might help."
-
-      Generate insights for the provided plant data:
-    `;
-
-    const chatCompletion = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      response_format: { type: 'json_object' },
       messages: [
-        { "role": "system", "content": "You are a helpful plant care assistant." },
-        { "role": "user", "content": prompt }
+        { role: 'system', content: "You are an expert botanist and data analyst agent that returns data in a structured JSON format." },
+        { role: 'user', content: prompt }
       ],
-      max_tokens: 150,
-      temperature: 0.5,
+      max_tokens: 500,
+      temperature: 0.6,
     });
-    
-    const insights = chatCompletion.choices[0].message.content
-      .split('\n')
-      .map((s: string) => s.replace(/^- /, '').trim())
-      .filter((s: string) => s.length > 0);
 
-    return new Response(JSON.stringify({ insights }), {
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('OpenAI returned an empty response.');
+    }
+
+    // The AI might wrap the array in a parent object, e.g., { "insights": [...] }
+    let rawData = JSON.parse(content);
+    if (rawData.insights && Array.isArray(rawData.insights)) {
+      rawData = rawData.insights;
+    }
+
+    const validationResult = InsightResponseSchema.safeParse(rawData);
+
+    if (!validationResult.success) {
+      console.error('Zod validation failed for insights.', validationResult.error.flatten());
+      console.error('Raw Data Received:', JSON.stringify(rawData, null, 2));
+      throw new Error('AI response for insights did not match the required structure.');
+    }
+
+    return new Response(JSON.stringify(validationResult.data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Error generating insights:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/generate-plant-insights' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
-
-*/

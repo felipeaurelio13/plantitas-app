@@ -1,18 +1,17 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { User, Session } from '@supabase/supabase-js';
-import { Tables } from '../lib/database.types';
+import { User } from '@supabase/supabase-js';
 import { SignInSchema, SignUpSchema } from '../schemas';
 import { z } from 'zod';
 
-type Profile = Tables<'profiles'>;
+type Profile = any; // Placeholder
 type SignInCredentials = z.infer<typeof SignInSchema>;
 type SignUpCredentials = z.infer<typeof SignUpSchema>;
 
 interface AuthState {
   user: User | null;
   profile: Profile | null;
-  session: Session | null;
+  session: any | null; // Use 'any' for now to avoid module issues
   isLoading: boolean;
   error: string | null;
   isInitialized: boolean;

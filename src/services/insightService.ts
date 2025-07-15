@@ -1,23 +1,29 @@
 import { supabase } from '../lib/supabase';
-import { Plant } from '../schemas';
+import { Plant, InsightResponseSchema, type Insight } from '../schemas';
+import { z } from 'zod';
 
-export const generateInsights = async (plant: Plant): Promise<string[]> => {
+export const generateInsights = async (plant: Plant): Promise<Insight[]> => {
   try {
+    console.log('[insightService] Generating insights for plant:', plant);
     const { data, error } = await supabase.functions.invoke('generate-plant-insights', {
       body: { plant },
     });
+
+    console.log('[insightService] Raw response:', { data, error });
 
     if (error) {
       throw new Error(`Failed to generate insights: ${error.message}`);
     }
 
-    if (!data.insights) {
-      throw new Error('No insights returned from function.');
-    }
+    const validatedData = InsightResponseSchema.parse(data);
+    console.log('[insightService] Validated insights:', validatedData);
+    return validatedData;
 
-    return data.insights;
   } catch (error) {
-    console.error('Error generating insights:', error);
+    console.error('[insightService] Error generating insights:', error);
+    if (error instanceof z.ZodError) {
+      throw new Error(`Invalid data structure for insights: ${error.message}`);
+    }
     throw error;
   }
 }; 

@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { produce } from 'immer';
 import { Plant, ChatMessage } from '../schemas';
 import { PlantService } from '../services/plantService';
-import { analyzeImage } from '../services/aiService';
 
 // Instantiate services
 const plantService = new PlantService();
@@ -17,8 +16,9 @@ interface PlantState {
 interface PlantActions {
   // loadPlants: (userId: string) => Promise<void>; // Removed
   getPlantById: (plantId: string) => Plant | undefined;
-  createPlantFromImage: (
+  addPlant: (
     imageDataUrl: string,
+    location: string,
     userId: string
   ) => Promise<Plant | undefined>;
   updatePlant: (plant: Plant, userId: string) => Promise<void>;
@@ -70,49 +70,22 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
     );
   },
 
-  createPlantFromImage: async (imageDataUrl, userId) => {
-    // set({ isLoading: true, error: null }); // Removed
+  addPlant: async (imageDataUrl, location, userId) => {
     try {
-      const analysis = await analyzeImage(imageDataUrl);
-
-      // Create a new plant object from the analysis
-      const newPlantData: Omit<Plant, 'id'> = {
-        name: analysis.commonName || 'Nueva Planta',
-        species: analysis.species,
-        variety: analysis.variety ?? undefined,
-        nickname: `Mi ${analysis.commonName || 'Planta'}`,
-        location: 'Interior',
-        dateAdded: new Date(),
-        healthScore: analysis.health.confidence,
-        careProfile: analysis.careProfile,
-        personality: analysis.personality,
-        images: [],
-        chatHistory: [],
-        notifications: [],
-      };
-
-      const createdPlant = await plantService.createPlant(newPlantData, userId);
-      
-      // Add image to the created plant
-      const imageUrl = await plantService.addPlantImage(
-        createdPlant.id,
-        { url: imageDataUrl, timestamp: new Date(), isProfileImage: true },
-        userId
+      const newPlant = await plantService.addPlantFromAnalysis(
+        userId,
+        imageDataUrl,
+        location
       );
-      createdPlant.images.push(imageUrl);
 
       set(
         produce((state: PlantState) => {
-          state.plants.unshift(createdPlant);
-          // state.isLoading = false; // Removed
+          state.plants.unshift(newPlant);
         })
       );
-      return createdPlant;
+      return newPlant;
     } catch (e) {
-      const error = e instanceof Error ? e.message : 'Failed to create plant';
-      // set({ error, isLoading: false }); // Removed
-      console.error(error);
-      // We should probably re-throw the error so TanStack Query's useMutation can catch it
+      console.error(e);
       throw e;
     }
   },

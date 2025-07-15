@@ -7,7 +7,7 @@ import { Database } from '@/lib/database.types';
 import { usePlantStore } from '@/stores';
 
 type PlantData = Database['public']['Tables']['plants']['Row'] & {
-  plant_images: Database['public']['Tables']['plant_images']['Row'][];
+  plant_images: any[];
 };
 
 const fetchPlantById = async (plantId: string): Promise<Plant> => {
@@ -37,6 +37,7 @@ const fetchPlantById = async (plantId: string): Promise<Plant> => {
     id: plantData.id,
     name: plantData.name,
     species: plantData.species,
+    description: plantData.description ?? undefined,
     variety: plantData.variety ?? undefined,
     nickname: plantData.nickname ?? undefined,
     location: plantData.location,
@@ -48,7 +49,7 @@ const fetchPlantById = async (plantId: string): Promise<Plant> => {
     careProfile: plantData.care_profile as CareProfile,
     personality: plantData.personality as PlantPersonality,
     
-    images: plantData.plant_images.map(img => ({
+    images: plantData.plant_images.map((img: any) => ({
       id: img.id,
       url: img.url ?? '', 
       timestamp: new Date(img.created_at!),

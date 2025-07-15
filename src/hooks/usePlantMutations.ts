@@ -5,23 +5,26 @@ import { Plant } from '../schemas';
 
 export const usePlantMutations = () => {
   const queryClient = useQueryClient();
-  const { updatePlant, deletePlant, createPlantFromImage } = usePlantStore.getState();
+  const { addPlant, updatePlant, deletePlant } = usePlantStore.getState();
   const user = useAuthStore((state) => state.user);
   const userId = user?.id;
 
   const createPlantMutation = useMutation({
     mutationFn: (imageDataUrl: string) => {
       if (!userId) throw new Error('User not authenticated');
-      return createPlantFromImage(imageDataUrl, userId);
+      // TODO: Get location from the UI instead of hardcoding
+      const location = 'Interior';
+      return addPlant(imageDataUrl, location, userId);
     },
-    onSuccess: (newPlant) => {
+    onSuccess: (_newPlant) => {
       queryClient.invalidateQueries({ queryKey: ['plants', userId] });
-      alert(`¡"${newPlant?.name}" ha sido creada con éxito!`);
-      // Future: navigate to the new plant's detail page
+      // The toast notification will be handled in the component calling the mutation.
+      // alert(`¡"${newPlant?.name}" ha sido creada con éxito!`);
     },
     onError: (error) => {
       console.error('Failed to create plant:', error);
-      alert('No se pudo crear la planta. Por favor, inténtalo de nuevo.');
+      // The toast notification will be handled in the component calling the mutation.
+      // alert('No se pudo crear la planta. Por favor, inténtalo de nuevo.');
     },
   });
 
@@ -45,7 +48,7 @@ export const usePlantMutations = () => {
       if (context?.previousPlants) {
         queryClient.setQueryData(['plants', userId], context.previousPlants);
       }
-      alert('No se pudo actualizar la planta. Se han restaurado los datos originales.');
+      // alert('No se pudo actualizar la planta. Se han restaurado los datos originales.');
     },
     onSettled: (updatedPlant) => {
       queryClient.invalidateQueries({ queryKey: ['plants', userId] });
@@ -76,7 +79,7 @@ export const usePlantMutations = () => {
       if (context?.previousPlants) {
         queryClient.setQueryData(['plants', userId], context.previousPlants);
       }
-      alert('No se pudo eliminar la planta. Se ha restaurado de la lista.');
+      // alert('No se pudo eliminar la planta. Se ha restaurado de la lista.');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['plants', userId] });

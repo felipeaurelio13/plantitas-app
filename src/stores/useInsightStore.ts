@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { produce } from 'immer';
 import { generateInsights } from '../services/insightService';
-import { Plant } from '../schemas';
+import { Plant, type Insight } from '../schemas';
 
 interface InsightState {
-  insights: Record<string, string[]>;
+  insights: Record<string, Insight[]>;
   isLoading: Record<string, boolean>;
   error: Record<string, string | null>;
 }

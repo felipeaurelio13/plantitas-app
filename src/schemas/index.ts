@@ -1,24 +1,18 @@
 import { z } from 'zod';
+import * as AiSchemas from './ai-shared';
 
-// Health Issue Schema
-export const HealthIssueSchema = z.object({
-  type: z.enum(['overwatering', 'underwatering', 'pest', 'disease', 'nutrient', 'light', 'other']),
-  severity: z.enum(['low', 'medium', 'high']),
-  description: z.string().min(1, 'Description is required'),
-  treatment: z.string().min(1, 'Treatment is required'),
-});
+// Export AI-related schemas directly
+export const {
+  HealthIssueSchema,
+  HealthAnalysisSchema,
+  CareProfileSchema,
+  PlantPersonalitySchema,
+  AIAnalysisResponseSchema,
+  InsightSchema,
+  InsightResponseSchema
+} = AiSchemas;
 
-// Health Analysis Schema
-export const HealthAnalysisSchema = z.object({
-  overallHealth: z.enum(['excellent', 'good', 'fair', 'poor']),
-  issues: z.array(HealthIssueSchema),
-  recommendations: z.array(z.string()),
-  moistureLevel: z.coerce.number().min(0).max(100),
-  growthStage: z.enum(['seedling', 'juvenile', 'mature', 'flowering', 'dormant']),
-  confidence: z.coerce.number().min(0).max(100),
-});
-
-// Plant Image Schema
+// Define other schemas
 export const PlantImageSchema = z.object({
   id: z.string().min(1, 'Image ID is required'),
   url: z.string().url('Must be a valid URL'),
@@ -27,35 +21,6 @@ export const PlantImageSchema = z.object({
   isProfileImage: z.boolean(),
 });
 
-// Care Profile Schema
-export const CareProfileSchema = z.object({
-  wateringFrequency: z.coerce.number().positive('Watering frequency must be positive'),
-  sunlightRequirement: z.enum(['low', 'medium', 'high']),
-  humidityPreference: z.enum(['low', 'medium', 'high']),
-  temperatureRange: z.object({
-    min: z.coerce.number(),
-    max: z.coerce.number(),
-  }).refine(data => data.max > data.min, {
-    message: 'Maximum temperature must be greater than minimum',
-  }),
-  fertilizingFrequency: z.coerce.number().positive('Fertilizing frequency must be positive'),
-  soilType: z.string().min(1, 'Soil type is required'),
-  specialCare: z.array(z.string()).optional(),
-});
-
-// Plant Personality Schema
-export const PlantPersonalitySchema = z.object({
-  traits: z.array(z.string()).min(1, 'At least one trait is required'),
-  communicationStyle: z.enum(['cheerful', 'wise', 'dramatic', 'calm', 'playful']),
-  catchphrases: z.array(z.string()),
-  moodFactors: z.object({
-    health: z.number().min(0).max(1),
-    care: z.number().min(0).max(1),
-    attention: z.number().min(0).max(1),
-  }),
-});
-
-// Chat Message Schema
 export const ChatMessageSchema = z.object({
   id: z.string().min(1, 'Message ID is required'),
   sender: z.enum(['user', 'plant', 'system']),
@@ -64,7 +29,6 @@ export const ChatMessageSchema = z.object({
   emotion: z.enum(['alegre', 'triste', 'enojado', 'neutral', 'juguetón', 'agradecido', 'happy', 'sad', 'excited', 'worried', 'grateful']).optional(),
 });
 
-// Plant Notification Schema
 export const PlantNotificationSchema = z.object({
   id: z.string().min(1, 'Notification ID is required'),
   type: z.enum(['watering', 'fertilizing', 'health_check', 'general']),
@@ -75,14 +39,14 @@ export const PlantNotificationSchema = z.object({
   completed: z.boolean(),
 });
 
-// Plant Schema
 export const PlantSchema = z.object({
-  id: z.string().min(1, 'Plant ID is required'),
-  name: z.string().min(1, 'Plant name is required'),
-  species: z.string().min(1, 'Species is required'),
+  id: z.string().uuid(),
+  name: z.string(),
+  species: z.string(),
   variety: z.string().optional(),
   nickname: z.string().optional(),
-  location: z.string().min(1, 'Location is required'),
+  description: z.string().optional(),
+  location: z.string(),
   dateAdded: z.date(),
   lastWatered: z.date().optional(),
   lastFertilized: z.date().optional(),
@@ -94,7 +58,6 @@ export const PlantSchema = z.object({
   notifications: z.array(PlantNotificationSchema),
 });
 
-// Plant Summary Schema for list views
 export const PlantSummarySchema = z.object({
   id: z.string().min(1, 'Plant ID is required'),
   name: z.string().min(1, 'Plant name is required'),
@@ -105,39 +68,6 @@ export const PlantSummarySchema = z.object({
   profileImageUrl: z.string().url().optional(),
   lastWatered: z.date().optional(),
   wateringFrequency: z.number().positive().optional(),
-});
-
-
-// Room Schema
-export const RoomSchema = z.object({
-  id: z.string().min(1, 'Room ID is required'),
-  name: z.string().min(1, 'Room name is required'),
-  lightLevel: z.enum(['low', 'medium', 'high']),
-  humidity: z.number().min(0).max(100),
-  temperature: z.number(),
-});
-
-// Auth Schemas
-export const SignUpSchema = z.object({
-  email: z.string().email('Must be a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  fullName: z.string().min(1, 'Full name is required').optional(),
-});
-
-export const SignInSchema = z.object({
-  email: z.string().email('Must be a valid email'),
-  password: z.string().min(1, 'Password is required'),
-});
-
-// API Response Schemas
-export const AIAnalysisResponseSchema = z.object({
-  species: z.string(),
-  commonName: z.string(),
-  variety: z.string().nullable().optional(),
-  confidence: z.coerce.number().min(0).max(100),
-  health: HealthAnalysisSchema,
-  careProfile: CareProfileSchema,
-  personality: PlantPersonalitySchema,
 });
 
 export const PlantResponseSchema = z.object({
@@ -153,7 +83,6 @@ export const ProgressAnalysisResponseSchema = z.object({
   newHealthScore: z.number().min(0).max(100),
 });
 
-// Form Validation Schemas
 export const PlantFormSchema = PlantSchema.omit({ 
   id: true, 
   dateAdded: true, 
@@ -166,31 +95,36 @@ export const PlantFormSchema = PlantSchema.omit({
   personality: true,
 });
 
-export const ChatMessageFormSchema = ChatMessageSchema.omit({ 
-  id: true, 
-  timestamp: true 
+export const SignUpSchema = z
+  .object({
+    fullName: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
+    email: z.string().email('Email inválido'),
+    password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+    confirmPassword: z.string().min(6),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Las contraseñas no coinciden',
+    path: ['confirmPassword'],
+  });
+
+export const SignInSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1, "Password is required"),
 });
 
-export const PlantImageFormSchema = PlantImageSchema.omit({ 
-  id: true, 
-  timestamp: true 
-});
-
-// Type inference from schemas
+// Export all inferred types
 export type HealthIssue = z.infer<typeof HealthIssueSchema>;
 export type HealthAnalysis = z.infer<typeof HealthAnalysisSchema>;
-export type PlantImage = z.infer<typeof PlantImageSchema>;
 export type CareProfile = z.infer<typeof CareProfileSchema>;
 export type PlantPersonality = z.infer<typeof PlantPersonalitySchema>;
+export type Insight = z.infer<typeof InsightSchema>;
+export type AIAnalysisResponse = z.infer<typeof AIAnalysisResponseSchema>;
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export type PlantNotification = z.infer<typeof PlantNotificationSchema>;
 export type Plant = z.infer<typeof PlantSchema>;
 export type PlantSummary = z.infer<typeof PlantSummarySchema>;
-export type Room = z.infer<typeof RoomSchema>;
+export type PlantImage = z.infer<typeof PlantImageSchema>;
 export type SignUpData = z.infer<typeof SignUpSchema>;
 export type SignInData = z.infer<typeof SignInSchema>;
-export type AIAnalysisResponse = z.infer<typeof AIAnalysisResponseSchema>;
 export type PlantResponse = z.infer<typeof PlantResponseSchema>;
-export type PlantFormData = z.infer<typeof PlantFormSchema>;
-export type ChatMessageFormData = z.infer<typeof ChatMessageFormSchema>;
-export type PlantImageFormData = z.infer<typeof PlantImageFormSchema>; 
+export type PlantFormData = z.infer<typeof PlantFormSchema>; 

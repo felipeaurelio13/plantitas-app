@@ -7,6 +7,7 @@ const AuthPage: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -27,17 +28,19 @@ const AuthPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (mode === 'login') {
-        await signIn({ email, password });
-      } else {
-        await signUp({ email, password, fullName });
-        // Optionally show a "Check your email" message here
+    clearError();
+
+    if (mode === 'login') {
+      await signIn({ email, password });
+    } else {
+      if (password !== confirmPassword) {
+        // This is a client-side check.
+        // The zod schema in the store also validates this.
+        console.error("Passwords do not match");
+        // We can also use the store to set a specific error here
+        return;
       }
-    } catch (err) {
-      // The store now handles the error state, so we just catch to prevent unhandled promise rejections.
-      // The error is already set in the store.
-      console.error(err);
+      await signUp({ email, password, confirmPassword, fullName });
     }
   };
 
@@ -146,6 +149,30 @@ const AuthPage: React.FC = () => {
                 </p>
               )}
             </div>
+
+            {mode === 'signup' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Confirmar Contraseña
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    required={mode === 'signup'}
+                  />
+                </div>
+              </motion.div>
+            )}
 
             {error && (
               <motion.div

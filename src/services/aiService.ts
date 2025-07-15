@@ -1,69 +1,11 @@
 import { supabase } from '../lib/supabase';
-import { 
-  Plant, 
-  AIAnalysisResponseSchema, 
+import {
   PlantResponseSchema,
   ProgressAnalysisResponseSchema,
-  type AIAnalysisResponse, 
-  type PlantResponse 
+  type AIAnalysisResponse,
+  type PlantResponse,
+  type Plant,
 } from '../schemas';
-
-const transformAIResponse = (data: any): any => {
-  if (!data) return null;
-
-  const translationMap: { [key: string]: string } = {
-    // overallHealth
-    'excelente': 'excellent',
-    'bueno': 'good',
-    'regular': 'fair',
-    'malo': 'poor',
-    // growthStage
-    'semillero': 'seedling',
-    'juvenil': 'juvenile',
-    'madura': 'mature',
-    'floración': 'flowering',
-    'durmiente': 'dormant',
-    // sunlightRequirement & humidityPreference
-    'bajo': 'low',
-    'medio': 'medium',
-    'alta': 'high',
-    // communicationStyle
-    'alegre': 'cheerful',
-    'sabio': 'wise',
-    'dramático': 'dramatic',
-    'calmado': 'calm',
-    'juguetón': 'playful',
-  };
-
-  const transformed = { ...data };
-  
-  if (transformed.health) {
-    if (transformed.health.overallHealth) {
-      transformed.health.overallHealth = translationMap[transformed.health.overallHealth] || transformed.health.overallHealth;
-    }
-    if (transformed.health.growthStage) {
-      transformed.health.growthStage = translationMap[transformed.health.growthStage] || transformed.health.growthStage;
-    }
-  }
-
-  if (transformed.careProfile) {
-    if (transformed.careProfile.sunlightRequirement) {
-      transformed.careProfile.sunlightRequirement = translationMap[transformed.careProfile.sunlightRequirement] || transformed.careProfile.sunlightRequirement;
-    }
-    if (transformed.careProfile.humidityPreference) {
-      transformed.careProfile.humidityPreference = translationMap[transformed.careProfile.humidityPreference] || transformed.careProfile.humidityPreference;
-    }
-  }
-
-  if (transformed.personality) {
-    if (transformed.personality.communicationStyle) {
-      transformed.personality.communicationStyle = translationMap[transformed.personality.communicationStyle] || transformed.personality.communicationStyle;
-    }
-  }
-
-  return transformed;
-};
-
 
 export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
   const { data, error } = await supabase.functions.invoke('analyze-image', {
@@ -71,32 +13,25 @@ export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResp
   });
 
   if (error) {
-    console.error('Error calling analyze-image function:', error);
-    throw new Error('Failed to analyze image: ' + error.message);
+    console.error('Error invoking analyze-image function:', error);
+    // Attempt to parse a more specific error message from the response if possible
+    const message = error.context?.msg ? JSON.parse(error.context.msg).error : error.message;
+    throw new Error(`Failed to analyze image: ${message}`);
   }
 
-  // The 'data' object from a successful function invocation can still contain a business logic error.
   if (data && data.error) {
-    console.error('Image analysis failed:', data.error);
-    throw new Error(data.error); // Propagate the specific error message to the UI.
+    console.error('Image analysis failed with a specific error:', data.error);
+    throw new Error(data.error);
   }
-
-  console.log('Raw data from analyze-image function:', JSON.stringify(data, null, 2));
-
-  const transformedData = transformAIResponse(data);
-  try {
-    const validatedResponse = AIAnalysisResponseSchema.parse(transformedData);
-    return validatedResponse;
-  } catch (validationError) {
-    console.error('Validation error in analyzeImage response:', validationError);
-    // For future debugging, let's log the data that failed validation.
-    console.error('Data that failed validation:', JSON.stringify(transformedData, null, 2));
-    throw new Error('Received invalid data from analysis function.');
-  }
+  
+  // Since the backend now uses the exact same schema file for validation,
+  // we can trust the data structure and just cast the type.
+  // The redundant client-side validation is removed.
+  return data as AIAnalysisResponse;
 };
 
 export const generatePlantResponse = async (
-  plant: Plant, 
+  plant: Plant,
   userMessage: string
 ): Promise<PlantResponse> => {
   console.log('[aiService] Invocando "generate-plant-response" con:', { plant, userMessage });

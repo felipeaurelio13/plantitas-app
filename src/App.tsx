@@ -6,6 +6,8 @@ import {
   Navigate,
 } from 'react-router-dom';
 import { useAuthStore } from './stores/useAuthStore';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
 
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -17,6 +19,8 @@ const Settings = lazy(() => import('./pages/Settings'));
 const AuthPage = lazy(() => import('./pages/Auth'));
 const CameraPage = lazy(() => import('./pages/Camera'));
 const ChatPage = lazy(() => import('./pages/Chat'));
+
+const queryClient = new QueryClient();
 
 const FullScreenLoader: React.FC<{ message: string }> = ({ message }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
@@ -55,22 +59,25 @@ const App: React.FC = () => {
   );
 
   return (
-    <ErrorBoundary>
-      <Router>
-        <Suspense fallback={<FullScreenLoader message="Cargando página..." />}>
-          <Routes>
-            <Route
-              path="/auth"
-              element={!session ? <AuthPage /> : <Navigate to="/" />}
-            />
-            <Route
-              path="/*"
-              element={session ? <PrivateRoutes /> : <Navigate to="/auth" />}
-            />
-          </Routes>
-        </Suspense>
-      </Router>
-    </ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Router>
+          <Toaster position="top-center" richColors />
+          <Suspense fallback={<FullScreenLoader message="Cargando página..." />}>
+            <Routes>
+              <Route
+                path="/auth"
+                element={!session ? <AuthPage /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/*"
+                element={session ? <PrivateRoutes /> : <Navigate to="/auth" />}
+              />
+            </Routes>
+          </Suspense>
+        </Router>
+      </ErrorBoundary>
+    </QueryClientProvider>
   );
 };
 

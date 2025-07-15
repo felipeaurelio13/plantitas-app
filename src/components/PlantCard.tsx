@@ -105,12 +105,14 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
         <CardFooter className="bg-neutral-50 dark:bg-neutral-800/50 p-2 border-t border-subtle">
           <div className="flex justify-between items-center w-full">
             <div className="flex items-center gap-1 text-xs text-text-muted">
-              <Droplets size={12} />
-              <span>
-                {plant.lastWatered
-                  ? `Regada ${formatDistanceToNow(new Date(plant.lastWatered), { addSuffix: true, locale: es })}`
-                  : 'Sin regar'}
-              </span>
+              {plant.lastWatered && (
+                <>
+                  <Droplets size={12} />
+                  <span>
+                    Regada {formatDistanceToNow(new Date(plant.lastWatered), { addSuffix: true, locale: es })}
+                  </span>
+                </>
+              )}
             </div>
             <Button
               size="sm"

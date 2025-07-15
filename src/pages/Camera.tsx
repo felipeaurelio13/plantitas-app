@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 import { usePlantMutations } from '@/hooks/usePlantMutations';
 import { useCamera } from '@/hooks/useCamera';
@@ -33,11 +34,28 @@ const CameraPage: React.FC = () => {
   const analyzeAndSave = () => {
     if (!capturedImage) return;
 
-    createPlant(capturedImage, {
-      onSuccess: () => {
-        navigate('/'); // Navigate to dashboard on success
-      },
-      // onError is handled by the hook's global alert
+    const promise = new Promise((resolve, reject) => {
+      createPlant(capturedImage, {
+        onSuccess: (newPlant) => {
+          // We navigate to the new plant's detail page on success.
+          if (newPlant?.id) {
+            navigate(`/plant/${newPlant.id}`);
+          } else {
+            // Fallback to the dashboard if for some reason the new plant has no ID.
+            navigate('/');
+          }
+          resolve(newPlant);
+        },
+        onError: (error) => {
+          reject(error);
+        },
+      });
+    });
+
+    toast.promise(promise, {
+      loading: 'Analizando imagen... La IA está trabajando.',
+      success: (data: any) => `¡Planta "${data.name}" creada con éxito!`,
+      error: (err) => `Error: ${err.message}`,
     });
   };
 

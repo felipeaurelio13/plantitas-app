@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Tables, TablesInsert, TablesUpdate } from '../lib/database.types';
+import { Database } from '../lib/database.types';
 import {
   Plant,
   PlantImage,
@@ -10,11 +10,12 @@ import {
   PlantSummary,
 } from '../schemas';
 import { uploadImage } from './imageService';
-import { generatePlantResponse } from './aiService';
+import {
+  analyzeImage,
+  generatePlantResponse
+} from './aiService';
 
-type DBPlant = Tables<'plants'>;
-type DBPlantInsert = TablesInsert<'plants'>;
-type DBPlantUpdate = TablesUpdate<'plants'>;
+type DBPlant = Database['public']['Tables']['plants']['Row'];
 // Type aliases for future use
 // type DBChatMessage = Tables<'chat_messages'>;
 // type DBPlantImage = Tables<'plant_images'>;
@@ -22,43 +23,30 @@ type DBPlantUpdate = TablesUpdate<'plants'>;
 
 // Convert database plant to app plant format
 const transformDBPlantToPlant = (
-  dbPlant: DBPlant,
-  images: PlantImage[] = [],
-  chatHistory: ChatMessage[] = [],
-  notifications: PlantNotification[] = []
-): Plant => ({
-  id: dbPlant.id,
-  name: dbPlant.name,
-  species: dbPlant.species,
-  variety: dbPlant.variety ?? undefined,
-  nickname: dbPlant.nickname ?? undefined,
-  location: dbPlant.location,
-  dateAdded: new Date(dbPlant.date_added ?? dbPlant.created_at!),
-  lastWatered: dbPlant.last_watered ? new Date(dbPlant.last_watered) : undefined,
-  lastFertilized: dbPlant.last_fertilized ? new Date(dbPlant.last_fertilized) : undefined,
-  images,
-  healthScore: dbPlant.health_score || 85,
-  careProfile: dbPlant.care_profile as unknown as CareProfile,
-  personality: dbPlant.personality as unknown as PlantPersonality,
-  chatHistory,
-  notifications,
-});
-
-// Convert app plant to database format
-const transformPlantToDBPlant = (plant: Plant, userId: string): DBPlantInsert => ({
-  user_id: userId,
-  name: plant.name,
-  species: plant.species,
-  variety: plant.variety,
-  nickname: plant.nickname,
-  location: plant.location,
-  health_score: plant.healthScore,
-  care_profile: plant.careProfile as any,
-  personality: plant.personality as any,
-  date_added: plant.dateAdded.toISOString(),
-  last_watered: plant.lastWatered?.toISOString(),
-  last_fertilized: plant.lastFertilized?.toISOString(),
-});
+  p: DBPlant,
+  images: PlantImage[],
+  chatHistory: ChatMessage[],
+  notifications: PlantNotification[]
+): Plant => {
+  return {
+    id: p.id,
+    name: p.name,
+    species: p.species,
+    variety: p.variety || undefined,
+    nickname: p.nickname || undefined,
+    description: p.description || undefined,
+    location: p.location,
+    dateAdded: new Date(p.date_added!),
+    lastWatered: p.last_watered ? new Date(p.last_watered) : undefined,
+    lastFertilized: p.last_fertilized ? new Date(p.last_fertilized) : undefined,
+    images,
+    healthScore: p.health_score || 85,
+    careProfile: p.care_profile as unknown as CareProfile,
+    personality: p.personality as unknown as PlantPersonality,
+    chatHistory,
+    notifications,
+  };
+};
 
 export class PlantService {
   async getUserPlantSummaries(userId: string): Promise<PlantSummary[]> {
@@ -216,19 +204,86 @@ export class PlantService {
     }
   }
 
-  async createPlant(plant: Omit<Plant, 'id'>, userId: string): Promise<Plant> {
+  async addPlantFromAnalysis(
+    userId: string,
+    imageDataUrl: string,
+    location: string
+  ): Promise<Plant> {
     try {
-      const plantData = transformPlantToDBPlant(plant as Plant, userId);
+      // 1. Get AI analysis from the image
+      const analysis = await analyzeImage(imageDataUrl);
+
+      // 2. Upload the captured image to storage
+      // We do this early so we can associate it with the plant record
+      const imagePath = `${userId}/${crypto.randomUUID()}.jpg`;
+      const imageUrl = await uploadImage(imageDataUrl, 'plant-images', imagePath);
+
+      // 3. Create the initial plant object from the analysis
+      const plantToCreate: Omit<Plant, 'id'> = {
+        name: analysis.commonName,
+        species: analysis.species,
+        description: analysis.generalDescription,
+        variety: analysis.variety ?? undefined,
+        nickname: analysis.commonName, // Default nickname to common name
+        location: location,
+        dateAdded: new Date(),
+        healthScore: analysis.health.confidence,
+        careProfile: analysis.careProfile,
+        personality: analysis.personality,
+        images: [],
+        chatHistory: [],
+        notifications: [],
+      };
       
+      // 4. Create the plant record in the database
+      const newPlant = await this.createPlant(plantToCreate, userId);
+
+      // 5. Create the plant image record and associate it with the plant
+      const plantImage: Omit<PlantImage, 'id'> = {
+        url: imageUrl,
+        timestamp: new Date(),
+        isProfileImage: true,
+        healthAnalysis: analysis.health,
+      };
+
+      const savedImage = await this.addPlantImage(newPlant.id, plantImage, userId);
+      
+      // Return the full plant object with its first image
+      newPlant.images.push(savedImage);
+      return newPlant;
+
+    } catch (error) {
+      console.error('Error adding plant from analysis:', error);
+      // Here you might want to handle cleanup, e.g., delete the uploaded image if the DB insert fails
+      throw new Error('Failed to create plant from image analysis.');
+    }
+  }
+
+  async createPlant(plantData: Omit<Plant, 'id'>, userId: string): Promise<Plant> {
+    try {
       const { data, error } = await supabase
         .from('plants')
-        .insert(plantData)
+        .insert({
+          user_id: userId,
+          name: plantData.name,
+          species: plantData.species,
+          description: plantData.description,
+          variety: plantData.variety,
+          nickname: plantData.nickname,
+          location: plantData.location,
+          health_score: plantData.healthScore,
+          care_profile: plantData.careProfile as any,
+          personality: plantData.personality as any,
+          date_added: plantData.dateAdded.toISOString(),
+          last_watered: plantData.lastWatered?.toISOString(),
+          last_fertilized: plantData.lastFertilized?.toISOString(),
+        })
         .select()
         .single();
 
       if (error) throw error;
 
-      return transformDBPlantToPlant(data, plant.images, plant.chatHistory, plant.notifications);
+      return transformDBPlantToPlant(data, [], [], []);
     } catch (error) {
       console.error('Error creating plant:', error);
       throw error;
@@ -237,7 +292,7 @@ export class PlantService {
 
   async updatePlant(plant: Plant, userId: string): Promise<Plant> {
     try {
-      const updateData: DBPlantUpdate = {
+      const updateData: any = {
         name: plant.name,
         species: plant.species,
         variety: plant.variety,
@@ -352,6 +407,7 @@ export class PlantService {
           url: imageUrl,
           storage_path: imageUrl.split('plant-images/')[1],
           is_profile_image: image.isProfileImage,
+          health_analysis: image.healthAnalysis as any,
         })
         .select()
         .single();
