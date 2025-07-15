@@ -18,12 +18,10 @@ export const usePlantMutations = () => {
     onSuccess: (_newPlant) => {
       queryClient.invalidateQueries({ queryKey: ['plants', userId] });
       // The toast notification will be handled in the component calling the mutation.
-      // alert(`¡"${newPlant?.name}" ha sido creada con éxito!`);
     },
     onError: (error) => {
       console.error('Failed to create plant:', error);
       // The toast notification will be handled in the component calling the mutation.
-      // alert('No se pudo crear la planta. Por favor, inténtalo de nuevo.');
     },
   });
 
@@ -47,13 +45,12 @@ export const usePlantMutations = () => {
       if (context?.previousPlants) {
         queryClient.setQueryData(['plants', userId], context.previousPlants);
       }
-      // alert('No se pudo actualizar la planta. Se han restaurado los datos originales.');
+      // The toast notification can be handled in the component.
     },
     onSettled: (updatedPlant) => {
       queryClient.invalidateQueries({ queryKey: ['plants', userId] });
       if (updatedPlant) {
-        // We could alert on success here, but optimistic updates make it feel instant,
-        // so an alert might be more disruptive than helpful.
+        // Optimistic updates make it feel instant.
       }
     },
   });
@@ -78,7 +75,7 @@ export const usePlantMutations = () => {
       if (context?.previousPlants) {
         queryClient.setQueryData(['plants', userId], context.previousPlants);
       }
-      // alert('No se pudo eliminar la planta. Se ha restaurado de la lista.');
+      // The toast notification can be handled in the component.
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['plants', userId] });
