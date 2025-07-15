@@ -7,27 +7,25 @@ import {
   type AIAnalysisResponse, 
   type PlantResponse 
 } from '../schemas';
+import { parseError, logError } from '../lib/errorHandling';
 
 const transformAIResponse = (data: any): any => {
   if (!data) return null;
 
+  // Traducción de valores si la IA responde en español
   const translationMap: { [key: string]: string } = {
-    // overallHealth
     'excelente': 'excellent',
     'bueno': 'good',
     'regular': 'fair',
     'malo': 'poor',
-    // growthStage
     'semillero': 'seedling',
     'juvenil': 'juvenile',
     'madura': 'mature',
     'floración': 'flowering',
     'durmiente': 'dormant',
-    // sunlightRequirement & humidityPreference
     'bajo': 'low',
     'medio': 'medium',
     'alta': 'high',
-    // communicationStyle
     'alegre': 'cheerful',
     'sabio': 'wise',
     'dramático': 'dramatic',
@@ -36,7 +34,7 @@ const transformAIResponse = (data: any): any => {
   };
 
   const transformed = { ...data };
-  
+
   if (transformed.health) {
     if (transformed.health.overallHealth) {
       transformed.health.overallHealth = translationMap[transformed.health.overallHealth] || transformed.health.overallHealth;
@@ -64,34 +62,33 @@ const transformAIResponse = (data: any): any => {
   return transformed;
 };
 
-
 export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
-  const { data, error } = await supabase.functions.invoke('analyze-image', {
-    body: { imageDataUrl },
-  });
-
-  if (error) {
-    console.error('Error calling analyze-image function:', error);
-    throw new Error('Failed to analyze image: ' + error.message);
-  }
-
-  // The 'data' object from a successful function invocation can still contain a business logic error.
-  if (data && data.error) {
-    console.error('Image analysis failed:', data.error);
-    throw new Error(data.error); // Propagate the specific error message to the UI.
-  }
-
-  console.log('Raw data from analyze-image function:', JSON.stringify(data, null, 2));
-
-  const transformedData = transformAIResponse(data);
   try {
+    const { data, error } = await supabase.functions.invoke('analyze-image', {
+      body: { imageDataUrl },
+    });
+
+    if (error) {
+      logError(error, 'analyzeImage');
+      throw new Error('Error al conectar con el servicio de análisis. Por favor, verifica tu conexión a internet.');
+    }
+
+    if (data && data.error) {
+      logError(data.error, 'analyzeImage');
+      throw new Error(data.error);
+    }
+
+    if (!data) {
+      throw new Error('No se recibió respuesta del servicio de análisis. Por favor, inténtalo de nuevo.');
+    }
+
+    const transformedData = transformAIResponse(data);
     const validatedResponse = AIAnalysisResponseSchema.parse(transformedData);
     return validatedResponse;
-  } catch (validationError) {
-    console.error('Validation error in analyzeImage response:', validationError);
-    // For future debugging, let's log the data that failed validation.
-    console.error('Data that failed validation:', JSON.stringify(transformedData, null, 2));
-    throw new Error('Received invalid data from analysis function.');
+  } catch (error) {
+    logError(error, 'analyzeImage');
+    const errorInfo = parseError(error);
+    throw new Error(errorInfo.userFriendlyMessage);
   }
 };
 

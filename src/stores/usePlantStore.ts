@@ -3,6 +3,7 @@ import { produce } from 'immer';
 import { Plant, ChatMessage } from '../schemas';
 import { PlantService } from '../services/plantService';
 import { analyzeImage } from '../services/aiService';
+import { parseError, logError } from '../lib/errorHandling';
 
 // Instantiate services
 const plantService = new PlantService();
@@ -71,7 +72,6 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
   },
 
   createPlantFromImage: async (imageDataUrl, userId) => {
-    // set({ isLoading: true, error: null }); // Removed
     try {
       const analysis = await analyzeImage(imageDataUrl);
 
@@ -104,16 +104,15 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
       set(
         produce((state: PlantState) => {
           state.plants.unshift(createdPlant);
-          // state.isLoading = false; // Removed
         })
       );
       return createdPlant;
     } catch (e) {
-      const error = e instanceof Error ? e.message : 'Failed to create plant';
-      // set({ error, isLoading: false }); // Removed
-      console.error(error);
-      // We should probably re-throw the error so TanStack Query's useMutation can catch it
-      throw e;
+      logError(e, 'createPlantFromImage');
+      
+      // Use the error handling utility to provide better error messages
+      const errorInfo = parseError(e);
+      throw new Error(errorInfo.userFriendlyMessage);
     }
   },
 
