@@ -9,6 +9,7 @@ import { useAuthStore } from './stores/useAuthStore';
 
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './components/ui/Toast';
 import { Leaf } from 'lucide-react';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -56,20 +57,22 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <Router>
-        <Suspense fallback={<FullScreenLoader message="Cargando página..." />}>
-          <Routes>
-            <Route
-              path="/auth"
-              element={!session ? <AuthPage /> : <Navigate to="/" />}
-            />
-            <Route
-              path="/*"
-              element={session ? <PrivateRoutes /> : <Navigate to="/auth" />}
-            />
-          </Routes>
-        </Suspense>
-      </Router>
+      <ToastProvider>
+        <Router>
+          <Suspense fallback={<FullScreenLoader message="Cargando página..." />}>
+            <Routes>
+              <Route
+                path="/auth"
+                element={!session ? <AuthPage /> : <Navigate to="/" />}
+              />
+              <Route
+                path="/*"
+                element={session ? <PrivateRoutes /> : <Navigate to="/auth" />}
+              />
+            </Routes>
+          </Suspense>
+        </Router>
+      </ToastProvider>
     </ErrorBoundary>
   );
 };
