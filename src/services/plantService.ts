@@ -35,6 +35,7 @@ const transformDBPlantToPlant = (
     variety: p.variety || undefined,
     nickname: p.nickname || undefined,
     description: p.description || undefined,
+    funFacts: (p.fun_facts as string[]) || [],
     location: p.location,
     dateAdded: new Date(p.date_added!),
     lastWatered: p.last_watered ? new Date(p.last_watered) : undefined,
@@ -233,6 +234,20 @@ export class PlantService {
       
       // 3. Create the plant record in the database
       const newPlant = await this.createPlant(plantToCreate, userId);
+
+      // This is where funFacts was missing from the returned object.
+      // The createPlant returns a transformed object that was missing funFacts.
+      // After adding it to transformDBPlantToPlant, we need to ensure it's
+      // correctly passed on. The `plantToCreate` object already has it, but the
+      // `newPlant` object is what's returned from the DB.
+      // Let's ensure the `newPlant` object is complete.
+      // The fix in `transformDBPlantToPlant` should be enough. Let's double check.
+      // The `createPlant` calls `transformDBPlantToPlant`, so `newPlant` *should*
+      // now have `funFacts`.
+
+      // Let's re-add it from the source of truth (`analysis`) just in case, to be robust.
+      newPlant.funFacts = analysis.funFacts;
+
 
       // 4. Create the plant image record (this will also upload it)
       const plantImage: Omit<PlantImage, 'id'> = {
