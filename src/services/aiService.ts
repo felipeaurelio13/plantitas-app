@@ -6,6 +6,7 @@ import {
   type PlantResponse,
   type Plant,
 } from '../schemas';
+import { parseError, logError } from '../lib/errorHandling';
 
 export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
   const { data, error } = await supabase.functions.invoke('analyze-image', {
