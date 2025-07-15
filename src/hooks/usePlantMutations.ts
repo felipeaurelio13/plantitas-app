@@ -2,28 +2,33 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/useAuthStore';
 import { usePlantStore } from '../stores/usePlantStore';
 import { Plant } from '../schemas';
+import { useToast } from '../components/ui/Toast';
 
 export const usePlantMutations = () => {
   const queryClient = useQueryClient();
   const { updatePlant, deletePlant, createPlantFromImage } = usePlantStore.getState();
   const user = useAuthStore((state) => state.user);
   const userId = user?.id;
+  const { addToast } = useToast();
 
-  const createPlantMutation = useMutation({
-    mutationFn: (imageDataUrl: string) => {
-      if (!userId) throw new Error('User not authenticated');
-      return createPlantFromImage(imageDataUrl, userId);
-    },
-    onSuccess: (newPlant) => {
+  const createPlant = async (imageDataUrl: string) => {
+    if (!userId) throw new Error('Usuario no autenticado');
+    try {
+      const newPlant = await createPlantFromImage(imageDataUrl, userId);
       queryClient.invalidateQueries({ queryKey: ['plants', userId] });
-      alert(`¡"${newPlant?.name}" ha sido creada con éxito!`);
-      // Future: navigate to the new plant's detail page
-    },
-    onError: (error) => {
+      addToast({
+        type: 'success',
+        title: '¡Planta creada con éxito!',
+        message: `"${newPlant?.name}" ha sido agregada a tu jardín.`
+      });
+      return newPlant;
+    } catch (error) {
       console.error('Failed to create plant:', error);
-      alert('No se pudo crear la planta. Por favor, inténtalo de nuevo.');
-    },
-  });
+      throw error; // Re-throw to let the component handle it
+    }
+  };
+
+  const isCreatingPlant = false; // We'll manage this state in the component
 
   const updatePlantMutation = useMutation({
     mutationFn: (plant: Plant) => {
@@ -45,7 +50,11 @@ export const usePlantMutations = () => {
       if (context?.previousPlants) {
         queryClient.setQueryData(['plants', userId], context.previousPlants);
       }
-      alert('No se pudo actualizar la planta. Se han restaurado los datos originales.');
+      addToast({
+        type: 'error',
+        title: 'Error al actualizar planta',
+        message: 'No se pudo actualizar la planta. Se han restaurado los datos originales.'
+      });
     },
     onSettled: (updatedPlant) => {
       queryClient.invalidateQueries({ queryKey: ['plants', userId] });
@@ -76,7 +85,11 @@ export const usePlantMutations = () => {
       if (context?.previousPlants) {
         queryClient.setQueryData(['plants', userId], context.previousPlants);
       }
-      alert('No se pudo eliminar la planta. Se ha restaurado de la lista.');
+      addToast({
+        type: 'error',
+        title: 'Error al eliminar planta',
+        message: 'No se pudo eliminar la planta. Se ha restaurado de la lista.'
+      });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['plants', userId] });
@@ -84,8 +97,8 @@ export const usePlantMutations = () => {
   });
 
   return {
-    createPlant: createPlantMutation.mutate,
-    isCreatingPlant: createPlantMutation.isPending,
+    createPlant,
+    isCreatingPlant,
     updatePlant: updatePlantMutation.mutate,
     isUpdatingPlant: updatePlantMutation.isPending,
     deletePlant: deletePlantMutation.mutate,

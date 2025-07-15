@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Camera, Image, LoaderCircle } from 'lucide-react';
 import { usePlantMutations } from '../hooks/usePlantMutations';
+import { useToast } from '../components/ui/Toast';
+import PlantCreationError from './PlantCreationError';
 
 const AddPlantMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreatingPlant, setIsCreatingPlant] = useState(false);
   const navigate = useNavigate();
-  const { createPlant, isCreatingPlant } = usePlantMutations();
+  const { createPlant } = usePlantMutations();
+  const { addToast } = useToast();
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -56,17 +61,30 @@ const AddPlantMenu: React.FC = () => {
   ];
 
   const handleFileSelect = useCallback(
-    (file: File) => {
+    async (file: File) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const imageDataUrl = e.target?.result as string;
-        // The hook now handles success/error feedback, so we just call mutate.
-        createPlant(imageDataUrl);
-        setIsOpen(false);
+        try {
+          setError(null);
+          setIsCreatingPlant(true);
+          await createPlant(imageDataUrl);
+          setIsOpen(false);
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+          setError(errorMessage);
+          addToast({
+            type: 'error',
+            title: 'Error al crear planta',
+            message: errorMessage
+          });
+        } finally {
+          setIsCreatingPlant(false);
+        }
       };
       reader.readAsDataURL(file);
     },
-    [createPlant]
+    [createPlant, addToast]
   );
 
   const handleGalleryPicker = () => {
@@ -80,6 +98,22 @@ const AddPlantMenu: React.FC = () => {
       }
     };
     input.click();
+  };
+
+  const handleRetry = () => {
+    setError(null);
+    // The user can try again by selecting a new image
+  };
+
+  const handleTryDifferentImage = () => {
+    setError(null);
+    handleGalleryPicker();
+  };
+
+  const handleManualEntry = () => {
+    setError(null);
+    setIsOpen(false);
+    navigate('/add-plant/manual');
   };
 
   const IconComponent = isCreatingPlant ? LoaderCircle : Plus;
@@ -180,7 +214,7 @@ const AddPlantMenu: React.FC = () => {
         />
       </motion.button>
 
-      {/* Desktop Helper / Loading Indicator */}
+      {/* Desktop Helper / Loading Indicator / Error Display */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -195,18 +229,27 @@ const AddPlantMenu: React.FC = () => {
               zIndex: 50
             }}
           >
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-xl border border-gray-200 dark:border-gray-700 mx-auto max-w-sm">
-              <div className="text-center">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                  {isCreatingPlant ? 'Analizando tu planta...' : 'Agregar Nueva Planta'}
-                </h3>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {isCreatingPlant
-                    ? 'Estamos identificando la especie y su estado de salud. ¡Un momento!'
-                    : 'Toma una foto o selecciona desde galería para identificar automáticamente tu planta'}
-                </p>
+            {error ? (
+              <PlantCreationError
+                error={error}
+                onRetry={handleRetry}
+                onTryDifferentImage={handleTryDifferentImage}
+                onManualEntry={handleManualEntry}
+              />
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-xl border border-gray-200 dark:border-gray-700 mx-auto max-w-sm">
+                <div className="text-center">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    {isCreatingPlant ? 'Analizando tu planta...' : 'Agregar Nueva Planta'}
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    {isCreatingPlant
+                      ? 'Estamos identificando la especie y su estado de salud. ¡Un momento!'
+                      : 'Toma una foto o selecciona desde galería para identificar automáticamente tu planta'}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
