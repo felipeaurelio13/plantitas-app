@@ -8,6 +8,7 @@ import { es } from 'date-fns/locale';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/Card';
 import LazyImage from './LazyImage';
 import { Button } from './ui/Button';
+import UpdateHealthDiagnosisButton from './UpdateHealthDiagnosisButton';
 
 interface PlantCardProps {
   plant: PlantSummary;
@@ -114,13 +115,22 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
                 </>
               )}
             </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleChatClick}
-            >
-              <MessageCircle size={14} />
-            </Button>
+            <div className="flex items-center gap-1">
+              <UpdateHealthDiagnosisButton
+                plant={plant}
+                variant="icon"
+                size="icon"
+                showLabel={false}
+                className="mr-1"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleChatClick}
+              >
+                <MessageCircle size={14} />
+              </Button>
+            </div>
           </div>
         </CardFooter>
       </Card>

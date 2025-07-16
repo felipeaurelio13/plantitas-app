@@ -1,9 +1,15 @@
 /// <reference types="https://esm.sh/@supabase/functions-js@2/src/edge-runtime.d.ts" />
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
 import OpenAI from 'https://esm.sh/openai@4.10.0';
 import { z } from 'https://esm.sh/zod@3.23.8';
 import { zodToJsonSchema } from 'https://esm.sh/zod-to-json-schema@3.23.0';
+
+// CORS headers inline to avoid dependency issues
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 // The Zod schema remains the single source of truth.
 const HealthIssueSchema = z.object({
@@ -179,9 +185,9 @@ serve(async (req: Request) => {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => {
-      console.log(`[${requestTimestamp}] OpenAI request timed out after 25 seconds.`);
+      console.log(`[${requestTimestamp}] OpenAI request timed out after 45 seconds.`);
       controller.abort();
-    }, 25000); // 25 seconds
+    }, 45000); // ✅ INCREASED TO 45 seconds
 
     console.log(`[${requestTimestamp}] Calling OpenAI API with Tool Calling...`);
     const response = await openai.chat.completions.create({

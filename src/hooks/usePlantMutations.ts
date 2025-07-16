@@ -2,12 +2,15 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/useAuthStore';
 import { usePlantStore } from '../stores/usePlantStore';
 import { Plant } from '../schemas';
+import { healthDiagnosisService } from '../services/healthDiagnosisService';
+import { useToast } from '../components/ui/Toast';
 
 export const usePlantMutations = () => {
   const queryClient = useQueryClient();
   const { addPlant, updatePlant, deletePlant } = usePlantStore.getState();
   const user = useAuthStore((state) => state.user);
   const userId = user?.id;
+  const { addToast } = useToast();
 
   const createPlantMutation = useMutation({
     mutationFn: (variables: { imageDataUrl: string; location: string }) => {
@@ -55,6 +58,46 @@ export const usePlantMutations = () => {
     },
   });
 
+  const updatePlantHealthMutation = useMutation({
+    mutationFn: async ({ plant, userId }: { plant: Plant; userId: string }) => {
+      console.log('🩺 [Mutation] Iniciando actualización de diagnóstico...');
+      
+      // 1. Obtener nuevo diagnóstico de IA
+      const diagnosis = await healthDiagnosisService.updatePlantHealthDiagnosis(plant);
+      
+      // 2. Actualizar en la base de datos
+      await healthDiagnosisService.updatePlantHealthScore(
+        plant.id,
+        userId,
+        diagnosis.healthScore,
+        diagnosis.healthAnalysis,
+        diagnosis.updatedImage.id
+      );
+      
+      console.log('✅ [Mutation] Diagnóstico actualizado exitosamente');
+      return diagnosis;
+    },
+    onSuccess: (diagnosis, { plant }) => {
+      // Invalidar queries para refrescar datos
+      queryClient.invalidateQueries({ queryKey: ['plants'] });
+      queryClient.invalidateQueries({ queryKey: ['plant', plant.id] });
+      
+              addToast({
+          type: 'success',
+          title: 'Diagnóstico Actualizado',
+          message: `Nuevo estado de salud: ${diagnosis.healthScore}%`
+        });
+    },
+    onError: (error: Error) => {
+      console.error('💥 [Mutation] Error actualizando diagnóstico:', error);
+              addToast({
+          type: 'error',
+          title: 'Error en Diagnóstico',
+          message: error.message
+        });
+    },
+  });
+
   const deletePlantMutation = useMutation({
     mutationFn: (plantId: string) => {
       if (!userId) throw new Error('User not authenticated');
@@ -87,6 +130,8 @@ export const usePlantMutations = () => {
     isCreatingPlant: createPlantMutation.isPending,
     updatePlant: updatePlantMutation.mutate,
     isUpdatingPlant: updatePlantMutation.isPending,
+    updatePlantHealthMutation: updatePlantHealthMutation.mutate,
+    isUpdatingPlantHealth: updatePlantHealthMutation.isPending,
     deletePlant: deletePlantMutation.mutate,
     isDeletingPlant: deletePlantMutation.isPending,
   };

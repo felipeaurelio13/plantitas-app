@@ -1,9 +1,13 @@
 import { supabase } from '../lib/supabase';
 import type { AIAnalysisResponse } from '../schemas/ai-shared';
 import type { PlantResponse, Plant } from '../schemas';
+import { validateImageSize } from './imageService';
 
 export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
   console.log('User authenticated with valid session, calling analyze-image function...');
+  
+  // ✅ Validate image size before processing
+  validateImageSize(imageDataUrl);
   
   // Get current session for JWT token
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -123,4 +127,143 @@ export const completeePlantInfo = async (
   };
 
   return result;
+};
+
+/**
+ * Actualiza el diagnóstico de salud de una planta basándose en su imagen más reciente
+ */
+export const updatePlantHealthDiagnosis = async (
+  plant: Plant
+): Promise<{
+  healthScore: number;
+  healthAnalysis: any;
+  updatedImage: any;
+}> => {
+  console.log('🩺 [Health] Iniciando actualización de diagnóstico para:', plant.name);
+  
+  // Verificar que la planta tenga imágenes
+  if (!plant.images || plant.images.length === 0) {
+    throw new Error('Esta planta no tiene imágenes para analizar. Toma una foto primero.');
+  }
+
+  // Obtener la imagen más reciente
+  const mostRecentImage = plant.images
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+
+  console.log('📸 [Health] Analizando imagen más reciente:', {
+    imageId: mostRecentImage.id,
+    timestamp: mostRecentImage.timestamp,
+    imageUrl: mostRecentImage.url.substring(0, 100) + '...'
+  });
+
+  // Obtener el JWT token del usuario autenticado
+  const { data: { session }, error: authError } = await supabase.auth.getSession();
+  
+  if (authError || !session?.access_token) {
+    console.error('💥 [Health] User session not available:', authError);
+    throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+  }
+
+  // Verificar que la imagen sea accesible
+  try {
+    const testResponse = await fetch(mostRecentImage.url, { method: 'HEAD' });
+    if (!testResponse.ok) {
+      throw new Error(`Imagen no accesible: ${testResponse.status}`);
+    }
+  } catch (imageError) {
+    console.error('💥 [Health] Error verificando acceso a imagen:', imageError);
+    throw new Error('La imagen de la planta no está disponible. Intenta tomar una nueva foto.');
+  }
+
+  // Llamar a la nueva función específica de diagnóstico de salud
+  console.log('🔬 [Health] Llamando a update-health-diagnosis...');
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('update-health-diagnosis', {
+      body: { 
+        imageUrl: mostRecentImage.url,
+        plantName: plant.name,
+        species: plant.species
+      },
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (error) {
+      console.error('💥 [Health] Error en función update-health-diagnosis:', error);
+      throw new Error(`Error en análisis: ${error.message}`);
+    }
+
+    if (!data || !data.overallHealth) {
+      console.error('💥 [Health] Datos incompletos del análisis:', data);
+      throw new Error('El análisis no devolvió información de salud válida.');
+    }
+
+    console.log('🎯 [Health] Análisis de salud completado exitosamente:', {
+      overallHealth: data.overallHealth,
+      confidence: data.confidence,
+      issuesCount: data.issues?.length || 0,
+      recommendationsCount: data.recommendations?.length || 0
+    });
+
+    // Convertir el análisis cualitativo a un score numérico
+    const healthScoreMap = {
+      'excellent': 95,
+      'good': 80,
+      'fair': 60,
+      'poor': 30
+    };
+    
+    const newHealthScore = healthScoreMap[data.overallHealth as keyof typeof healthScoreMap] || data.confidence || 60;
+
+    console.log('📊 [Health] Nuevo score de salud calculado:', {
+      overallHealth: data.overallHealth,
+      numericScore: newHealthScore,
+      confidence: data.confidence
+    });
+
+    return {
+      healthScore: newHealthScore,
+      healthAnalysis: data,
+      updatedImage: {
+        ...mostRecentImage,
+        healthAnalysis: data
+      }
+    };
+
+  } catch (primaryError) {
+    console.error('💥 [Health] Error en diagnóstico primario:', primaryError);
+    
+    // Fallback: Crear un análisis básico basado en la imagen existente
+    console.log('🔄 [Health] Intentando análisis de fallback...');
+    
+    try {
+      // Si la imagen ya tiene análisis de salud, usarlo
+      if (mostRecentImage.healthAnalysis && mostRecentImage.healthAnalysis.overallHealth) {
+        console.log('🎯 [Health] Usando análisis existente de la imagen');
+        
+        const existingAnalysis = mostRecentImage.healthAnalysis;
+        const healthScoreMap = {
+          'excellent': 95,
+          'good': 80,
+          'fair': 60,
+          'poor': 30
+        };
+        
+        const fallbackScore = healthScoreMap[existingAnalysis.overallHealth as keyof typeof healthScoreMap] || 60;
+        
+        return {
+          healthScore: fallbackScore,
+          healthAnalysis: existingAnalysis,
+          updatedImage: mostRecentImage
+        };
+      }
+    } catch (fallbackError) {
+      console.error('💥 [Health] Error en fallback:', fallbackError);
+    }
+    
+    // Error final - no hay forma de obtener diagnóstico
+    throw new Error('No se pudo actualizar el diagnóstico de salud. Verifica tu conexión a internet e intenta nuevamente.');
+  }
 };
