@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GardenChatService } from '../src/services/gardenChatService';
 
-// Mock Supabase
+// Mock Supabase with auth session
 vi.mock('../src/lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
@@ -31,6 +31,16 @@ vi.mock('../src/lib/supabase', () => ({
           content: "¡Hola! Tu jardín se ve muy bien.",
           insights: [],
           suggestedActions: []
+        },
+        error: null
+      }))
+    },
+    auth: {
+      getSession: vi.fn(() => ({
+        data: {
+          session: {
+            access_token: 'mock-jwt-token'
+          }
         },
         error: null
       }))
