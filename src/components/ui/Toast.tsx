@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { toastService, ToastData } from '../../services/toastService';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -75,6 +76,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }, newToast.duration);
     }
   }, []);
+
+  // Listen to toast service
+  useEffect(() => {
+    const unsubscribe = toastService.subscribe((toastData: ToastData) => {
+      addToast(toastData);
+    });
+
+    return unsubscribe;
+  }, [addToast]);
 
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));

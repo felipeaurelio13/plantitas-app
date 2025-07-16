@@ -1,6 +1,33 @@
 import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
+// Image size limits
+const MAX_IMAGE_SIZE_MB = 5;
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
+// Helper function to validate image size
+export const validateImageSize = (dataUrl: string): void => {
+  if (!dataUrl || typeof dataUrl !== 'string') {
+    throw new Error('URL de imagen inválida');
+  }
+
+  // Calculate approximate size in bytes
+  // Base64 encoding adds ~33% overhead, so we adjust for that
+  const base64String = dataUrl.split(',')[1];
+  if (!base64String) {
+    throw new Error('Formato de imagen inválido');
+  }
+  
+  const sizeInBytes = (base64String.length * 3) / 4;
+  
+  if (sizeInBytes > MAX_IMAGE_SIZE_BYTES) {
+    const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(1);
+    throw new Error(`La imagen es demasiado grande (${sizeInMB}MB). El límite máximo es ${MAX_IMAGE_SIZE_MB}MB. Por favor, usa una imagen más pequeña.`);
+  }
+  
+  console.log(`[imageService] Image size validation passed: ${(sizeInBytes / (1024 * 1024)).toFixed(2)}MB`);
+};
+
 // Helper function to convert data URL to Blob
 const dataURLtoBlob = (dataurl: string): Blob => {
   console.log('[imageService] Processing data URL, length:', dataurl?.length);

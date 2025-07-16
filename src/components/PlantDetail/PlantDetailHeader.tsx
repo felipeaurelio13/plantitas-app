@@ -7,6 +7,7 @@ import LazyImage from '../LazyImage';
 import { usePlantMutations } from '../../hooks/usePlantMutations';
 import { usePlantInfoCompletion } from '../../hooks/usePlantInfoCompletion';
 import { Button } from '../ui/Button';
+import UpdateHealthDiagnosisButton from '../UpdateHealthDiagnosisButton';
 
 interface PlantDetailHeaderProps {
   plant: Plant;
@@ -300,14 +301,17 @@ const PlantDetailHeader = ({ plant, onShare }: PlantDetailHeaderProps) => {
                           <span>{isCompleting ? 'Completando...' : 'Completar con IA'}</span>
                         </button>
                       )}
-                      {/* Función de edición temporalmente oculta - ver ROADMAP.md */}
-                      {/* <button
-                        onClick={handleEdit}
-                        className="flex w-full items-center px-4 py-3 text-sm text-foreground hover:bg-muted/70 transition-colors rounded-lg mx-2"
-                      >
-                        <Edit className="mr-3 h-4 w-4" />
-                        <span>Editar</span>
-                      </button> */}
+                      
+                      <div className="flex w-full items-center px-2 py-1">
+                        <UpdateHealthDiagnosisButton
+                          plant={plant}
+                          variant="outline"
+                          size="sm"
+                          showLabel={true}
+                          className="w-full"
+                        />
+                      </div>
+                      
                       <button
                         onClick={handleDelete}
                         disabled={isDeletingPlant}
@@ -318,7 +322,7 @@ const PlantDetailHeader = ({ plant, onShare }: PlantDetailHeaderProps) => {
                         ) : (
                           <Trash2 className="mr-3 h-4 w-4" />
                         )}
-                        <span>{isDeletingPlant ? 'Eliminando...' : 'Eliminar'}</span>
+                        <span>{isDeletingPlant ? 'Eliminando...' : 'Eliminar planta'}</span>
                       </button>
                     </div>
                   </motion.div>
