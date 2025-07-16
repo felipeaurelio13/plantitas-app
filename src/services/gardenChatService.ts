@@ -1,10 +1,10 @@
 import { supabase } from '../lib/supabase';
+import { gardenCacheService } from './gardenCacheService';
 import {
   GardenAnalysisContext,
   GardenAIResponse,
   GardenChatMessage,
 } from '../schemas';
-import { addDays, isAfter } from 'date-fns';
 
 export class GardenChatService {
   private static instance: GardenChatService;
@@ -178,18 +178,29 @@ export class GardenChatService {
     healthyPlants: number;
   }> {
     try {
+      // Try to get from cache first
+      const cachedSummary = gardenCacheService.getGardenSummary(userId);
+      if (cachedSummary) {
+        return cachedSummary;
+      }
+
       const context = await this.buildGardenContext(userId);
       
       const healthyPlants = context.plantsData.filter(plant => plant.healthScore >= 80).length;
       const urgentActions = context.careScheduleSummary.needsWatering.length + 
                            context.careScheduleSummary.healthConcerns.length;
 
-      return {
+      const summary = {
         totalPlants: context.totalPlants,
         averageHealth: context.averageHealthScore,
         urgentActions,
         healthyPlants
       };
+
+      // Cache the summary
+      gardenCacheService.setGardenSummary(userId, summary);
+
+      return summary;
     } catch (error) {
       console.error('Error getting garden health summary:', error);
       throw error;
@@ -247,6 +258,12 @@ export class GardenChatService {
 
   async buildGardenContext(userId: string): Promise<GardenAnalysisContext> {
     try {
+      // Try to get from cache first
+      const cachedContext = gardenCacheService.getGardenContext(userId);
+      if (cachedContext) {
+        return cachedContext;
+      }
+
       // Simplified version - fetch plants data
       const { data: dbPlants, error } = await supabase
         .from('plants')
@@ -296,8 +313,10 @@ export class GardenChatService {
 
       plantsData.forEach((plant: any) => {
         if (plant.lastWatered && plant.wateringFrequency) {
-          const nextWateringDate = addDays(plant.lastWatered, plant.wateringFrequency);
-          if (isAfter(now, nextWateringDate)) {
+          const lastWateredDate = new Date(plant.lastWatered);
+          const nextWateringDate = new Date(lastWateredDate);
+          nextWateringDate.setDate(lastWateredDate.getDate() + plant.wateringFrequency);
+          if (now > nextWateringDate) {
             needsWatering.push(plant.id);
           }
         }
@@ -327,6 +346,9 @@ export class GardenChatService {
         },
       };
 
+      // Cache the context
+      gardenCacheService.setGardenContext(userId, context);
+
       return context;
     } catch (error) {
       console.error('Error building garden context:', error);
@@ -335,7 +357,7 @@ export class GardenChatService {
   }
 
   invalidateCache(userId: string): void {
-    // Cache invalidation placeholder
+    gardenCacheService.invalidateUserCache(userId);
     console.log('Cache invalidated for user:', userId);
   }
 }

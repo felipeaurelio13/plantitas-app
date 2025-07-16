@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
-  base: '/',
+  base: '/plantitas-app/',
   plugins: [
     react(),
     VitePWA({
