@@ -357,7 +357,7 @@ export class GardenChatService {
   }
 
   invalidateCache(userId: string): void {
-    gardenCacheService.invalidateUserCache(userId);
+    gardenCacheService.invalidateCache(userId);
     console.log('Cache invalidated for user:', userId);
   }
 }
