@@ -305,10 +305,9 @@ export class PlantService {
           console.log(`[PlantService] Background tasks for plant ${newPlant.id} partially completed.`);
         }
 
-      } catch (backgroundError) {
+      })().catch((backgroundError) => {
         console.error(`[PlantService] Error during background tasks for plant ${newPlant.id}:`, backgroundError);
-      }
-      })();
+      });
 
       return newPlant;
     } catch (error) {
