@@ -1,7 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, RefreshCw, Sprout } from 'lucide-react';
+import { AlertCircle, RefreshCw, MessageCircle, Sprout } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useGardenChat } from '../hooks/useGardenChat';
+import { usePlantStore } from '../stores';
 import { 
   GardenChatHeader, 
   GardenMessageBubble, 
@@ -9,8 +11,12 @@ import {
 } from '../components/GardenChat';
 import TypingIndicator from '../components/Chat/TypingIndicator';
 import { Button } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Card, CardContent } from '../components/ui/Card';
 
 const GardenChat: React.FC = () => {
+  const navigate = useNavigate();
+  const plants = usePlantStore((state) => state.plants);
   const {
     messages,
     isLoading,
@@ -31,64 +37,28 @@ const GardenChat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Loading state
-  if (isLoading && messages.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="text-center space-y-4"
-        >
-          <div className="relative">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            >
-              <Sprout className="w-12 h-12 text-green-500 mx-auto" />
-            </motion.div>
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
-              className="absolute inset-0 w-12 h-12 bg-green-500/20 rounded-full mx-auto"
-            />
-          </div>
-          <div>
-            <p className="text-lg font-medium">Analizando tu jardín...</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Preparando el contexto de todas tus plantas
-            </p>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   // Error state
-  if (error && messages.length === 0) {
+  if (error && !gardenSummary) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground p-4">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="text-center space-y-4 max-w-md"
-        >
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-          <div>
-            <p className="text-lg font-medium">Error al cargar el chat</p>
-            <p className="text-sm text-muted-foreground mt-1">{error}</p>
-          </div>
-          <Button
-            onClick={() => window.location.reload()}
-            className="gap-2"
-            variant="outline"
+      <div className="flex flex-col h-screen bg-background text-foreground">
+        <GardenChatHeader gardenSummary={gardenSummary} />
+        
+        <div className="flex-1 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center max-w-md"
           >
-            <RefreshCw size={16} />
-            Intentar de nuevo
-          </Button>
-        </motion.div>
+            <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Error de conexión</h2>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            
+            <Button onClick={refreshGardenData} variant="primary">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reintentar
+            </Button>
+          </motion.div>
+        </div>
       </div>
     );
   }
@@ -99,40 +69,82 @@ const GardenChat: React.FC = () => {
       <div className="flex flex-col h-screen bg-background text-foreground">
         <GardenChatHeader gardenSummary={gardenSummary} />
         
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Sprout className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">
-              Tu jardín está vacío
-            </h2>
-            <p className="text-muted-foreground max-w-sm">
-              Agrega algunas plantas a tu jardín para poder chatear conmigo sobre su cuidado y salud.
-            </p>
-          </motion.div>
-          
-          <Button
-            onClick={() => window.location.href = '/camera'}
-            className="mt-6"
-          >
-            Agregar mi primera planta
-          </Button>
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState
+            illustration="plants"
+            title="Tu jardín está vacío"
+            description="Agrega algunas plantas a tu jardín para poder chatear conmigo sobre su cuidado y salud."
+            action={{
+              label: "Agregar mi primera planta",
+              onClick: () => navigate('/camera')
+            }}
+          />
         </div>
       </div>
     );
   }
 
-      return (
-      <div className="flex flex-col h-screen bg-background text-foreground">
-        <GardenChatHeader 
-          gardenSummary={gardenSummary} 
-          onClearChat={clearMessages}
-          onRefresh={refreshGardenData}
-          isRefreshing={isLoading && messages.length > 0}
-        />
+  return (
+    <div className="flex flex-col h-screen bg-background text-foreground">
+      <GardenChatHeader 
+        gardenSummary={gardenSummary} 
+        onClearChat={clearMessages}
+        onRefresh={refreshGardenData}
+        isRefreshing={isLoading && messages.length > 0}
+      />
+
+      {/* Quick access to plant chats - shown when no messages yet */}
+      {messages.length === 0 && plants.length > 0 && (
+        <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
+          <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+            Chats individuales con tus plantas:
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
+            {plants.slice(0, 4).map((plant) => (
+              <Card
+                key={plant.id}
+                variant="glass"
+                size="sm"
+                interactive
+                className="cursor-pointer hover:border-primary-300 dark:hover:border-primary-600"
+                onClick={() => navigate(`/plant/${plant.id}/chat`)}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+                      <Sprout className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {plant.nickname || plant.name}
+                      </p>
+                      <p className="text-xs text-neutral-500 truncate">
+                        {plant.species}
+                      </p>
+                    </div>
+                    <MessageCircle className="w-4 h-4 text-neutral-400" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {plants.length > 4 && (
+              <Card
+                variant="outline"
+                size="sm"
+                interactive
+                className="cursor-pointer"
+                onClick={() => navigate('/')}
+              >
+                <CardContent className="p-3 flex items-center justify-center">
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    +{plants.length - 4} más
+                  </span>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto">

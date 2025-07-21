@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Settings, Bot, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
-import { usePlantStore } from '../stores';
 
 // Navegación optimizada a 3 tabs + FAB
 const navItems = [
@@ -29,8 +28,6 @@ const navItems = [
 
 const BottomNavigation: React.FC = () => {
   const location = useLocation();
-  const selectedPlantId = usePlantStore((state) => state.selectedPlantId);
-  const plants = usePlantStore((state) => state.plants);
 
   // Determinar la ruta activa de manera más inteligente
   const getActivePath = () => {
@@ -58,18 +55,9 @@ const BottomNavigation: React.FC = () => {
   const activePath = getActivePath();
 
   const handleChatNavigation = () => {
-    // Si hay una planta seleccionada, ir a su chat
-    if (selectedPlantId) {
-      return `/plant/${selectedPlantId}/chat`;
-    }
-    
-    // Si hay plantas, ir al chat del jardín
-    if (plants.length > 0) {
-      return '/garden-chat';
-    }
-    
-    // Si no hay plantas, ir al chat general
-    return '/chat';
+    // SIEMPRE ir al chat del jardín como punto de entrada principal
+    // Desde ahí el usuario puede navegar a chats específicos de plantas
+    return '/garden-chat';
   };
 
   return (
