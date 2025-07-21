@@ -8,15 +8,14 @@ import {
   PlantDetailHeader,
   ImageGallery,
 } from '@/components/PlantDetail';
-import Layout from '@/components/Layout';
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/Button';
 import { AlertCircle, Camera, MessageCircle, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PlantDetailFallback = () => (
-  <Layout>
-    <div className="relative">
+  <div className="relative">
       {/* Header Skeleton */}
       <div className="relative h-96 w-full overflow-hidden bg-gradient-to-br from-muted/50 to-muted">
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
@@ -137,7 +136,6 @@ const PlantDetailFallback = () => (
         <Skeleton className="h-16 w-16 rounded-full" />
       </div>
     </div>
-  </Layout>
 );
 
 const FloatingActionButtons = ({ plantId }: { plantId: string }) => {
@@ -236,53 +234,48 @@ const PlantDetail = () => {
 
   if (error) {
     return (
-      <Layout>
-        <main className="flex flex-1 flex-col items-center justify-center p-4 text-center h-screen">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
-          >
-            <AlertCircle className="w-16 h-16 text-destructive mx-auto" />
-            <h1 className="text-2xl font-bold text-destructive">Ocurrió un Error</h1>
-            <p className="text-muted-foreground max-w-md">{error}</p>
-            <Button onClick={() => window.location.reload()} className="mt-4">
-              Intentar de nuevo
-            </Button>
-          </motion.div>
-        </main>
-      </Layout>
+      <main className="flex flex-1 flex-col items-center justify-center p-4 text-center h-screen">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          <AlertCircle className="w-16 h-16 text-destructive mx-auto" />
+          <h1 className="text-2xl font-bold text-destructive">Ocurrió un Error</h1>
+          <p className="text-muted-foreground max-w-md">{error}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Intentar de nuevo
+          </Button>
+        </motion.div>
+      </main>
     );
   }
 
   if (!plant) {
     return (
-      <Layout>
-        <main className="flex flex-1 flex-col items-center justify-center p-4 text-center h-screen">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
-          >
-            <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto" />
-            <h1 className="text-2xl font-bold">Planta no encontrada</h1>
-            <p className="text-muted-foreground max-w-md">
-              No se pudo encontrar la información de la planta solicitada.
-            </p>
-            <Button onClick={() => window.location.assign('/')} className="mt-4">
+      <main className="flex flex-1 flex-col items-center justify-center p-4 text-center h-screen">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto" />
+          <h1 className="text-2xl font-bold">Planta no encontrada</h1>
+          <p className="text-muted-foreground max-w-md">
+            No se pudo encontrar la información de la planta solicitada.
+          </p>
+          <Button onClick={() => window.location.assign('/')} className="mt-4">
               Volver al inicio
             </Button>
           </motion.div>
         </main>
-      </Layout>
     );
   }
 
   const firstImageAnalysis = plant.images?.[0]?.healthAnalysis;
 
   return (
-    <Layout>
-      <Suspense fallback={<PlantDetailFallback />}>
+    <Suspense fallback={<PlantDetailFallback />}>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -338,8 +331,7 @@ const PlantDetail = () => {
           <FloatingActionButtons plantId={plant.id} />
         </motion.div>
       </Suspense>
-    </Layout>
-  );
+    );
 };
 
 export default PlantDetail;

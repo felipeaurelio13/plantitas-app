@@ -46,19 +46,20 @@ const App: React.FC = () => {
   }
 
   const PrivateRoutes = () => (
-    <Layout>
-      <Routes>
+    <Routes>
+      <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="plant/:plantId">
           <Route index element={<PlantDetail />} />
           <Route path="chat" element={<ChatPage />} />
         </Route>
         <Route path="garden-chat" element={<GardenChatPage />} />
+        <Route path="chat" element={<ChatPage />} />
         <Route path="settings" element={<Settings />} />
         <Route path="camera" element={<CameraPage />} />
         <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Layout>
+      </Route>
+    </Routes>
   );
 
   return (
