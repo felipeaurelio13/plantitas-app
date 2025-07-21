@@ -308,6 +308,29 @@
     animation: bounceIn var(--duration-500) var(--ease-bounce);
   }
 
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  .animate-pulse-gentle {
+    animation: pulseGentle 3s infinite ease-in-out;
+  }
+
+  .animate-float {
+    animation: float 3s infinite ease-in-out;
+  }
+
+  .animate-glow {
+    animation: glow 2s infinite alternate ease-in-out;
+  }
+
   /* Reduced motion respect */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -351,5 +374,43 @@
   100% {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulseGentle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
   }
 }
