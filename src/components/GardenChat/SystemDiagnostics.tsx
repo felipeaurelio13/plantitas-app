@@ -146,7 +146,7 @@ export const SystemDiagnostics: React.FC<SystemDiagnosticsProps> = ({ onClose })
               
               <Button
                 onClick={onClose}
-                variant="default"
+                variant="secondary"
                 size="sm"
                 className="flex-1"
               >
