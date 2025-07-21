@@ -4,6 +4,19 @@ import OpenAI from 'https://esm.sh/openai@4.10.0';
 import { z } from 'https://esm.sh/zod@3.23.8';
 import { zodToJsonSchema } from 'https://esm.sh/zod-to-json-schema@3.23.0';
 
+// Import our enhanced AI utilities
+import { 
+  enhancedOpenAICall, 
+  selectOptimalModel,
+  estimateTokens,
+  EnhancedAIError 
+} from '../_shared/ai-utils.ts';
+
+import {
+  getCachedResponse,
+  setCachedResponse
+} from '../_shared/ai-cache.ts';
+
 // CORS headers inline to avoid dependency issues
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -143,23 +156,62 @@ const forceSchema = (data: any): z.infer<typeof AIAnalysisResponseSchema> => {
 };
 
 
-const SYSTEM_PROMPT = `You are an expert botanist and plant psychologist. Your goal is to analyze the user's image of a plant and provide a complete, detailed analysis by calling the 'submit_plant_analysis' tool.
+const SYSTEM_PROMPT = `You are an expert botanist and plant psychologist with advanced analytical capabilities. Your mission is to provide the most accurate and comprehensive plant analysis possible.
 
-**CRITICAL INSTRUCTIONS:**
-1.  **COMPLETE ANALYSIS**: You MUST fill every single field in the schema, including all nested objects. Do not omit any fields.
-2.  **LANGUAGE**: All descriptive, free-text fields MUST be in SPANISH. All fields with predefined options (enums) MUST use the specified ENGLISH values from the schema.
-3.  **ACCURACY**: Provide the most accurate analysis possible. If you are uncertain about a specific detail, make a reasonable, educated guess.
-4.  **DETAILED DESCRIPTION**: The 'generalDescription' field MUST contain a comprehensive paragraph (minimum 50 words) in Spanish describing the plant species, its origins, natural habitat, general characteristics, and basic care overview. NEVER leave this field empty or use placeholder text.
-5.  **FUN FACTS**: Provide exactly 5 interesting, educational facts about the plant species in Spanish. These should be specific and informative.
-6.  **PLANT ENVIRONMENT & LIGHT**: MANDATORY fields to analyze:
-    - plantEnvironment: Determine if this plant species is best suited for 'interior' (indoor houseplant), 'exterior' (outdoor garden plant), or 'ambos' (can thrive in both environments)
-    - lightRequirements: Specify light needs as 'poca_luz' (low light, shade-tolerant), 'luz_indirecta' (bright indirect light), 'luz_directa_parcial' (partial direct sunlight), or 'pleno_sol' (full sun requirements)
-7.  **FAILURE CASE**: If you cannot identify a plant in the image, you must still call the function. Use "Planta no identificada" for names and descriptions, and provide default or null values for the other fields. DO NOT skip the function call.
-`;
+**ENHANCED ANALYSIS PROTOCOL (2025):**
+
+**Step 1: Visual Inspection Process**
+First, examine the image systematically:
+- Overall plant structure and morphology
+- Leaf shape, size, arrangement, and surface characteristics
+- Stem/trunk characteristics and growth pattern
+- Visible flowers, fruits, or reproductive structures
+- Root system (if visible)
+- Container and growing environment
+- Any signs of stress, disease, or health issues
+
+**Step 2: Species Identification**
+Based on your systematic examination:
+- Identify the plant family and genus
+- Determine the most likely species
+- Consider regional varieties and cultivars
+- Assess confidence level in identification
+
+**Step 3: Health Assessment**
+Evaluate the plant's current condition:
+- Overall vigor and appearance
+- Signs of proper or improper care
+- Environmental stress indicators
+- Nutrient deficiencies or excesses
+- Pest or disease presence
+
+**Step 4: Complete Analysis Compilation**
+Using the submit_plant_analysis tool, provide:
+
+**CRITICAL REQUIREMENTS:**
+1. **COMPLETE DATA**: Fill every field in the schema without omissions
+2. **LANGUAGE PROTOCOL**: 
+   - All descriptive text → SPANISH
+   - All enum values → ENGLISH (exactly as specified)
+3. **ACCURACY STANDARD**: Provide scientifically accurate information
+4. **DETAILED DESCRIPTIONS**: Minimum 50 words for generalDescription
+5. **EDUCATIONAL VALUE**: Include 5 specific, interesting facts
+6. **ENVIRONMENTAL ASSESSMENT**: 
+   - plantEnvironment: 'interior'|'exterior'|'ambos'
+   - lightRequirements: 'poca_luz'|'luz_indirecta'|'luz_directa_parcial'|'pleno_sol'
+7. **FAILURE PROTOCOL**: If plant cannot be identified, use "Planta no identificada" but still complete all fields with reasonable defaults
+
+**CONFIDENCE INDICATORS**: Base your confidence score (0-100) on:
+- Image clarity and quality
+- Visible identifying features
+- Certainty of species identification
+- Health assessment accuracy
+
+Think step-by-step through your analysis before submitting results.`;
 
 serve(async (req: Request) => {
   const requestTimestamp = new Date().toISOString();
-  console.log(`[${requestTimestamp}] Function received a request. Method: ${req.method}`);
+  console.log(`[${requestTimestamp}] Enhanced analyze-image function received request. Method: ${req.method}`);
 
   if (req.method === 'OPTIONS') {
     console.log(`[${requestTimestamp}] Handling OPTIONS request.`);
@@ -167,7 +219,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    console.log(`[${requestTimestamp}] Request is not OPTIONS, processing as POST.`);
+    console.log(`[${requestTimestamp}] Processing image analysis request...`);
     const { imageDataUrl } = await req.json();
 
     if (!imageDataUrl) {
@@ -177,75 +229,108 @@ serve(async (req: Request) => {
         status: 400,
       });
     }
-    console.log(`[${requestTimestamp}] Parsed imageDataUrl from request body.`);
+
+    // Estimate tokens and complexity for optimal model selection
+    const estimatedTokens = estimateTokens(SYSTEM_PROMPT, true); // true for image
+    const complexity = estimatedTokens > 1500 ? 'high' : 'medium';
+    
+    // Select optimal model based on complexity and cost considerations
+    const selectedModel = selectOptimalModel('image_analysis', complexity, 'balanced');
+    
+    console.log(`[${requestTimestamp}] Selected model: ${selectedModel}, complexity: ${complexity}, estimated tokens: ${estimatedTokens}`);
+
+    // Check cache first
+    const cacheInput = { imageDataUrl, model: selectedModel };
+    const cachedResult = await getCachedResponse('image_analysis', cacheInput);
+    
+    if (cachedResult) {
+      console.log(`[${requestTimestamp}] Cache HIT - returning cached analysis`);
+      return new Response(JSON.stringify(cachedResult), {
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-Cache': 'HIT'
+        },
+      });
+    }
+
+    console.log(`[${requestTimestamp}] Cache MISS - proceeding with AI analysis`);
 
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      console.log(`[${requestTimestamp}] OpenAI request timed out after 45 seconds.`);
-      controller.abort();
-    }, 45000); // ✅ INCREASED TO 45 seconds
-
-    console.log(`[${requestTimestamp}] Calling OpenAI API with Tool Calling...`);
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image_url',
-              image_url: { url: imageDataUrl, detail: 'high' },
-            },
-          ],
+    // Use enhanced OpenAI call with retry logic and monitoring
+    const response = await enhancedOpenAICall(
+      openai,
+      'image_analysis',
+      (signal: AbortSignal) => openai.chat.completions.create({
+        model: selectedModel,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: { url: imageDataUrl, detail: 'high' },
+              },
+            ],
+          },
+        ],
+        tools: [{
+          type: 'function',
+          function: {
+            name: 'submit_plant_analysis',
+            description: 'Submits the complete analysis of the plant in the image.',
+            parameters: analysisSchemaAsJson,
+          },
+        }],
+        tool_choice: {
+          type: 'function',
+          function: { name: 'submit_plant_analysis' },
         },
-      ],
-      tools: [{
-        type: 'function',
-        function: {
-          name: 'submit_plant_analysis',
-          description: 'Submits the complete analysis of the plant in the image.',
-          parameters: analysisSchemaAsJson,
-        },
-      }],
-      tool_choice: {
-        type: 'function',
-        function: { name: 'submit_plant_analysis' },
-      },
-      max_tokens: 2500,
-      temperature: 0.2,
-    }, { signal: controller.signal });
+        max_tokens: 2500,
+        temperature: 0.2,
+      }, { signal }),
+      {
+        model: selectedModel,
+        complexity,
+        retryConfig: { maxRetries: 2 }, // Fewer retries for image analysis
+        context: { operation: 'image_analysis', hasImage: true }
+      }
+    );
 
-    clearTimeout(timeout);
-    console.log(`[${requestTimestamp}] Received response from OpenAI.`);
+    console.log(`[${requestTimestamp}] Received response from OpenAI with enhanced error handling.`);
 
     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
 
     if (!toolCall || toolCall.type !== 'function') {
-      console.error(`[${requestTimestamp}] OpenAI did not return a valid tool call. Response:`, JSON.stringify(response, null, 2));
-      throw new Error('AI response did not follow the expected tool call format.');
+      console.error(`[${requestTimestamp}] OpenAI did not return a valid tool call.`);
+      throw new EnhancedAIError(
+        new Error('AI response did not follow the expected tool call format.'),
+        { requestTimestamp, model: selectedModel, complexity }
+      );
     }
 
     const content = toolCall.function.arguments;
 
     if (!content) {
       console.error(`[${requestTimestamp}] OpenAI tool call arguments are empty.`);
-      throw new Error('OpenAI returned an empty analysis.');
+      throw new EnhancedAIError(
+        new Error('OpenAI returned an empty analysis.'),
+        { requestTimestamp, model: selectedModel }
+      );
     }
 
-    console.log(`[${requestTimestamp}] Raw arguments from tool call:`, content);
-    console.log(`[${requestTimestamp}] Parsing tool call arguments...`);
+    console.log(`[${requestTimestamp}] Processing tool call arguments...`);
     const rawData = JSON.parse(content);
 
     // Use the brute-force schema enforcer
-    console.log(`[${requestTimestamp}] Forcing data into schema...`);
+    console.log(`[${requestTimestamp}] Enforcing schema compliance...`);
     const finalData = forceSchema(rawData);
 
-    // Final validation for logging purposes, should always pass.
+    // Final validation for logging purposes
     const validationResult = AIAnalysisResponseSchema.safeParse(finalData);
 
     if (!validationResult.success) {
@@ -255,14 +340,47 @@ serve(async (req: Request) => {
       throw new Error('A critical error occurred while formatting the AI response.');
     }
 
-    console.log(`[${requestTimestamp}] Validation successful. Returning structured, guaranteed-valid data.`);
+    console.log(`[${requestTimestamp}] Validation successful. Caching result and returning data.`);
+    
+    // Cache the successful result for future use
+    await setCachedResponse('image_analysis', cacheInput, validationResult.data);
+    
     return new Response(JSON.stringify(validationResult.data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'X-Cache': 'MISS'
+      },
       status: 200,
     });
 
   } catch (error) {
-    console.error(`[${requestTimestamp}] An unhandled error occurred:`, error);
+    console.error(`[${requestTimestamp}] Enhanced error handling - Error details:`, {
+      error: error instanceof Error ? error.message : error,
+      classification: error instanceof EnhancedAIError ? error.classification : null,
+      context: error instanceof EnhancedAIError ? error.context : {},
+      timestamp: requestTimestamp
+    });
+
+    // Determine appropriate response based on error type
+    if (error instanceof EnhancedAIError) {
+      const { classification } = error;
+      const statusCode = classification.errorType === 'auth_error' ? 401 :
+                        classification.errorType === 'rate_limit' ? 429 :
+                        classification.errorType === 'content_policy' ? 400 : 500;
+
+      return new Response(JSON.stringify({ 
+        error: error.message,
+        type: classification.errorType,
+        retryable: classification.isRetryable,
+        severity: classification.severity
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: statusCode,
+      });
+    }
+
+    // Fallback for unknown errors
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return new Response(JSON.stringify({ error: `Internal Server Error: ${errorMessage}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
