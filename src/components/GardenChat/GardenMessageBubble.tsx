@@ -77,10 +77,10 @@ const GardenMessageBubble: React.FC<GardenMessageBubbleProps> = ({ message }) =>
       <div className="flex-1">
         <div
           className={cn(
-            'rounded-2xl px-4 py-3 break-words',
+            'rounded-2xl px-4 py-3 break-words shadow-adaptive',
             isUser
-              ? 'rounded-br-lg bg-primary text-primary-foreground ml-8'
-              : 'rounded-bl-lg bg-muted text-muted-foreground mr-8'
+              ? 'rounded-br-lg bg-primary text-white ml-8'
+              : 'rounded-bl-lg bg-contrast-surface text-contrast-medium mr-8 border border-contrast'
           )}
         >
           {/* Message content */}

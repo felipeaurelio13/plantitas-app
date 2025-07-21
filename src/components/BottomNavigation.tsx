@@ -63,7 +63,7 @@ const BottomNavigation: React.FC = () => {
   return (
     <>
       {/* Bottom Navigation */}
-      <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-neutral-200/50 dark:border-neutral-700/50">
+      <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-50 glass-enhanced border-t border-contrast">
         <div className="flex justify-around items-center h-20 max-w-lg mx-auto px-2">
           {navItems.map((item) => {
             const isActive = activePath === item.path;
@@ -80,10 +80,10 @@ const BottomNavigation: React.FC = () => {
                   to={navPath}
                   className={cn(
                     'touch-target relative flex flex-col items-center justify-center w-full h-full rounded-2xl transition-all duration-200',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:ring-offset-2',
+                    'focus-contrast',
                     isActive 
-                      ? 'text-primary-600 dark:text-primary-400' 
-                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200'
+                      ? 'text-primary-600 dark:text-primary-300' 
+                      : 'text-neutral-600 dark:text-neutral-300 hover:text-contrast-medium'
                   )}
                   aria-label={`${item.label} - ${item.description}`}
                 >

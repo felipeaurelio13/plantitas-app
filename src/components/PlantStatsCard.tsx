@@ -111,8 +111,8 @@ const PlantStatsCard: React.FC<PlantStatsCardProps> = ({ plant, className = '' }
   ];
 
   return (
-    <div className={`glass-effect rounded-2xl p-6 ${className}`}>
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <div className={`glass-enhanced rounded-2xl p-6 shadow-adaptive ${className}`}>
+      <h3 className="text-lg font-semibold text-contrast-high mb-4">
         Estadísticas de {plant.nickname || plant.name}
       </h3>
       
@@ -126,7 +126,7 @@ const PlantStatsCard: React.FC<PlantStatsCardProps> = ({ plant, className = '' }
             className={`${stat.bgColor} rounded-xl p-4`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className={`w-8 h-8 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center`}>
+              <div className={`w-8 h-8 rounded-lg bg-contrast-surface border border-contrast flex items-center justify-center`}>
                 <stat.icon size={16} className={stat.color} />
               </div>
               {stat.trend && (
@@ -140,11 +140,11 @@ const PlantStatsCard: React.FC<PlantStatsCardProps> = ({ plant, className = '' }
               <p className={`text-lg font-bold ${stat.color}`}>
                 {stat.value}
               </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
+              <p className="text-xs text-contrast-soft">
                 {stat.label}
               </p>
               {stat.subtitle && (
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                <p className="text-xs text-contrast-soft mt-1">
                   {stat.subtitle}
                 </p>
               )}

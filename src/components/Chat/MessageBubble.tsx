@@ -42,14 +42,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       )}
       <div
         className={cn(
-          'max-w-xs rounded-2xl px-4 py-2 sm:max-w-sm md:max-w-md',
+          'max-w-xs rounded-2xl px-4 py-2 sm:max-w-sm md:max-w-md shadow-adaptive',
           isUser
-            ? 'rounded-br-lg bg-primary text-primary-foreground'
-            : 'rounded-bl-lg bg-muted text-muted-foreground'
+            ? 'rounded-br-lg bg-primary text-white'
+            : 'rounded-bl-lg bg-contrast-surface text-contrast-medium border border-contrast'
         )}
       >
         <p className="text-sm">{message.content}</p>
-        <p className={cn("mt-1 text-xs", isUser ? "text-primary-foreground/70" : "text-muted-foreground/70")}>
+        <p className={cn("mt-1 text-xs", isUser ? "text-white/80" : "text-contrast-soft")}>
           {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true, locale: es })}
         </p>
       </div>

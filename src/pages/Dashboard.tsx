@@ -103,8 +103,8 @@ const Dashboard: React.FC = () => {
     <div className="p-4 sm:p-6 space-y-6">
         <header className="flex items-center justify-between">
             <div>
-                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Mi Jardín</h1>
-                <p className="text-gray-600 dark:text-gray-400">{plants.length} {plants.length === 1 ? 'planta' : 'plantas'} en tu colección</p>
+                <h1 className="text-3xl font-bold text-contrast-high">Mi Jardín</h1>
+                <p className="text-contrast-medium">{plants.length} {plants.length === 1 ? 'planta' : 'plantas'} en tu colección</p>
             </div>
             <AddPlantMenu />
         </header>
@@ -120,7 +120,7 @@ const Dashboard: React.FC = () => {
             <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortByType)}
-                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 h-10 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-green-500"
+                className="bg-contrast-surface border border-contrast rounded-lg px-4 py-2 h-10 text-contrast-medium focus-contrast"
             >
                 <option value="name">Ordenar por Nombre</option>
                 <option value="health">Ordenar por Salud</option>
