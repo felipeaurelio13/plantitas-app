@@ -60,10 +60,10 @@ const AuthPage: React.FC = () => {
           >
             <Leaf className="w-8 h-8 text-white" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-3xl font-bold text-contrast-high mb-2">
             Plantitas
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-contrast-medium">
             {mode === 'login' 
               ? 'Bienvenido de vuelta' 
               : 'Únete a la comunidad de plantas'

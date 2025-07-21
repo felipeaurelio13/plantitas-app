@@ -177,21 +177,24 @@
   }
 
   [data-theme="dark"] {
-    /* Dark mode - Colores semánticos */
+    /* Dark mode - Colores semánticos con MEJOR CONTRASTE */
     --color-background: var(--color-neutral-950);
     --color-surface: var(--color-neutral-900);
     --color-surface-elevated: var(--color-neutral-800);
-    --color-surface-glass: rgba(0, 0, 0, 0.4);
+    --color-surface-glass: rgba(0, 0, 0, 0.6);
     
-    --color-text-primary: var(--color-neutral-50);
-    --color-text-secondary: var(--color-neutral-400);
-    --color-text-muted: var(--color-neutral-500);
+    /* ✨ Textos con contraste mejorado para MacBook */
+    --color-text-primary: var(--color-neutral-0);     /* Blanco puro para máximo contraste */
+    --color-text-secondary: var(--color-neutral-300); /* Más claro que antes */
+    --color-text-muted: var(--color-neutral-400);     /* Más visible */
     --color-text-inverse: var(--color-neutral-900);
     
-    --color-border: var(--color-neutral-700);
-    --color-border-subtle: var(--color-neutral-800);
-    --color-border-strong: var(--color-neutral-600);
+    /* ✨ Bordes más visibles */
+    --color-border: var(--color-neutral-600);         /* Más claro que antes */
+    --color-border-subtle: var(--color-neutral-700);
+    --color-border-strong: var(--color-neutral-500);  /* Mucho más visible */
     
+    /* ✨ Acentos ajustados para dark mode */
     --color-accent: var(--color-primary-400);
     --color-accent-hover: var(--color-primary-300);
     --color-accent-subtle: var(--color-primary-950);
@@ -347,6 +350,76 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+  }
+
+/* 🔍 UTILIDADES DE CONTRASTE MEJORADO */
+@layer utilities {
+  /* Texto con máximo contraste para dark mode */
+  .text-contrast-high {
+    @apply text-neutral-0 dark:text-neutral-0;
+  }
+  
+  .text-contrast-medium {
+    @apply text-neutral-900 dark:text-neutral-200;
+  }
+  
+  .text-contrast-soft {
+    @apply text-neutral-700 dark:text-neutral-300;
+  }
+
+  /* Fondos con mejor contraste */
+  .bg-contrast-surface {
+    @apply bg-white dark:bg-neutral-800;
+  }
+  
+  .bg-contrast-elevated {
+    @apply bg-neutral-50 dark:bg-neutral-700;
+  }
+
+  /* Bordes más visibles */
+  .border-contrast {
+    @apply border-neutral-300 dark:border-neutral-500;
+  }
+  
+  .border-contrast-strong {
+    @apply border-neutral-400 dark:border-neutral-400;
+  }
+
+  /* Glass effect mejorado para dark mode */
+  .glass-enhanced {
+    @apply backdrop-blur-lg bg-white/80 dark:bg-neutral-900/80 
+           border border-neutral-200/50 dark:border-neutral-600/50;
+  }
+
+  /* Tooltips y overlays con mejor contraste */
+  .tooltip-contrast {
+    @apply bg-neutral-900 text-neutral-0 dark:bg-neutral-100 dark:text-neutral-900;
+  }
+
+  /* Estados interactivos mejorados */
+  .interactive-contrast {
+    @apply hover:bg-neutral-100 dark:hover:bg-neutral-700 
+           active:bg-neutral-200 dark:active:bg-neutral-600
+           transition-colors duration-200;
+  }
+
+  /* Focus rings mejorados */
+  .focus-contrast {
+    @apply focus-visible:ring-2 focus-visible:ring-primary-500 
+           dark:focus-visible:ring-primary-400
+           focus-visible:ring-offset-2 
+           focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-900;
+  }
+
+  /* Divisores más visibles */
+  .divide-contrast > * + * {
+    @apply border-t border-neutral-200 dark:border-neutral-600;
+  }
+
+  /* Sombras adaptativas para dark mode */
+  .shadow-adaptive {
+    @apply shadow-lg dark:shadow-2xl dark:shadow-neutral-950/50;
+  }
 }
 
 @keyframes slideUp {

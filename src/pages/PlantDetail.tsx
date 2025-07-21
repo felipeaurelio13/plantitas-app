@@ -287,7 +287,7 @@ const PlantDetail = () => {
               title="Agregar nueva foto"
             >
               <Camera className="w-5 h-5" />
-              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 tooltip-contrast text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
                 Agregar foto
               </span>
             </motion.button>
@@ -301,7 +301,7 @@ const PlantDetail = () => {
               title="Chat con la planta"
             >
               <MessageCircle className="w-5 h-5" />
-              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 tooltip-contrast text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
                 Chat
               </span>
             </motion.button>
