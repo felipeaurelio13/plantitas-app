@@ -1,4 +1,4 @@
-import{z as j,F as h,a as f,u as b,a0 as m,r as l,j as e,m as g,K as u,A as y}from"./index-BnsrWapf.js";import{a as N,L as v}from"./usePlantDetail-DCk9I5Cl.js";import{A as k}from"./arrow-left-CGWeB5nm.js";import{f as w,l as C,I as S}from"./Input-5QMMgjie.js";import{B as x}from"./Button-B-sY6nwz.js";import{C as M,S as I,T as P}from"./TypingIndicator-CA5SH7tQ.js";import{S as E}from"./sparkles-BqZTD1pI.js";import"./index-Bnwr932r.js";/**
+import{z as j,F as h,a as f,u as b,a1 as m,r as l,j as e,m as g,K as u,A as y}from"./index-BkAh9aiK.js";import{a as N,L as v}from"./usePlantDetail-Dim91Asi.js";import{A as k}from"./arrow-left-x4MSWX40.js";import{f as w,l as C,I as S}from"./Input-DqxekJfw.js";import{B as x}from"./Button-DnBLjDnT.js";import{C as M,S as I,T as P}from"./TypingIndicator-C94QNqx2.js";import{S as E}from"./sparkles-BkuOZx73.js";import"./index-Bnwr932r.js";/**
  * @license lucide-react v0.411.0 - ISC
  *
  * This source code is licensed under the ISC license.
