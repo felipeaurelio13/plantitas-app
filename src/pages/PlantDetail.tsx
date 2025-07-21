@@ -14,7 +14,7 @@ import { AddPhotoModal } from '../components/PlantDetail/AddPhotoModal';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/Button';
-import { AlertCircle, Camera, MessageCircle, Plus } from 'lucide-react';
+import { AlertCircle, Camera, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PlantDetailFallback = () => (
@@ -141,100 +141,11 @@ const PlantDetailFallback = () => (
     </div>
 );
 
-const FloatingActionButtons = ({ 
-  plantId,
-  onAddPhoto 
-}: { 
-  plantId: string;
-  onAddPhoto?: () => void;
-}) => {
-  const navigate = useNavigate();
 
-  const actions = [
-    {
-      icon: <Camera className="w-5 h-5" />,
-      label: "Agregar foto",
-      color: "bg-primary hover:bg-primary/90",
-      onClick: onAddPhoto || (() => navigate(`/camera?plantId=${plantId}`)),
-    },
-    {
-      icon: <MessageCircle className="w-5 h-5" />,
-      label: "Chat",
-      color: "bg-blue-500 hover:bg-blue-600",
-      onClick: () => navigate(`/plant/${plantId}/chat`),
-    },
-    // Función de recordatorios temporalmente oculta - ver ROADMAP.md
-    /* {
-      icon: <Calendar className="w-5 h-5" />,
-      label: "Recordatorios",
-      color: "bg-purple-500 hover:bg-purple-600",
-      onClick: () => alert('Función de recordatorios en desarrollo'),
-    }, */
-  ];
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { scale: 0, opacity: 0 },
-    visible: { 
-      scale: 1, 
-      opacity: 1,
-      transition: {
-        type: "spring" as const,
-        damping: 15,
-        stiffness: 300,
-      }
-    },
-  };
-
-  return (
-    <motion.div
-      className="fixed bottom-4 right-4 z-40 flex flex-col-reverse gap-3"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {actions.map((action, index) => (
-        <motion.button
-          key={index}
-          className={`${action.color} text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group`}
-          onClick={action.onClick}
-          variants={itemVariants}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          title={action.label}
-        >
-          {action.icon}
-          <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            {action.label}
-          </span>
-        </motion.button>
-      ))}
-      
-      {/* Main FAB */}
-      <motion.button
-        className="bg-primary text-primary-foreground p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
-        variants={itemVariants}
-        whileHover={{ rotate: 45 }}
-        whileTap={{ scale: 0.95 }}
-        title="Acciones rápidas"
-      >
-        <Plus className="w-6 h-6" />
-      </motion.button>
-    </motion.div>
-  );
-};
 
 const PlantDetail = () => {
   const { plantId } = useParams<{ plantId: string }>();
+  const navigate = useNavigate();
   const { plant, loading, error } = usePlantDetail(plantId);
   const { addPlantImage } = usePlantImageMutations();
   const [isAddPhotoModalOpen, setIsAddPhotoModalOpen] = useState(false);
@@ -360,11 +271,41 @@ const PlantDetail = () => {
             </motion.div>
           </main>
 
-          {/* Floating Action Buttons */}
-          <FloatingActionButtons 
-            plantId={plant.id} 
-            onAddPhoto={() => setIsAddPhotoModalOpen(true)}
-          />
+          {/* Floating Action Buttons - Simplified for PlantDetail */}
+          <motion.div
+            className="fixed bottom-24 right-4 z-40 flex flex-col-reverse gap-3"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            {/* Add Photo Button */}
+            <motion.button
+              onClick={() => setIsAddPhotoModalOpen(true)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              title="Agregar nueva foto"
+            >
+              <Camera className="w-5 h-5" />
+              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Agregar foto
+              </span>
+            </motion.button>
+            
+            {/* Chat Button */}
+            <motion.button
+              onClick={() => navigate(`/plant/${plant.id}/chat`)}
+              className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              title="Chat con la planta"
+            >
+              <MessageCircle className="w-5 h-5" />
+              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Chat
+              </span>
+            </motion.button>
+          </motion.div>
           
           {/* Modal para agregar fotos */}
           <AddPhotoModal
