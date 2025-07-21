@@ -25,6 +25,7 @@
     },
     "types": ["vite/client", "vitest/globals", "node"]
   },
-  "include": ["src", "tests", "src/vite-env.d.ts"],
+  "include": ["src", "src/vite-env.d.ts"],
+  "exclude": ["tests/**/*.test.ts", "**/*.deno.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 } 

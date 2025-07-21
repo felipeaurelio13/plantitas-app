@@ -1,6 +1,7 @@
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePlantDetail } from '@/hooks/usePlantDetail';
+import { usePlantImageMutations } from '../hooks/usePlantImageMutations';
 import {
   DescriptionCard,
   HealthAnalysisCard,
@@ -8,6 +9,8 @@ import {
   PlantDetailHeader,
   ImageGallery,
 } from '@/components/PlantDetail';
+import { PlantEvolutionTracker } from '../components/PlantDetail/PlantEvolutionTracker';
+import { AddPhotoModal } from '../components/PlantDetail/AddPhotoModal';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/Button';
@@ -138,21 +141,27 @@ const PlantDetailFallback = () => (
     </div>
 );
 
-const FloatingActionButtons = ({ plantId }: { plantId: string }) => {
+const FloatingActionButtons = ({ 
+  plantId,
+  onAddPhoto 
+}: { 
+  plantId: string;
+  onAddPhoto?: () => void;
+}) => {
   const navigate = useNavigate();
 
   const actions = [
     {
       icon: <Camera className="w-5 h-5" />,
-      label: "Tomar foto",
+      label: "Agregar foto",
       color: "bg-primary hover:bg-primary/90",
-      onClick: () => navigate(`/camera?plantId=${plantId}`),
+      onClick: onAddPhoto || (() => navigate(`/camera?plantId=${plantId}`)),
     },
     {
       icon: <MessageCircle className="w-5 h-5" />,
       label: "Chat",
       color: "bg-blue-500 hover:bg-blue-600",
-      onClick: () => navigate(`/chat?plantId=${plantId}`),
+      onClick: () => navigate(`/plant/${plantId}/chat`),
     },
     // Función de recordatorios temporalmente oculta - ver ROADMAP.md
     /* {
@@ -227,6 +236,19 @@ const FloatingActionButtons = ({ plantId }: { plantId: string }) => {
 const PlantDetail = () => {
   const { plantId } = useParams<{ plantId: string }>();
   const { plant, loading, error } = usePlantDetail(plantId);
+  const { addPlantImage } = usePlantImageMutations();
+  const [isAddPhotoModalOpen, setIsAddPhotoModalOpen] = useState(false);
+
+  const handleAddPhoto = async (imageDataUrl: string, note?: string) => {
+    if (!plantId) throw new Error('Plant ID is required');
+    
+    return new Promise<void>((resolve, reject) => {
+      addPlantImage({ plantId, imageDataUrl, note }, {
+        onSuccess: () => resolve(),
+        onError: (error) => reject(error),
+      });
+    });
+  };
 
   if (loading) {
     return <PlantDetailFallback />;
@@ -323,12 +345,34 @@ const PlantDetail = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
+              <PlantEvolutionTracker 
+                plant={plant} 
+                onAddPhoto={() => setIsAddPhotoModalOpen(true)}
+              />
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
               <ImageGallery images={plant.images} />
             </motion.div>
           </main>
 
           {/* Floating Action Buttons */}
-          <FloatingActionButtons plantId={plant.id} />
+          <FloatingActionButtons 
+            plantId={plant.id} 
+            onAddPhoto={() => setIsAddPhotoModalOpen(true)}
+          />
+          
+          {/* Modal para agregar fotos */}
+          <AddPhotoModal
+            isOpen={isAddPhotoModalOpen}
+            onClose={() => setIsAddPhotoModalOpen(false)}
+            onPhotoAdded={handleAddPhoto}
+            plantName={plant.nickname || plant.name}
+          />
         </motion.div>
       </Suspense>
     );

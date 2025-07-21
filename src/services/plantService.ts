@@ -629,6 +629,68 @@ export class PlantService {
       throw new Error(`Image upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+
+  /**
+   * Actualiza una imagen como imagen de perfil principal
+   */
+  async setProfileImage(plantId: string, imageId: string, userId: string): Promise<void> {
+    try {
+      // Primero, quitar la marca de perfil de todas las imágenes existentes
+      await supabase
+        .from('plant_images')
+        .update({ is_profile_image: false })
+        .eq('plant_id', plantId)
+        .eq('user_id', userId);
+
+      // Luego, marcar la imagen seleccionada como de perfil
+      const { error } = await supabase
+        .from('plant_images')
+        .update({ is_profile_image: true })
+        .eq('id', imageId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error setting profile image:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina una imagen de una planta
+   */
+  async deleteImage(imageId: string, userId: string): Promise<void> {
+    try {
+      // Obtener información de la imagen antes de eliminar
+      const { data: imageData, error: fetchError } = await supabase
+        .from('plant_images')
+        .select('storage_path')
+        .eq('id', imageId)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Eliminar imagen de Storage si existe path
+      if (imageData?.storage_path) {
+        await supabase.storage
+          .from('plant-images')
+          .remove([imageData.storage_path]);
+      }
+
+      // Eliminar registro de la base de datos
+      const { error } = await supabase
+        .from('plant_images')
+        .delete()
+        .eq('id', imageId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      throw error;
+    }
+  }
 }
 
 export const plantService = new PlantService(); 
