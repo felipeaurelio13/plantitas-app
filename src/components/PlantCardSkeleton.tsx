@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from './ui/Card';
 
 const PlantCardSkeleton: React.FC = () => {
   return (
-    <Card variant="elevated" padding="none" className="overflow-hidden">
+    <Card variant="elevated" size="default" className="overflow-hidden">
       <div className="flex items-start p-4 space-x-4">
         <Skeleton className="w-20 h-20 rounded-lg flex-shrink-0" />
         <div className="flex-1 min-w-0">
