@@ -272,7 +272,7 @@ const PlantDetailHeader = ({ plant, onShare }: PlantDetailHeaderProps) => {
                   e.stopPropagation();
                   setIsActionMenuOpen((prev) => !prev);
                 }}
-                className="bg-black/30 text-white backdrop-blur-lg rounded-full border border-white/20 hover:bg-black/50 transition-all duration-300"
+                className="bg-neutral-800/90 text-white backdrop-blur-lg rounded-full border border-neutral-600 hover:bg-neutral-700 transition-all duration-300 dark:bg-neutral-200/90 dark:text-neutral-900 dark:border-neutral-400 dark:hover:bg-neutral-300"
               >
                 <MoreVertical size={20} />
               </Button>
@@ -288,11 +288,11 @@ const PlantDetailHeader = ({ plant, onShare }: PlantDetailHeaderProps) => {
                   >
                     <div className="py-2">
                       {needsCompletion && (
-                        <button
-                          onClick={handleCompleteInfo}
-                          disabled={isCompleting}
-                          className="flex w-full items-center px-4 py-3 text-sm text-foreground hover:bg-muted/70 transition-colors rounded-lg mx-2"
-                        >
+                                              <button
+                        onClick={handleCompleteInfo}
+                        disabled={isCompleting}
+                        className="flex w-full items-center px-4 py-3 text-sm text-contrast-high hover:bg-contrast-surface transition-colors rounded-lg mx-2"
+                      >
                           {isCompleting ? (
                             <LoaderCircle className="mr-3 h-4 w-4 animate-spin" />
                           ) : (
@@ -315,7 +315,7 @@ const PlantDetailHeader = ({ plant, onShare }: PlantDetailHeaderProps) => {
                       <button
                         onClick={handleDelete}
                         disabled={isDeletingPlant}
-                        className="flex w-full items-center px-4 py-3 text-sm text-destructive hover:bg-destructive/10 transition-colors rounded-lg mx-2"
+                        className="flex w-full items-center px-4 py-3 text-sm text-error-600 dark:text-error-500 hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors rounded-lg mx-2 font-medium"
                       >
                         {isDeletingPlant ? (
                           <LoaderCircle className="mr-3 h-4 w-4 animate-spin" />

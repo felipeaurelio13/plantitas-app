@@ -51,8 +51,8 @@ const BottomNavigation: React.FC = () => {
                     'touch-target relative flex flex-col items-center justify-center w-full h-full rounded-2xl transition-all duration-200',
                     'focus-contrast',
                     isActive 
-                      ? 'text-primary-600 dark:text-primary-300' 
-                      : 'text-neutral-600 dark:text-neutral-300 hover:text-contrast-medium'
+                      ? 'text-primary-700 dark:text-primary-400' 
+                      : 'text-neutral-700 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
                   )}
                   aria-label={`${item.label} - ${item.description}`}
                 >
