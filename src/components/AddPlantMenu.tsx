@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Camera, Image, LoaderCircle } from 'lucide-react';
 import { usePlantMutations } from '../hooks/usePlantMutations';
 import { toast } from 'sonner';
+import { navigation } from '../lib/navigation';
 
 const AddPlantMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -34,7 +35,7 @@ const AddPlantMenu: React.FC = () => {
       color: 'bg-blue-500',
       action: () => {
         setIsOpen(false);
-        navigate('/camera');
+        navigate(navigation.toCamera());
       },
     },
     {
@@ -57,148 +58,158 @@ const AddPlantMenu: React.FC = () => {
     }, */
   ];
 
-  const handleFileSelect = useCallback(
-    (file: File) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageDataUrl = e.target?.result as string;
-        
-        // Use default location "Interior" - user can edit it later if needed
-        const location = "Interior";
-
-        const promise = new Promise((resolve, reject) => {
-          createPlant({ imageDataUrl, location }, {
-            onSuccess: (newPlant) => {
-              if (newPlant?.id) {
-                navigate(`/plant/${newPlant.id}`);
-              }
-              resolve(newPlant);
-            },
-            onError: (error) => reject(error),
-          });
-        });
-
-        toast.promise(promise, {
-          loading: 'Analizando imagen...',
-          success: (data: any) => `¡Planta "${data.name}" creada con éxito!`,
-          error: (err) => `Error: ${err.message}`,
-        });
-
-        setIsOpen(false);
-      };
-      reader.readAsDataURL(file);
-    },
-    [createPlant, navigate]
-  );
-
-  const handleGalleryPicker = () => {
+  const handleGalleryPicker = useCallback(() => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e) => {
-      const target = e.target as HTMLInputElement;
-      if (target.files && target.files[0]) {
-        handleFileSelect(target.files[0]);
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const imageDataUrl = e.target?.result as string;
+          if (imageDataUrl) {
+            setIsOpen(false);
+            
+            const promise = new Promise((resolve, reject) => {
+              createPlant({ 
+                imageDataUrl, 
+                location: 'Interior' 
+              }, {
+                onSuccess: (newPlant) => {
+                  if (newPlant?.id) {
+                    navigate(navigation.toPlantDetail(newPlant.id));
+                  }
+                  resolve(newPlant);
+                },
+                onError: (error) => {
+                  console.error('Failed to create plant:', error);
+                  reject(error);
+                },
+              });
+            });
+
+            // Show loading toast with promise
+            toast.promise(promise, {
+              loading: 'Analizando imagen... La IA está trabajando.',
+              success: (data: any) => `¡Planta "${data.name}" creada con éxito!`,
+              error: (err) => `Error: ${err.message}`,
+            });
+          }
+        };
+        reader.readAsDataURL(file);
       }
     };
     input.click();
-  };
-
-  const IconComponent = isCreatingPlant ? LoaderCircle : Plus;
+  }, [createPlant, navigate]);
 
   return (
-    <div className="fixed bottom-20 right-4 z-50">
+    <>
+      {/* Main button */}
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-12 h-12 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center disabled:cursor-not-allowed"
+        whileHover={{ scale: isCreatingPlant ? 1 : 1.05 }}
+        whileTap={{ scale: isCreatingPlant ? 1 : 0.95 }}
+        disabled={isCreatingPlant}
+        aria-label={isOpen ? 'Cerrar menú' : 'Agregar planta'}
+        aria-expanded={isOpen}
+      >
+        <AnimatePresence mode="wait">
+          {isCreatingPlant ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+            >
+              <LoaderCircle className="w-6 h-6 animate-spin" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="plus"
+              initial={{ opacity: 0, rotate: -180 }}
+              animate={{ 
+                opacity: 1, 
+                rotate: isOpen ? 45 : 0 
+              }}
+              exit={{ opacity: 0, rotate: 180 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Plus className="w-6 h-6" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
+
+      {/* Menu items */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="absolute bottom-16 right-0 flex flex-col gap-3"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={{
+              open: {
+                transition: { staggerChildren: 0.1, delayChildren: 0.1 },
+              },
+              closed: {
+                transition: { staggerChildren: 0.05, staggerDirection: -1 },
+              },
+            }}
+          >
+            {menuItems.map((item, index) => (
+              <motion.button
+                key={item.id}
+                onClick={item.action}
+                className={`w-12 h-12 ${item.color} hover:scale-105 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group relative`}
+                variants={{
+                  open: {
+                    opacity: 1,
+                    scale: 1,
+                    y: 0,
+                    transition: { delay: index * 0.1 },
+                  },
+                  closed: {
+                    opacity: 0,
+                    scale: 0.3,
+                    y: 20,
+                    transition: { delay: (menuItems.length - index) * 0.05 },
+                  },
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                aria-label={item.label}
+              >
+                <item.icon className="w-5 h-5" />
+                
+                {/* Tooltip */}
+                <div className="absolute right-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                  <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded-lg whitespace-nowrap">
+                    {item.label}
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 w-0 h-0 border-l-4 border-r-0 border-t-2 border-b-2 border-transparent border-l-gray-900"></div>
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Backdrop */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            className="fixed inset-0 z-[-1]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 z-30"
             onClick={() => setIsOpen(false)}
           />
         )}
       </AnimatePresence>
-
-      {/* Menu Items */}
-      <AnimatePresence>
-        {isOpen && (
-          <div className="absolute bottom-16 right-0 space-y-3 z-40">
-            {menuItems.map((item, index) => (
-              <motion.button
-                key={item.id}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{
-                  scale: 1,
-                  opacity: 1,
-                  transition: { delay: index * 0.1 },
-                }}
-                exit={{
-                  scale: 0,
-                  opacity: 0,
-                  transition: { delay: (menuItems.length - index) * 0.05 },
-                }}
-                onClick={item.action}
-                disabled={isCreatingPlant}
-                style={{
-                  backgroundColor: item.color.includes('blue') ? '#3b82f6' : '#8b5cf6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  cursor: isCreatingPlant ? 'not-allowed' : 'pointer',
-                  minWidth: '140px',
-                }}
-              >
-                <item.icon size={20} />
-                <span className="text-sm font-medium">{item.label}</span>
-              </motion.button>
-            ))}
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Main Button */}
-      <motion.button
-        aria-label={
-          isCreatingPlant
-            ? 'Agregando planta'
-            : isOpen
-            ? 'Cerrar menú'
-            : 'Agregar planta'
-        }
-        onClick={() => !isCreatingPlant && setIsOpen(!isOpen)}
-        disabled={isCreatingPlant}
-        style={{
-          backgroundColor: '#22c55e',
-          color: 'white',
-          border: 'none',
-          borderRadius: '50%',
-          width: '56px',
-          height: '56px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 10px 25px -3px rgba(0, 0, 0, 0.1)',
-          cursor: isCreatingPlant ? 'not-allowed' : 'pointer',
-        }}
-        whileHover={{ scale: isCreatingPlant ? 1 : 1.05 }}
-        whileTap={{ scale: isCreatingPlant ? 1 : 0.95 }}
-        animate={{ rotate: isOpen ? 45 : 0 }}
-      >
-        <IconComponent
-          size={24}
-          className={isCreatingPlant ? 'animate-spin' : ''}
-        />
-      </motion.button>
-
-
-    </div>
+    </>
   );
 };
 

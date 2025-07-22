@@ -12,6 +12,7 @@ import { ToastProvider } from './components/ui/Toast';
 
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import { routes } from './lib/navigation';
 import { Leaf } from 'lucide-react';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -48,16 +49,20 @@ const App: React.FC = () => {
   const PrivateRoutes = () => (
     <Routes>
       <Route path="/" element={<Layout />}>
+        {/* Main Routes */}
         <Route index element={<Dashboard />} />
-        <Route path="plant/:plantId">
-          <Route index element={<PlantDetail />} />
-          <Route path="chat" element={<ChatPage />} />
-        </Route>
-        <Route path="garden-chat" element={<GardenChatPage />} />
-        <Route path="chat" element={<ChatPage />} />
-        <Route path="settings" element={<Settings />} />
         <Route path="camera" element={<CameraPage />} />
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="settings" element={<Settings />} />
+        
+        {/* Chat Routes - Clearly separated */}
+        <Route path="garden-chat" element={<GardenChatPage />} />
+        
+        {/* Plant Routes */}
+        <Route path="plant/:plantId" element={<PlantDetail />} />
+        <Route path="plant/:plantId/chat" element={<ChatPage />} />
+        
+        {/* Catch all - redirect to dashboard with replace to avoid history pollution */}
+        <Route path="*" element={<Navigate to={routes.dashboard} replace />} />
       </Route>
     </Routes>
   );
@@ -67,7 +72,7 @@ const App: React.FC = () => {
       <ToastProvider>
         <ErrorBoundary>
           <Router 
-            basename="/plantitas-app"
+            basename="/plantitas-app/"
             future={{
               v7_startTransition: true,
               v7_relativeSplatPath: true,
@@ -77,12 +82,12 @@ const App: React.FC = () => {
             <Suspense fallback={<FullScreenLoader message="Cargando página..." />}>
             <Routes>
               <Route
-                path="/auth"
-                element={!session ? <AuthPage /> : <Navigate to="/" />}
+                path={routes.auth}
+                element={!session ? <AuthPage /> : <Navigate to={routes.dashboard} replace />}
               />
               <Route
                 path="/*"
-                element={session ? <PrivateRoutes /> : <Navigate to="/auth" />}
+                element={session ? <PrivateRoutes /> : <Navigate to={routes.auth} replace />}
               />
             </Routes>
           </Suspense>

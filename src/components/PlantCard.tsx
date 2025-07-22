@@ -10,6 +10,7 @@ import LazyImage from './LazyImage';
 import { Button } from './ui/Button';
 import UpdateHealthDiagnosisButton from './UpdateHealthDiagnosisButton';
 import { cn } from '../lib/utils';
+import { navigation } from '../lib/navigation';
 
 interface PlantCardProps {
   plant: PlantSummary;
@@ -92,10 +93,10 @@ const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
     return { needsWatering, isFavorite, lastWateredText };
   }, [plant.lastWatered, plant.wateringFrequency, plant.healthScore]);
 
-  const handleCardClick = () => navigate(`/plant/${plant.id}`);
+  const handleCardClick = () => navigate(navigation.toPlantDetail(plant.id));
   const handleChatClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/plant/${plant.id}/chat`);
+    navigate(navigation.toPlantChat(plant.id));
   };
 
   // Reduced animation complexity and capped index
