@@ -6,3 +6,5 @@ export * from './DescriptionCard';
 export * from './HealthAnalysisCard';
 export * from './PlantEvolutionTracker';
 export * from './AddPhotoModal';
+export * from './PlantOverviewCard';
+export * from './ExpandableInfoSection';

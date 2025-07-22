@@ -3,14 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { usePlantDetail } from '@/hooks/usePlantDetail';
 import { usePlantImageMutations } from '../hooks/usePlantImageMutations';
 import {
-  DescriptionCard,
-  HealthAnalysisCard,
-  PlantCharacteristics,
   PlantDetailHeader,
+  PlantOverviewCard,
+  ExpandableInfoSection,
+  AddPhotoModal,
   ImageGallery,
 } from '@/components/PlantDetail';
-import { PlantEvolutionTracker } from '../components/PlantDetail/PlantEvolutionTracker';
-import { AddPhotoModal } from '../components/PlantDetail/AddPhotoModal';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/Button';
@@ -205,8 +203,6 @@ const PlantDetail = () => {
     );
   }
 
-  const firstImageAnalysis = plant.images?.[0]?.healthAnalysis;
-
   return (
     <Suspense fallback={<PlantDetailFallback />}>
         <motion.div
@@ -223,45 +219,28 @@ const PlantDetail = () => {
             }}
           />
           <main className="p-4 space-y-6 pb-20">
+            {/* Overview Card - Main info at a glance */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <DescriptionCard
-                species={plant.species}
-                description={plant.description}
-                funFacts={plant.funFacts}
-              />
+              <PlantOverviewCard plant={plant} />
             </motion.div>
             
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <HealthAnalysisCard analysis={firstImageAnalysis} />
-            </motion.div>
-            
+            {/* Expandable Detailed Information */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <PlantCharacteristics plant={plant} />
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <PlantEvolutionTracker 
+              <ExpandableInfoSection 
                 plant={plant} 
                 onAddPhoto={() => setIsAddPhotoModalOpen(true)}
               />
             </motion.div>
-            
+
+            {/* Gallery - Always visible for quick photo access */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
