@@ -100,15 +100,19 @@ export const ExpandableInfoSection: React.FC<ExpandableInfoSectionProps> = ({
 
   const getBadgeColor = (sectionId: string, badge?: string) => {
     if (sectionId === 'health' && badge === 'Atención') {
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+      return 'badge-error-contrast';
     }
     if (badge === 'Pendiente') {
-      return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300';
+      return 'badge-warning-contrast';
     }
     if (badge === 'Nueva') {
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+      return 'bg-blue-600 text-white font-semibold border border-blue-700 dark:bg-blue-500 dark:text-black dark:border-blue-600';
     }
-    return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+    if (badge === 'Saludable' || badge === 'Completo') {
+      return 'badge-success-contrast';
+    }
+    // Default for data counts and other neutral badges
+    return 'badge-neutral-contrast';
   };
 
   return (
