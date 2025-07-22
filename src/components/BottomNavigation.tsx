@@ -3,24 +3,25 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Settings, Bot, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
+import { routes, isActiveRoute } from '../lib/navigation';
 
-// Navegación optimizada a 3 tabs + FAB
+// Simplified navigation - 3 main tabs + FAB
 const navItems = [
   { 
     icon: Home, 
-    path: '/', 
+    path: routes.dashboard, 
     label: 'Inicio',
     description: 'Tu jardín personal'
   },
   { 
     icon: Bot, 
-    path: '/chat', 
+    path: routes.gardenChat, 
     label: 'Chat IA',
     description: 'Asistente de plantas'
   },
   { 
     icon: Settings, 
-    path: '/settings', 
+    path: routes.settings, 
     label: 'Ajustes',
     description: 'Configuración'
   },
@@ -29,45 +30,13 @@ const navItems = [
 const BottomNavigation: React.FC = () => {
   const location = useLocation();
 
-  // Determinar la ruta activa de manera más inteligente
-  const getActivePath = () => {
-    const path = location.pathname;
-    
-    // Unificar todas las rutas de chat bajo /chat
-    if (path.includes('/chat') || path.includes('/garden-chat') || 
-        (path.includes('/plant/') && path.includes('/chat'))) {
-      return '/chat';
-    }
-    
-    // Dashboard y rutas de plantas van a inicio
-    if (path === '/' || path.includes('/plant/') || path === '/dashboard') {
-      return '/';
-    }
-    
-    // Settings y subrutas
-    if (path.includes('/settings')) {
-      return '/settings';
-    }
-    
-    return path;
-  };
-
-  const activePath = getActivePath();
-
-  const handleChatNavigation = () => {
-    // SIEMPRE ir al chat del jardín como punto de entrada principal
-    // Desde ahí el usuario puede navegar a chats específicos de plantas
-    return '/garden-chat';
-  };
-
   return (
     <>
       {/* Bottom Navigation */}
       <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-50 glass-enhanced border-t border-contrast">
         <div className="flex justify-around items-center h-20 max-w-lg mx-auto px-2">
           {navItems.map((item) => {
-            const isActive = activePath === item.path;
-            const navPath = item.path === '/chat' ? handleChatNavigation() : item.path;
+            const isActive = isActiveRoute(location.pathname, item.path);
 
             return (
               <motion.div
@@ -77,7 +46,7 @@ const BottomNavigation: React.FC = () => {
                 whileHover={{ scale: 1.02 }}
               >
                 <Link
-                  to={navPath}
+                  to={item.path}
                   className={cn(
                     'touch-target relative flex flex-col items-center justify-center w-full h-full rounded-2xl transition-all duration-200',
                     'focus-contrast',
@@ -160,7 +129,7 @@ const BottomNavigation: React.FC = () => {
         transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
       >
         <Link
-          to="/camera"
+          to={routes.camera}
           className="touch-target flex items-center justify-center w-14 h-14 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-200 group"
           aria-label="Agregar nueva planta"
         >

@@ -5,6 +5,7 @@ import { Plus, Wind, Leaf, Droplets } from 'lucide-react';
 
 import { usePlantsQuery } from '@/hooks/usePlantsQuery'; // Import the new hook
 import { PlantSummary } from '@/schemas';
+import { navigation } from '@/lib/navigation';
 
 import PlantCard from '@/components/PlantCard';
 import PlantCardSkeleton from '@/components/PlantCardSkeleton';
@@ -38,7 +39,7 @@ const EmptyState: React.FC = () => {
       <p className="text-gray-600 dark:text-gray-400 max-w-sm mb-6">
         Añade tu primera planta para empezar a monitorizar su salud y cuidados.
       </p>
-      <Button size="lg" onClick={() => navigate('/camera')}>
+      <Button size="lg" onClick={() => navigate(navigation.toCamera())}>
         <Plus className="mr-2" />
         Añadir Planta
       </Button>
