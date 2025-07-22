@@ -14,7 +14,10 @@ export const usePlantsQuery = () => {
       return plantService.getUserPlantSummaries(user.id);
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 2, // Reduced from 5 minutes to 2 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes cache time
+    refetchOnWindowFocus: false, // Disabled for better performance
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 }; 
