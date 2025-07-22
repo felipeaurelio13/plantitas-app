@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Droplets, Sun, Heart, Sparkles } from 'lucide-react';
@@ -16,8 +16,8 @@ interface PlantCardProps {
   index: number;
 }
 
-const PlantHealthIndicator: React.FC<{ score: number }> = ({ score }) => {
-  const getHealthStatus = (score: number) => {
+const PlantHealthIndicator: React.FC<{ score: number }> = memo(({ score }) => {
+  const healthStatus = useMemo(() => {
     if (score >= 80) return { 
       color: 'bg-success-500', 
       textColor: 'text-success-600 dark:text-success-400',
@@ -36,9 +36,7 @@ const PlantHealthIndicator: React.FC<{ score: number }> = ({ score }) => {
       emoji: '🥺',
       status: 'Necesita cuidados'
     };
-  };
-
-  const healthStatus = getHealthStatus(score);
+  }, [score]);
 
   return (
     <div className="flex items-center justify-between">
@@ -48,15 +46,15 @@ const PlantHealthIndicator: React.FC<{ score: number }> = ({ score }) => {
             className={`absolute top-0 left-0 h-full rounded-full ${healthStatus.color}`}
             initial={{ width: 0 }}
             animate={{ width: `${score}%` }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }} // Reduced from 0.8
           />
-          {/* Sparkle effect for excellent health */}
-          {score >= 80 && (
+          {/* Simplified sparkle effect - only show for excellent health */}
+          {score >= 90 && (
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: [0, 1, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
+              transition={{ duration: 3, repeat: Infinity }} // Slower, less resource intensive
             >
               <Sparkles size={8} className="text-white" />
             </motion.div>
@@ -72,14 +70,27 @@ const PlantHealthIndicator: React.FC<{ score: number }> = ({ score }) => {
       </div>
     </div>
   );
-};
+});
 
-const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
+PlantHealthIndicator.displayName = 'PlantHealthIndicator';
+
+const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
   const navigate = useNavigate();
   
-  const needsWatering = plant.lastWatered && plant.wateringFrequency
-    ? new Date().getTime() - new Date(plant.lastWatered).getTime() > plant.wateringFrequency * 24 * 60 * 60 * 1000
-    : !plant.lastWatered;
+  // Memoize expensive calculations
+  const { needsWatering, isFavorite, lastWateredText } = useMemo(() => {
+    const needsWatering = plant.lastWatered && plant.wateringFrequency
+      ? new Date().getTime() - new Date(plant.lastWatered).getTime() > plant.wateringFrequency * 24 * 60 * 60 * 1000
+      : !plant.lastWatered;
+
+    const isFavorite = plant.healthScore >= 80;
+
+    const lastWateredText = plant.lastWatered 
+      ? formatDistanceToNow(new Date(plant.lastWatered), { addSuffix: true, locale: es })
+      : 'Sin registro de riego';
+
+    return { needsWatering, isFavorite, lastWateredText };
+  }, [plant.lastWatered, plant.wateringFrequency, plant.healthScore]);
 
   const handleCardClick = () => navigate(`/plant/${plant.id}`);
   const handleChatClick = (e: React.MouseEvent) => {
@@ -87,22 +98,19 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
     navigate(`/plant/${plant.id}/chat`);
   };
 
-  // Determinar si es una planta "favorita" basado en health score alto
-  const isFavorite = plant.healthScore >= 80;
+  // Reduced animation complexity and capped index
+  const animationIndex = Math.min(index, 6); // Cap animation delay
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ 
-        delay: index * 0.1, 
-        duration: 0.5, 
-        ease: [0.4, 0, 0.2, 1],
-        type: 'spring',
-        stiffness: 300,
-        damping: 30
+        delay: animationIndex * 0.03, // Reduced from 0.1
+        duration: 0.3, // Reduced from 0.5
+        ease: 'easeOut' // Simplified from spring
       }}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -2 }} // Reduced from -4
       className="group"
     >
       <Card
@@ -112,7 +120,7 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
         interactive
         hover
         onClick={handleCardClick}
-        className="overflow-hidden border-2 hover:border-primary-300 dark:hover:border-primary-600 transition-all duration-300"
+        className="overflow-hidden border-2 hover:border-primary-300 dark:hover:border-primary-600 transition-all duration-200" // Reduced from 300ms
       >
         {/* Header con imagen y info básica */}
         <CardHeader className="p-4 pb-2">
@@ -123,7 +131,7 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
                 <LazyImage
                   src={plant.profileImageUrl}
                   alt={plant.name}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" // Reduced scale and duration
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-primary-400 dark:text-primary-600">
@@ -131,13 +139,14 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
                 </div>
               )}
               
-              {/* Indicador de favorito */}
+              {/* Indicador de favorito - simplified animation */}
               <AnimatePresence>
                 {isFavorite && (
                   <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    transition={{ duration: 0.2 }} // Reduced from default
                     className="absolute -top-1 -right-1 w-6 h-6 bg-error-500 rounded-full flex items-center justify-center shadow-lg"
                   >
                     <Heart size={12} className="text-white fill-current" />
@@ -145,18 +154,19 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
                 )}
               </AnimatePresence>
 
-              {/* Alerta de riego */}
+              {/* Alerta de riego - simplified animation */}
               <AnimatePresence>
                 {needsWatering && (
                   <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    transition={{ duration: 0.2 }}
                     className="absolute -bottom-1 -right-1 w-6 h-6 bg-warning-500 rounded-full flex items-center justify-center shadow-lg"
                   >
                     <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }} // Slower pulse
                     >
                       <Droplets size={12} className="text-white" />
                     </motion.div>
@@ -192,19 +202,8 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
           <div className="flex justify-between items-center w-full">
             {/* Info de último riego */}
             <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-              {plant.lastWatered ? (
-                <>
-                  <Droplets size={12} className="text-primary-500" />
-                  <span>
-                    {formatDistanceToNow(new Date(plant.lastWatered), { addSuffix: true, locale: es })}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Droplets size={12} className="text-neutral-400" />
-                  <span>Sin registro de riego</span>
-                </>
-              )}
+              <Droplets size={12} className="text-primary-500" />
+              <span>{lastWateredText}</span>
             </div>
 
             {/* Botones de acción */}
@@ -229,14 +228,16 @@ const PlantCard: React.FC<PlantCardProps> = ({ plant, index }) => {
           </div>
         </CardFooter>
 
-        {/* Hover overlay effect */}
+        {/* Simplified hover overlay effect */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-t from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+          className="absolute inset-0 bg-gradient-to-t from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" // Reduced duration
           initial={false}
         />
       </Card>
     </motion.div>
   );
-};
+});
+
+PlantCard.displayName = 'PlantCard';
 
 export default PlantCard;

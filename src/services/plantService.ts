@@ -56,7 +56,8 @@ const transformDBPlantToPlant = (
 export class PlantService {
   async getUserPlantSummaries(userId: string): Promise<PlantSummary[]> {
     try {
-      const { data: dbPlants, error } = await supabase
+      // First, get all plants data (without JOIN to avoid complex query)
+      const { data: dbPlants, error: plantsError } = await supabase
         .from('plants')
         .select(`
           id,
@@ -68,15 +69,31 @@ export class PlantService {
           light_requirements,
           health_score,
           last_watered,
-          care_profile,
-          plant_images ( * )
+          care_profile
         `)
         .eq('user_id', userId)
-        .eq('plant_images.is_profile_image', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (plantsError) throw plantsError;
       
+      // Get profile images in a separate optimized query
+      const plantIds = dbPlants.map(plant => plant.id);
+      const { data: profileImages, error: imagesError } = await supabase
+        .from('plant_images')
+        .select('plant_id, url')
+        .in('plant_id', plantIds)
+        .eq('is_profile_image', true);
+
+      if (imagesError) {
+        console.warn('Error fetching profile images:', imagesError);
+        // Continue without profile images rather than failing
+      }
+
+      // Create a map for quick lookup of profile images
+      const profileImageMap = new Map(
+        (profileImages || []).map(img => [img.plant_id, img.url])
+      );
+
       const summaries: PlantSummary[] = dbPlants.map(plant => ({
         id: plant.id,
         name: plant.name,
@@ -87,9 +104,7 @@ export class PlantService {
         plantEnvironment: plant.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
         lightRequirements: plant.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
         healthScore: plant.health_score || 85,
-        profileImageUrl: plant.plant_images.length > 0 
-          ? plant.plant_images[0].url ?? undefined
-          : undefined,
+        profileImageUrl: profileImageMap.get(plant.id),
         lastWatered: plant.last_watered ? new Date(plant.last_watered) : undefined,
         wateringFrequency: (plant.care_profile as any)?.wateringFrequency,
       }));

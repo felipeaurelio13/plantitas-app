@@ -1,91 +1,75 @@
-import React, { useState, useRef, RefObject } from 'react';
-import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
-import { motion } from 'framer-motion';
+import React, { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface LazyImageProps {
   src: string;
   alt: string;
   className?: string;
-  placeholder?: string;
+  fallback?: React.ReactNode;
   onLoad?: () => void;
   onError?: () => void;
 }
 
-const LazyImage: React.FC<LazyImageProps> = ({
-  src,
-  alt,
-  className = '',
-  placeholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxvYWRpbmcuLi48L3RleHQ+PC9zdmc+',
+const LazyImage: React.FC<LazyImageProps> = ({ 
+  src, 
+  alt, 
+  className = '', 
+  fallback,
   onLoad,
-  onError,
+  onError 
 }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [shouldLoad, setShouldLoad] = useState(false);
-  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  useIntersectionObserver(imgRef as RefObject<Element>, {
-    onIntersect: () => setShouldLoad(true),
-    threshold: 0.1,
-  });
-
-  const handleLoad = () => {
-    setIsLoaded(true);
+  const handleLoad = useCallback(() => {
+    setImageLoaded(true);
     onLoad?.();
-  };
+  }, [onLoad]);
 
-  const handleError = () => {
-    setHasError(true);
+  const handleError = useCallback(() => {
+    setImageError(true);
     onError?.();
-  };
+  }, [onError]);
+
+  if (imageError && fallback) {
+    return <>{fallback}</>;
+  }
+
+  if (imageError) {
+    return (
+      <div className={`bg-gray-200 dark:bg-gray-700 flex items-center justify-center ${className}`}>
+        <span className="text-gray-400 text-sm">No image</span>
+      </div>
+    );
+  }
 
   return (
-    <div ref={imgRef} className={`relative overflow-hidden ${className}`}>
-      {/* Placeholder */}
-      {!isLoaded && !hasError && (
-        <motion.img
-          src={placeholder}
-          alt=""
-          className="w-full h-full object-cover filter blur-sm"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: shouldLoad ? 0.5 : 1 }}
-        />
-      )}
+    <div className={`relative overflow-hidden ${className}`}>
+      {/* Loading skeleton */}
+      <AnimatePresence>
+        {!imageLoaded && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }} // Reduced from 0.3
+            className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse"
+          />
+        )}
+      </AnimatePresence>
 
       {/* Actual image */}
-      {shouldLoad && !hasError && (
-        <motion.img
-          src={src}
-          alt={alt}
-          className="w-full h-full object-cover"
-          onLoad={handleLoad}
-          onError={handleError}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isLoaded ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
-        />
-      )}
-
-      {/* Error state */}
-      {hasError && (
-        <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-8 h-8 mx-auto mb-2 text-gray-400">
-              <svg fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <p className="text-xs text-gray-500">Error loading image</p>
-          </div>
-        </div>
-      )}
-
-      {/* Loading indicator */}
-      {shouldLoad && !isLoaded && !hasError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-          <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      )}
+      <motion.img
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+        loading="lazy" // Native lazy loading for better performance
+        decoding="async" // Async decoding for smoother loading
+        onLoad={handleLoad}
+        onError={handleError}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: imageLoaded ? 1 : 0 }}
+        transition={{ duration: 0.2 }} // Reduced from 0.3
+      />
     </div>
   );
 };

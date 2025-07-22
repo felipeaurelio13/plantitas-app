@@ -137,13 +137,13 @@ const Dashboard: React.FC = () => {
                     variants={{
                         visible: {
                             transition: {
-                                staggerChildren: 0.05,
+                                staggerChildren: 0.02, // Reduced from 0.05 for faster loading
                             },
                         },
                     }}
                 >
                     {filteredAndSortedPlants.map((plant: PlantSummary, index: number) => (
-                        <PlantCard key={plant.id} plant={plant} index={index} />
+                        <PlantCard key={plant.id} plant={plant} index={Math.min(index, 8)} />
                     ))}
                 </motion.div>
             ) : (
