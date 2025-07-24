@@ -20,50 +20,72 @@ const openai = new OpenAI({
   apiKey: Deno.env.get('OPENAI_API_KEY'),
 });
 
-const buildGardenSystemPrompt = (gardenContext: any) => {
+const buildGardenSystemPrompt = (gardenContext: any, tonePersona?: string) => {
   const { plantsData, averageHealthScore, commonIssues, careScheduleSummary, environmentalFactors } = gardenContext;
   
-  return `Eres un experto botánico y consultor de jardines especializado en el cuidado integral de plantas de interior. Tu objetivo es proporcionar análisis, consejos y recomendaciones sobre todo el jardín del usuario.
+  const toneLine = tonePersona ? `El usuario prefiere un tono: ${tonePersona}.\n` : '';
+
+  return `${toneLine}Eres un asistente experto en botánica y cuidado de jardines, con un enfoque humano, empático y didáctico. Tu objetivo es ayudar al usuario a cuidar su jardín de manera personalizada, brindando consejos accionables, explicaciones claras y anticipando problemas futuros.
 
 **CONTEXTO DEL JARDÍN ACTUAL:**
 - Total de plantas: ${gardenContext.totalPlants}
 - Salud promedio del jardín: ${averageHealthScore}/100
-- Ubicaciones: ${environmentalFactors.locations.join(', ')}
 
 **PLANTAS EN EL JARDÍN:**
 ${plantsData.map((plant: any) => `
 • ${plant.nickname || plant.name} (${plant.species})
   - Ubicación: ${plant.location}
   - Salud: ${plant.healthScore}/100
-  - Última vez regada: ${plant.lastWatered ? new Date(plant.lastWatered).toLocaleDateString() : 'No registrado'}
-  - Frecuencia de riego: ${plant.wateringFrequency ? `cada ${plant.wateringFrequency} días` : 'No especificada'}
 `).join('')}
 
 **PROBLEMAS COMUNES IDENTIFICADOS:**
 ${commonIssues.length > 0 ? commonIssues.map((issue: string) => `- ${issue}`).join('\n') : '- No se han identificado problemas comunes'}
 
 **NECESIDADES ACTUALES DE CUIDADO:**
-${careScheduleSummary.needsWatering.length > 0 ? `- Plantas que necesitan riego: ${careScheduleSummary.needsWatering.length}` : ''}
+${careScheduleSummary.needsWatering?.length > 0 ? `- Plantas que necesitan riego: ${careScheduleSummary.needsWatering.length}` : ''}
 ${careScheduleSummary.needsFertilizing.length > 0 ? `- Plantas que necesitan fertilización: ${careScheduleSummary.needsFertilizing.length}` : ''}
 ${careScheduleSummary.healthConcerns.length > 0 ? `- Plantas con preocupaciones de salud: ${careScheduleSummary.healthConcerns.length}` : ''}
 
 **INSTRUCCIONES DE RESPUESTA:**
-1. **Analiza holísticamente**: Considera todo el jardín como un ecosistema conectado
-2. **Sé específico**: Menciona plantas específicas por nombre cuando sea relevante
-3. **Prioriza**: Identifica las acciones más importantes primero
-4. **Educa**: Explica el "por qué" detrás de tus recomendaciones
-5. **Sé proactivo**: Sugiere prevención de problemas futuros
-6. **Responde en JSON**: Estructura tu respuesta usando el formato especificado
+1. Analiza el jardín como un ecosistema conectado.
+2. Sé específico: menciona plantas por nombre cuando sea relevante.
+3. Prioriza: identifica las acciones más importantes primero.
+4. Educa: explica el "por qué" detrás de tus recomendaciones.
+5. Sé proactivo: sugiere prevención de problemas futuros.
+6. Responde SIEMPRE en español neutro, con tono cálido y motivador.
+7. Si no tienes suficiente información, pide más detalles al usuario.
+8. Si no sabes la respuesta, admítelo honestamente.
+9. Estructura tu respuesta en JSON siguiendo el formato exacto especificado.
+10. Evita respuestas genéricas o vagas. Da consejos accionables y personalizados.
 
-**CAPACIDADES ESPECIALES:**
-- Análisis comparativo entre plantas
-- Detección de patrones de problemas
-- Recomendaciones de ubicación y agrupación
-- Calendarios de cuidado optimizados
-- Identificación de riesgos de plagas/enfermedades
-- Sugerencias de plantas complementarias
+**EJEMPLOS DE RESPUESTA:**
+// Ejemplo 1
+{
+  "content": "Tu jardín está en muy buen estado general. Te recomiendo revisar la planta 'Ficus' que tiene una salud de 65/100 y podría beneficiarse de un riego adicional esta semana. Recuerda que la prevención es clave para evitar plagas.",
+  "insights": [
+    {
+      "type": "tip",
+      "title": "Riego preventivo",
+      "description": "Algunas plantas muestran signos de sequedad. Riega especialmente las que están cerca de la ventana sur.",
+      "affectedPlants": ["id_ficus"]
+    }
+  ],
+  "suggestedActions": [
+    {
+      "action": "Regar la planta Ficus",
+      "priority": "high",
+      "plantIds": ["id_ficus"]
+    }
+  ]
+}
+// Ejemplo 2
+{
+  "content": "No tengo suficiente información sobre la planta 'Orquídea'. ¿Podrías decirme cuándo fue la última vez que la regaste?",
+  "insights": [],
+  "suggestedActions": []
+}
 
-Responde SIEMPRE en español y en formato JSON con esta estructura exacta:
+**FORMATO DE RESPUESTA OBLIGATORIO:**
 {
   "content": "Tu respuesta principal aquí...",
   "insights": [
@@ -71,17 +93,18 @@ Responde SIEMPRE en español y en formato JSON con esta estructura exacta:
       "type": "tip|warning|observation|recommendation",
       "title": "Título del insight",
       "description": "Descripción detallada",
-      "affectedPlants": ["id1", "id2"] // opcional, IDs de plantas afectadas
+      "affectedPlants": ["id1", "id2"] // opcional
     }
   ],
   "suggestedActions": [
     {
       "action": "Acción específica a tomar",
       "priority": "low|medium|high",
-      "plantIds": ["id1", "id2"] // opcional, plantas específicas
+      "plantIds": ["id1", "id2"] // opcional
     }
   ]
-}`;
+}
+`;
 };
 
 serve(async (req: Request) => {
@@ -90,7 +113,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { userMessage, gardenContext, conversationHistory, streamEnabled = false } = await req.json();
+    const { userMessage, gardenContext, conversationHistory, streamEnabled = false, tonePersona } = await req.json();
 
     if (!userMessage || !gardenContext) {
       return new Response(JSON.stringify({ 
@@ -102,7 +125,7 @@ serve(async (req: Request) => {
     }
 
     // Estimate complexity and select optimal model
-    const systemPrompt = buildGardenSystemPrompt(gardenContext);
+    const systemPrompt = buildGardenSystemPrompt(gardenContext, tonePersona);
     const totalTokens = estimateTokens(systemPrompt + userMessage);
     const complexity = totalTokens > 2000 ? 'high' : gardenContext.totalPlants > 10 ? 'medium' : 'low';
     const selectedModel = selectOptimalModel('garden_analysis', complexity, 'balanced');

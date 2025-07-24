@@ -5,6 +5,7 @@ import {
   GardenAIResponse,
   GardenChatMessage,
 } from '../schemas';
+import { toastService } from './toastService';
 
 export class GardenChatService {
   private static instance: GardenChatService;
@@ -63,6 +64,19 @@ export class GardenChatService {
         content: msg.content
       }));
 
+      // Parámetro fijo de tono/persona
+      const tonePersona = 'amigable, motivador, experto, cálido, y con un toque de humor ligero';
+
+      // AUDITORÍA DE PROMPT (solo en desarrollo)
+      if (import.meta.env.DEV) {
+        console.log('[DEBUG][gardenChatService] Prompt enviado a garden-ai-chat:', {
+          userMessage: message,
+          gardenContext,
+          conversationHistory: formattedHistory,
+          tonePersona
+        });
+      }
+
       // Obtener el JWT token del usuario autenticado
       const { data: { session }, error: authError } = await supabase.auth.getSession();
       
@@ -75,12 +89,17 @@ export class GardenChatService {
         body: { 
           userMessage: message,
           gardenContext,
-          conversationHistory: formattedHistory
+          conversationHistory: formattedHistory,
+          tonePersona
         },
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
         },
       });
+
+      if (import.meta.env.DEV) {
+        console.log('[DEBUG][gardenChatService] Respuesta cruda de garden-ai-chat:', data);
+      }
 
       if (error) {
         throw new Error(`Garden AI service error: ${error.message}`);
@@ -90,9 +109,22 @@ export class GardenChatService {
         throw new Error('No data received from garden AI service');
       }
 
-      // Parse the JSON response from the AI
+      // VALIDACIÓN DE CALIDAD DE RESPUESTA IA
       const aiResponse = typeof data === 'string' ? JSON.parse(data) : data;
-      
+      const lowerContent = (aiResponse.content || '').toLowerCase();
+      const isGeneric =
+        !aiResponse.content ||
+        lowerContent.includes('no sé') ||
+        lowerContent.includes('no tengo información') ||
+        lowerContent.includes('no puedo ayudarte') ||
+        lowerContent.length < 30;
+      if (isGeneric) {
+        toastService.warning('Respuesta genérica', 'La respuesta de la IA fue muy genérica o poco útil. Intenta preguntar de otra forma o proporciona más detalles.');
+        if (import.meta.env.DEV) {
+          console.warn('[QA][gardenChatService] Respuesta IA considerada genérica o pobre:', aiResponse.content);
+        }
+      }
+
       return {
         content: aiResponse.content || 'Lo siento, no pude procesar tu mensaje.',
         insights: aiResponse.insights || [],
@@ -210,13 +242,9 @@ export class GardenChatService {
   async getSuggestedQuestions(userId: string): Promise<string[]> {
     try {
       const context = await this.buildGardenContext(userId);
-      
-      const suggestions: string[] = [
-        '¿Cómo está la salud general de mi jardín?',
-        '¿Qué plantas necesitan más atención?',
-        '¿Cuáles son mis próximas tareas de cuidado?'
-      ];
+      const suggestions: string[] = [];
 
+<<<<<<< HEAD
       // Add context-specific suggestions
       if (context.careScheduleSummary.needsWatering.length > 0) {
         suggestions.push('¿Qué plantas necesitan riego?');
@@ -224,19 +252,56 @@ export class GardenChatService {
 
       if (context.careScheduleSummary.healthConcerns.length > 0) {
         suggestions.push('¿Qué plantas tienen problemas de salud?');
+=======
+      if (context.totalPlants === 0) {
+        suggestions.push('¿Cómo agrego mi primera planta?');
+        suggestions.push('¿Qué tipo de planta me recomiendas para empezar?');
+        return suggestions;
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
       }
 
+      // Siempre relevante
+      suggestions.push('¿Cuántas plantas tengo y cómo están?');
+      suggestions.push('¿Cuál es la salud promedio de mi jardín?');
+
+      // Si hay plantas con problemas de salud
+      if (context.careScheduleSummary.healthConcerns.length > 0) {
+        suggestions.push('¿Qué plantas necesitan atención especial?');
+        suggestions.push('¿Qué problemas de salud hay en mi jardín?');
+      }
+
+      // Si hay plantas sanas destacadas
+      if (context.plantsData.some(p => p.healthScore >= 80)) {
+        suggestions.push('¿Cuáles de mis plantas están más sanas?');
+      }
+
+      // Si hay más de 1 ubicación
+      if (context.environmentalFactors.locations.length > 1) {
+        suggestions.push('¿Cómo afecta la ubicación a mis plantas?');
+      }
+
+      // Si hay más de 5 plantas
       if (context.totalPlants > 5) {
         suggestions.push('¿Cómo organizar mejor mi espacio de plantas?');
       }
 
-      return suggestions;
+      // Si hay fertilización registrada (solo si la propiedad existe en el objeto)
+      if (context.plantsData.some(p => 'lastFertilized' in p && Boolean((p as any).lastFertilized))) {
+        suggestions.push('¿Cuándo debo fertilizar mis plantas?');
+      }
+
+      // Si hay especies diferentes
+      if (new Set(context.plantsData.map(p => p.species)).size > 1) {
+        suggestions.push('¿Qué especie de planta es la más resistente en mi jardín?');
+      }
+
+      // Limita a máximo 6 sugerencias
+      return suggestions.slice(0, 6);
     } catch (error) {
       console.error('Error getting suggested questions:', error);
       return [
-        '¿Cómo está la salud general de mi jardín?',
-        '¿Qué plantas necesitan más atención?',
-        '¿Cuáles son mis próximas tareas de cuidado?'
+        '¿Cuántas plantas tengo y cómo están?',
+        '¿Cuál es la salud promedio de mi jardín?'
       ];
     }
   }

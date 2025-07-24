@@ -11,9 +11,11 @@ export const useChat = () => {
   const addChatMessage = usePlantStore((state) => state.addChatMessage);
   const isLoading = usePlantStore((state) => state.isLoading);
 
-  console.log('--- DEBUG CHAT ---');
-  console.log('ID de planta desde URL:', plantId);
-  console.log('Planta encontrada en el store:', plant);
+  if (import.meta.env.DEV) {
+    console.log('--- DEBUG CHAT ---');
+    console.log('ID de planta desde URL:', plantId);
+    console.log('Planta encontrada en el store:', plant);
+  }
 
 
   const isTyping = useMemo(() => {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, MoreVertical, Sprout, Activity, RefreshCw, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SystemDiagnostics } from './SystemDiagnostics';
+import { navigation } from '../../lib/navigation';
 
 interface GardenChatHeaderProps {
   gardenSummary: {
@@ -42,7 +43,7 @@ const GardenChatHeader: React.FC<GardenChatHeaderProps> = ({
       <div className="flex items-center gap-3 p-4 pt-safe-top">
         {/* Back button */}
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate(navigation.toDashboard())}
           className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors"
           aria-label="Volver al dashboard"
         >

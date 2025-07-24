@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { X, Camera as CameraIcon, RotateCcw, Image, Sparkles, Slash } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
+import { navigation } from '../../lib/navigation';
 
 interface CameraCaptureViewProps {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -42,7 +43,7 @@ export const CameraCaptureView: React.FC<CameraCaptureViewProps> = ({
       {/* Camera Controls */}
       <div className="absolute top-0 left-0 right-0 p-4 safe-area-top z-20">
         <div className="flex items-center justify-between">
-          <Button onClick={() => navigate('/')} variant="ghost" size="icon" className="rounded-full bg-black/50">
+          <Button onClick={() => navigate(navigation.toDashboard())} variant="ghost" size="icon" className="rounded-full bg-black/50">
             <X size={20} />
           </Button>
           

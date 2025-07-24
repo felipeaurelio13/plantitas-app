@@ -30,8 +30,10 @@ export const validateImageSize = (dataUrl: string): void => {
 
 // Helper function to convert data URL to Blob
 const dataURLtoBlob = (dataurl: string): Blob => {
-  console.log('[imageService] Processing data URL, length:', dataurl?.length);
-  console.log('[imageService] Data URL start:', dataurl?.substring(0, 50));
+  if (import.meta.env.DEV) {
+    console.log('[imageService] Processing data URL, length:', dataurl?.length);
+    console.log('[imageService] Data URL start:', dataurl?.substring(0, 50));
+  }
   
   if (!dataurl || typeof dataurl !== 'string') {
     throw new Error('Invalid data URL: input is not a string');
@@ -52,7 +54,7 @@ const dataURLtoBlob = (dataurl: string): Blob => {
   }
   
   const mime = mimeMatch[1];
-  console.log('[imageService] Detected MIME type:', mime);
+  if (import.meta.env.DEV) console.log('[imageService] Detected MIME type:', mime);
   
   if (!mime.startsWith('image/')) {
     throw new Error(`Invalid data URL: not an image MIME type (${mime})`);
@@ -66,7 +68,7 @@ const dataURLtoBlob = (dataurl: string): Blob => {
       u8arr[n] = bstr.charCodeAt(n);
     }
     
-    console.log('[imageService] Successfully created blob with size:', u8arr.length);
+    if (import.meta.env.DEV) console.log('[imageService] Successfully created blob with size:', u8arr.length);
     return new Blob([u8arr], { type: mime });
   } catch (error) {
     throw new Error(`Invalid data URL: failed to decode base64 data - ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -79,6 +81,7 @@ export const uploadImage = async (
   path: string
 ): Promise<string> => {
     try {
+    validateImageSize(imageDataUrl); // Validar tamaño antes de procesar
     const blob = dataURLtoBlob(imageDataUrl);
     const fileExt = blob.type.split('/')[1];
     const fileName = `${path}/${uuidv4()}.${fileExt}`;

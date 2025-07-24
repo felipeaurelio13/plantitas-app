@@ -121,51 +121,56 @@ export const AddPhotoModal: React.FC<AddPhotoModalProps> = ({
     }
   }, [selectedImage, note, onPhotoAdded, plantName, addToast, handleClose]);
 
-  const renderChooseStep = () => (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="text-center space-y-6"
-    >
-      <div>
-        <Camera className="w-16 h-16 text-primary mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Agregar Nueva Foto</h2>
-        <p className="text-muted-foreground">
-          Documenta el progreso de <span className="font-medium">{plantName}</span>
-        </p>
-      </div>
+  const renderChooseStep = () => {
+    console.log('[AddPhotoModal] Renderizando botón Tomar Foto:', <Camera className="w-6 h-6" />, 'Tomar Foto');
+    console.log('[AddPhotoModal] Renderizando botón Elegir de Galería:', <Upload className="w-6 h-6" />, 'Elegir de Galería');
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center space-y-6"
+      >
+        <div>
+          <Camera className="w-16 h-16 text-primary mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Agregar Nueva Foto</h2>
+          <p className="text-muted-foreground">
+            Documenta el progreso de <span className="font-medium">{plantName}</span>
+          </p>
+        </div>
 
-      <div className="grid gap-4">
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={handleCameraCapture}
-          className="h-16 gap-3"
-        >
-          <Camera className="w-6 h-6" />
-          Tomar Foto
-        </Button>
+        <div className="grid gap-4">
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleCameraCapture}
+            className="h-16 gap-3 text-primary-foreground"
+          >
+            <Camera className="w-6 h-6" />
+            Tomar Foto
+          </Button>
 
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={handleGallerySelect}
-          className="h-16 gap-3"
-        >
-          <Upload className="w-6 h-6" />
-          Elegir de Galería
-        </Button>
-      </div>
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={handleGallerySelect}
+            className="h-16 gap-3 text-primary-foreground"
+          >
+            <Upload className="w-6 h-6" />
+            Elegir de Galería
+          </Button>
+        </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileInputChange}
-        className="hidden"
-      />
-    </motion.div>
-  );
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileInputChange}
+          className="hidden"
+          data-testid="file-input"
+        />
+      </motion.div>
+    );
+  };
 
   const renderPreviewStep = () => (
     <motion.div

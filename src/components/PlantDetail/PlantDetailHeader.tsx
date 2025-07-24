@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MoreVertical, Share2, Trash2, LoaderCircle, MapPin, Calendar, Home, TreePine, Sun, Moon, Sparkles } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Trash2, LoaderCircle, MapPin, Calendar, Home, TreePine, Sun, Moon, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { Plant, PlantImage } from '../../schemas';
@@ -11,10 +11,9 @@ import UpdateHealthDiagnosisButton from '../UpdateHealthDiagnosisButton';
 
 interface PlantDetailHeaderProps {
   plant: Plant;
-  onShare: () => void;
 }
 
-const PlantDetailHeader = ({ plant, onShare }: PlantDetailHeaderProps) => {
+const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
   const navigate = useNavigate();
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -70,45 +69,6 @@ const PlantDetailHeader = ({ plant, onShare }: PlantDetailHeaderProps) => {
   const handleCancelComplete = () => {
     console.log('❌ [UI] Usuario canceló el completado automático');
     setShowConfirmDialog(false);
-  };
-
-  const handleShare = async () => {
-    const shareData = {
-      title: `Mi ${plant.species}${plant.nickname ? ` "${plant.nickname}"` : ''}`,
-      text: `¡Mira mi hermosa ${plant.species}${plant.nickname ? ` "${plant.nickname}"` : ''}! 🌱`,
-      url: window.location.href,
-    };
-
-    // Try native sharing first
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (error) {
-        // User cancelled or sharing failed, fall back to clipboard
-        console.log('Native sharing cancelled or failed:', error);
-      }
-    }
-
-    // Fallback: Copy to clipboard
-    try {
-      const shareText = `${shareData.text}\n\n${shareData.url}`;
-      await navigator.clipboard.writeText(shareText);
-      
-      // Show a toast notification (you might want to implement a proper toast system)
-      const toast = document.createElement('div');
-      toast.className = 'fixed bottom-4 left-4 right-4 bg-primary text-primary-foreground p-4 rounded-lg shadow-lg z-50 text-center font-medium';
-      toast.textContent = '¡Enlace copiado al portapapeles!';
-      document.body.appendChild(toast);
-      
-      setTimeout(() => {
-        toast.remove();
-      }, 3000);
-    } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
-      // Final fallback: Call the provided onShare callback
-      onShare();
-    }
   };
 
   const formatDate = (dateString: Date | string) => {
@@ -254,6 +214,7 @@ const PlantDetailHeader = ({ plant, onShare }: PlantDetailHeaderProps) => {
           </Button>
 
           <div className="flex items-center space-x-2">
+<<<<<<< HEAD
             <Button
               aria-label="Compartir"
               variant="ghost"
@@ -263,6 +224,8 @@ const PlantDetailHeader = ({ plant, onShare }: PlantDetailHeaderProps) => {
             >
               <Share2 size={20} />
             </Button>
+=======
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
             <div className="relative">
               <Button
                 aria-label="Más opciones"

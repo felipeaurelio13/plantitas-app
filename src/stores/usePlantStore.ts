@@ -51,8 +51,10 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
   // loadPlants: async (userId) => { ... }, // Removed
 
   getPlantById: (plantId) => {
-    console.log('[usePlantStore] Solicitando planta con ID:', plantId);
-    console.log('[usePlantStore] Estado actual de `plants`:', get().plants);
+    if (import.meta.env.DEV) {
+      console.log('[usePlantStore] Solicitando planta con ID:', plantId);
+      console.log('[usePlantStore] Estado actual de `plants`:', get().plants);
+    }
     return get().plants.find((p) => p.id === plantId);
   },
 

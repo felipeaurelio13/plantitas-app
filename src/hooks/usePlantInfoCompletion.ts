@@ -28,12 +28,14 @@ export const usePlantInfoCompletion = () => {
       setIsCompleting(true);
       
       // Console log del inicio del proceso
-      console.log('🤖 [COMPLETAR IA] Iniciando completado automático de información...');
-      console.log('📋 [COMPLETAR IA] Datos de entrada:', {
-        plantId,
-        species,
-        commonName: commonName || 'No especificado'
-      });
+      if (import.meta.env.DEV) {
+        console.log('🤖 [COMPLETAR IA] Iniciando completado automático de información...');
+        console.log('📋 [COMPLETAR IA] Datos de entrada:', {
+          plantId,
+          species,
+          commonName: commonName || 'No especificado'
+        });
+      }
 
       // Toast de inicio
       addToast({
@@ -44,19 +46,19 @@ export const usePlantInfoCompletion = () => {
       });
       
       try {
-        console.log('🔄 [COMPLETAR IA] Consultando IA para generar información faltante...');
+        if (import.meta.env.DEV) console.log('🔄 [COMPLETAR IA] Consultando IA para generar información faltante...');
         
         // Llamar a la IA para obtener la información faltante
         const aiResult = await completeePlantInfo(species, commonName);
         
-        console.log('✅ [COMPLETAR IA] IA respondió exitosamente:', {
+        if (import.meta.env.DEV) console.log('✅ [COMPLETAR IA] IA respondió exitosamente:', {
           ambiente: aiResult.plantEnvironment,
           luz: aiResult.lightRequirements,
           tieneDescripcion: !!aiResult.description,
           cantidadDatosCuriosos: aiResult.funFacts?.length || 0
         });
         
-        console.log('💾 [COMPLETAR IA] Guardando información en base de datos...');
+        if (import.meta.env.DEV) console.log('💾 [COMPLETAR IA] Guardando información en base de datos...');
         
         // Actualizar la planta en la base de datos
         const updatedPlant = await plantService.updatePlantInfo(plantId, user.id, {
@@ -66,12 +68,14 @@ export const usePlantInfoCompletion = () => {
           funFacts: aiResult.funFacts,
         });
 
-        console.log('🎉 [COMPLETAR IA] ¡Proceso completado exitosamente!');
-        console.log('📊 [COMPLETAR IA] Datos actualizados:', {
-          plantId: updatedPlant.id,
-          ambiente: updatedPlant.plantEnvironment,
-          necesidadesLuz: updatedPlant.lightRequirements
-        });
+        if (import.meta.env.DEV) {
+          console.log('🎉 [COMPLETAR IA] ¡Proceso completado exitosamente!');
+          console.log('📊 [COMPLETAR IA] Datos actualizados:', {
+            plantId: updatedPlant.id,
+            ambiente: updatedPlant.plantEnvironment,
+            necesidadesLuz: updatedPlant.lightRequirements
+          });
+        }
 
         return updatedPlant;
       } catch (error) {

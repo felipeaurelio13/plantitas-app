@@ -71,8 +71,13 @@ export const PlantOverviewCard: React.FC<PlantOverviewCardProps> = ({ plant }) =
       initial="hidden"
       animate="visible"
     >
+<<<<<<< HEAD
       <Card variant="glass" className="p-6 space-y-6">
         {/* Quick Stats Header */}
+=======
+      <Card variant="glass" className="content-spacing-sm element-spacing">
+        {/* Quick Stats Header - Simplified */}
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
         <motion.div variants={itemVariants} className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className={cn(

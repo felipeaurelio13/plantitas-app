@@ -13,6 +13,7 @@ import TypingIndicator from '../components/Chat/TypingIndicator';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Card, CardContent } from '../components/ui/Card';
+import { navigation } from '../lib/navigation';
 
 const GardenChat: React.FC = () => {
   const navigate = useNavigate();
@@ -76,7 +77,7 @@ const GardenChat: React.FC = () => {
             description="Agrega algunas plantas a tu jardín para poder chatear conmigo sobre su cuidado y salud."
             action={{
               label: "Agregar mi primera planta",
-              onClick: () => navigate('/camera')
+              onClick: () => navigate(navigation.toCamera())
             }}
           />
         </div>
@@ -107,7 +108,7 @@ const GardenChat: React.FC = () => {
                 size="sm"
                 interactive
                 className="cursor-pointer hover:border-primary-300 dark:hover:border-primary-600"
-                onClick={() => navigate(`/plant/${plant.id}/chat`)}
+                onClick={() => navigate(navigation.toPlantChat(plant.id))}
               >
                 <CardContent className="p-3">
                   <div className="flex items-center space-x-2">
@@ -133,7 +134,7 @@ const GardenChat: React.FC = () => {
                 size="sm"
                 interactive
                 className="cursor-pointer"
-                onClick={() => navigate('/')}
+                onClick={() => navigate(navigation.toDashboard())}
               >
                 <CardContent className="p-3 flex items-center justify-center">
                   <span className="text-sm text-neutral-600 dark:text-neutral-400">

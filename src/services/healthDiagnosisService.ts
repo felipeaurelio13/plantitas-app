@@ -14,7 +14,7 @@ export class HealthDiagnosisService {
     healthAnalysis: any;
     updatedImage: any;
   }> {
-    console.log('🩺 [Health] Iniciando actualización de diagnóstico para:', plant.name);
+    if (import.meta.env.DEV) console.log('🩺 [Health] Iniciando actualización de diagnóstico para:', plant.name);
     
     // Verificar que la planta tenga imágenes
     if (!plant.images || plant.images.length === 0) {
@@ -22,14 +22,16 @@ export class HealthDiagnosisService {
     }
 
     // Obtener la imagen más reciente
-    const mostRecentImage = plant.images
+    const mostRecentImage = [...plant.images]
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
 
-    console.log('📸 [Health] Analizando imagen más reciente:', {
-      imageId: mostRecentImage.id,
-      timestamp: mostRecentImage.timestamp,
-      imageUrl: mostRecentImage.url.substring(0, 100) + '...'
-    });
+    if (import.meta.env.DEV) {
+      console.log('📸 [Health] Analizando imagen más reciente:', {
+        imageId: mostRecentImage.id,
+        timestamp: mostRecentImage.timestamp,
+        imageUrl: mostRecentImage.url.substring(0, 100) + '...'
+      });
+    }
 
     // Obtener el JWT token del usuario autenticado
     const { data: { session }, error: authError } = await supabase.auth.getSession();

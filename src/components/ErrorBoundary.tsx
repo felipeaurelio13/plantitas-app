@@ -42,7 +42,8 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   handleGoHome = () => {
-    window.location.href = '/';
+    // Redirige correctamente respetando el basename de la app
+    window.location.href = import.meta.env.BASE_URL || '/plantitas-app/';
   };
 
   render() {

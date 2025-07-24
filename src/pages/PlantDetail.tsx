@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/Button';
 import { AlertCircle, Camera, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { navigation } from '../lib/navigation';
 
 const PlantDetailFallback = () => (
   <div className="relative">
@@ -195,7 +196,7 @@ const PlantDetail = () => {
           <p className="text-muted-foreground max-w-md">
             No se pudo encontrar la información de la planta solicitada.
           </p>
-          <Button onClick={() => window.location.assign('/')} className="mt-4">
+          <Button onClick={() => navigate(navigation.toDashboard())} className="mt-4">
               Volver al inicio
             </Button>
           </motion.div>
@@ -210,6 +211,7 @@ const PlantDetail = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
+<<<<<<< HEAD
           <PlantDetailHeader
             plant={plant}
             onShare={() => {
@@ -219,6 +221,10 @@ const PlantDetail = () => {
             }}
           />
           <main className="p-4 space-y-6 pb-20">
+=======
+          <PlantDetailHeader plant={plant} />
+          <main className="p-3 sm:p-4 space-y-3 sm:space-y-4 pb-20">
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
             {/* Overview Card - Main info at a glance */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -260,27 +266,54 @@ const PlantDetail = () => {
             {/* Add Photo Button */}
             <motion.button
               onClick={() => setIsAddPhotoModalOpen(true)}
+<<<<<<< HEAD
               className="bg-primary hover:bg-primary/90 text-primary-foreground p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group"
+=======
+              className="bg-primary hover:bg-primary/90 text-primary-foreground p-2.5 sm:p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group flex items-center"
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               title="Agregar nueva foto"
             >
+<<<<<<< HEAD
               <Camera className="w-5 h-5" />
               <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 tooltip-contrast text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+=======
+              <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
+              {/* Label fijo en mobile, tooltip en desktop */}
+              <span className="ml-2 text-xs font-medium block sm:hidden">
+                Agregar foto
+              </span>
+              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 tooltip-contrast text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg hidden sm:block">
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
                 Agregar foto
               </span>
             </motion.button>
             
             {/* Chat Button */}
             <motion.button
+<<<<<<< HEAD
               onClick={() => navigate(`/plant/${plant.id}/chat`)}
               className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group"
+=======
+              onClick={() => navigate(navigation.toPlantChat(plant.id))}
+              className="bg-blue-500 hover:bg-blue-600 text-white p-2.5 sm:p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group flex items-center"
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               title="Chat con la planta"
             >
+<<<<<<< HEAD
               <MessageCircle className="w-5 h-5" />
               <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 tooltip-contrast text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+=======
+              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+              {/* Label fijo en mobile, tooltip en desktop */}
+              <span className="ml-2 text-xs font-medium block sm:hidden">
+                Chat
+              </span>
+              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 tooltip-contrast text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg hidden sm:block">
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
                 Chat
               </span>
             </motion.button>

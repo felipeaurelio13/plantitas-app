@@ -49,15 +49,15 @@ export class GardenCacheService {
   private getCachedData<T>(key: string): T | null {
     const entry = this.cache.get(key);
     if (this.isValidCache(entry)) {
-      console.log(`[GardenCache] Cache HIT for key: ${key}`);
+      if (import.meta.env.DEV) console.log(`[GardenCache] Cache HIT for key: ${key}`);
       return entry.data;
     }
     
     if (entry) {
-      console.log(`[GardenCache] Cache EXPIRED for key: ${key}`);
+      if (import.meta.env.DEV) console.log(`[GardenCache] Cache EXPIRED for key: ${key}`);
       this.cache.delete(key);
     } else {
-      console.log(`[GardenCache] Cache MISS for key: ${key}`);
+      if (import.meta.env.DEV) console.log(`[GardenCache] Cache MISS for key: ${key}`);
     }
     
     return null;
@@ -237,7 +237,7 @@ export class GardenCacheService {
   clearAll(): void {
     const size = this.cache.size;
     this.cache.clear();
-    console.log(`[GardenCache] Cleared all cache (${size} entries)`);
+    if (import.meta.env.DEV) console.log(`[GardenCache] Cleared all cache (${size} entries)`);
   }
 }
 

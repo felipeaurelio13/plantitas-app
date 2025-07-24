@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useChat } from '../hooks/useChat';
 import { usePlantDetail } from '../hooks/usePlantDetail'; // Import the hook
 import ChatHeader from '../components/Chat/ChatHeader';
@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 
 const Chat: React.FC = () => {
   const { plantId } = useParams<{ plantId: string }>();
+  const navigate = useNavigate();
   
   // Use usePlantDetail to ensure the plant data is loaded.
   const { loading: isLoadingDetail, error } = usePlantDetail(plantId);
@@ -41,7 +42,7 @@ const Chat: React.FC = () => {
     return (
        <div className="flex flex-col items-center justify-center h-screen bg-background text-red-500">
         <p className="mb-4">Error: {error}</p>
-        <button onClick={() => window.history.back()} className="btn btn-primary">
+        <button onClick={() => navigate(-1)} className="btn btn-primary">
           Volver
         </button>
       </div>
@@ -52,7 +53,7 @@ const Chat: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
         <p className="mb-4">Planta no encontrada.</p>
-        <button onClick={() => window.history.back()} className="btn btn-primary">
+        <button onClick={() => navigate(-1)} className="btn btn-primary">
           Volver
         </button>
       </div>

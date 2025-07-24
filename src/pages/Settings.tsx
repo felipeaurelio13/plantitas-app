@@ -37,8 +37,8 @@ const Settings: React.FC = () => {
                   label={item.label}
                   isLast={isLast}
                   type="toggle"
-                  toggleState={item.toggleState}
-                  onToggleChange={item.onToggleChange}
+                  toggleState={"toggleState" in item ? item.toggleState : false}
+                  onToggleChange={"onToggleChange" in item ? item.onToggleChange : undefined}
                 />
               );
             }
@@ -48,10 +48,11 @@ const Settings: React.FC = () => {
                 key={item.id}
                 icon={IconComponent}
                 label={item.label}
-                value={(item as any).value || undefined}
-                onClick={item.action}
+                value={"value" in item && typeof item.value === 'string' ? item.value : undefined}
+                onClick={"onClick" in item ? item.onClick : undefined}
                 isLast={isLast}
                 type="button"
+                disabled={"disabled" in item ? item.disabled : false}
               />
             );
           })}

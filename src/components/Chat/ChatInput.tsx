@@ -23,8 +23,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
     setMessage('');
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSend();
     }
@@ -39,7 +39,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
               type="text"
               value={message}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="Escribe un mensaje..."
               className="pr-12"
               disabled={isTyping}

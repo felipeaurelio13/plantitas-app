@@ -2,9 +2,10 @@ import { supabase } from '../lib/supabase';
 import type { AIAnalysisResponse } from '../schemas/ai-shared';
 import type { PlantResponse, Plant } from '../schemas';
 import { validateImageSize } from './imageService';
+import { toastService } from './toastService';
 
 export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
-  console.log('User authenticated with valid session, calling analyze-image function...');
+  if (import.meta.env.DEV) console.log('User authenticated with valid session, calling analyze-image function...');
   
   // ✅ Validate image size before processing
   validateImageSize(imageDataUrl);
@@ -44,7 +45,7 @@ export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResp
     throw new Error(data.error);
   }
 
-  console.log('Image analysis completed successfully');
+  if (import.meta.env.DEV) console.log('Image analysis completed successfully');
   return data as AIAnalysisResponse;
 };
 
@@ -52,8 +53,32 @@ export const generatePlantResponse = async (
   plant: Plant,
   userMessage: string
 ): Promise<PlantResponse> => {
-  console.log('[aiService] Invocando "generate-plant-response" con:', { plant, userMessage });
-  
+  if (import.meta.env.DEV) {
+    console.log('[DEBUG][aiService] Prompt enviado a generate-plant-response:', { plant, userMessage });
+  }
+  // Parámetro fijo de tono/persona
+  const tonePersona = 'cálido, simpático, motivador, y con un toque de humor ligero';
+
+  // Asegurar que las imágenes estén en el formato correcto y ordenadas, incluyendo healthAnalysis si existe
+  const images = (plant.images || [])
+    .map(img => ({
+      url: img.url,
+      timestamp: img.timestamp instanceof Date ? img.timestamp.toISOString() : img.timestamp,
+      ...(img.healthAnalysis ? { healthAnalysis: img.healthAnalysis } : {})
+    }))
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  // Construir el objeto planta enriquecido
+  const plantForPrompt = {
+    ...plant,
+    images
+  };
+
+  if (import.meta.env.DEV) {
+    console.log('[DEBUG][generatePlantResponse] Imágenes enviadas a la IA:', images);
+    console.log('[DEBUG][generatePlantResponse] Objeto plantForPrompt:', plantForPrompt);
+  }
+
   // Obtener el JWT token del usuario autenticado
   const { data: { session }, error: authError } = await supabase.auth.getSession();
   
@@ -63,18 +88,36 @@ export const generatePlantResponse = async (
   }
   
   const { data, error } = await supabase.functions.invoke('generate-plant-response', {
-    body: { plant, userMessage },
+    body: { plant: plantForPrompt, userMessage, tonePersona },
     headers: {
       'Authorization': `Bearer ${session.access_token}`,
     },
   });
+
+  if (import.meta.env.DEV) {
+    console.log('[DEBUG][aiService] Respuesta cruda de generate-plant-response:', data);
+  }
 
   if (error) {
     console.error('Error calling generate-plant-response function:', error);
     throw new Error('Failed to generate plant response: ' + error.message);
   }
 
-  console.log('[aiService] Raw response from generate-plant-response:', data);
+  // VALIDACIÓN DE CALIDAD DE RESPUESTA IA
+  const lowerContent = (data?.content || '').toLowerCase();
+  const isGeneric =
+    !data?.content ||
+    lowerContent.includes('no sé') ||
+    lowerContent.includes('no tengo información') ||
+    lowerContent.includes('no puedo ayudarte') ||
+    lowerContent.length < 20;
+  if (isGeneric) {
+    toastService.warning('Respuesta genérica', 'La respuesta de la planta fue muy genérica o poco útil. Intenta preguntar de otra forma o proporciona más detalles.');
+    if (import.meta.env.DEV) {
+      console.warn('[QA][aiService] Respuesta IA considerada genérica o pobre:', data?.content);
+    }
+  }
+
   return data as PlantResponse;
 };
 
@@ -90,8 +133,10 @@ export const completeePlantInfo = async (
   description?: string;
   funFacts?: string[];
 }> => {
-  console.log('🚀 [API] Iniciando llamada a complete-plant-info...');
-  console.log('📡 [API] Parámetros enviados:', { species, commonName });
+  if (import.meta.env.DEV) {
+    console.log('🚀 [API] Iniciando llamada a complete-plant-info...');
+    console.log('📡 [API] Parámetros enviados:', { species, commonName });
+  }
   
   // Obtener el JWT token del usuario autenticado
   const { data: { session }, error: authError } = await supabase.auth.getSession();
@@ -113,7 +158,7 @@ export const completeePlantInfo = async (
     throw new Error('Failed to complete plant info: ' + error.message);
   }
 
-  console.log('🎯 [API] Respuesta recibida exitosamente:', data);
+  if (import.meta.env.DEV) console.log('🎯 [API] Respuesta recibida exitosamente:', data);
 
   // Validar que los datos recibidos sean correctos
   const validEnvironments = ['interior', 'exterior', 'ambos'] as const;

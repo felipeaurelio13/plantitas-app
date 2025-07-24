@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useThemeStore, useAuthStore } from '../stores';
-import { notificationService } from '../services/notificationService';
 import { storageService } from '../services/storageService';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,7 +9,9 @@ export const useSettings = () => {
   const navigate = useNavigate();
 
   // Local state for settings that don't have a store
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  // TODO: Reemplazar por lógica real si se requiere
+  const hasDataToExport = true;
+  const hasDataToDelete = true;
 
   const handleSignOut = async () => {
     // We should use a custom modal here in a real app
@@ -25,15 +26,6 @@ export const useSettings = () => {
     }
   };
 
-  const handleNotificationToggle = async (enabled: boolean) => {
-    if (enabled) {
-      const granted = await notificationService.requestPermission();
-      setNotificationsEnabled(granted);
-    } else {
-      // Logic to disable notifications if any
-      setNotificationsEnabled(false);
-    }
-  };
   
   const handleExportData = async () => {
     try {
@@ -72,20 +64,11 @@ export const useSettings = () => {
       title: 'Cuenta',
       items: [
         {
-          id: 'profile',
-          icon: 'User',
-          label: 'Perfil',
-          value: profile?.full_name || 'Sin nombre',
-          action: () => { /* Navigate to profile page */ },
-          type: 'button' as const,
-        },
-        {
-          id: 'logout',
+          id: 'signout',
           icon: 'LogOut',
-          label: 'Cerrar Sesión',
-          value: profile?.email,
-          action: handleSignOut,
-          type: 'button' as const,
+          label: 'Cerrar sesión',
+          type: 'button',
+          onClick: handleSignOut,
         },
       ],
     },
@@ -100,14 +83,6 @@ export const useSettings = () => {
           toggleState: isDark,
           onToggleChange: toggleTheme,
         },
-        {
-          id: 'notifications',
-          icon: 'Bell',
-          label: 'Notificaciones',
-          type: 'toggle' as const,
-          toggleState: notificationsEnabled,
-          onToggleChange: handleNotificationToggle,
-        },
       ],
     },
     {
@@ -117,15 +92,17 @@ export const useSettings = () => {
                 id: 'export',
                 icon: 'Download',
                 label: 'Exportar mis datos',
-                action: handleExportData,
-                type: 'button' as const,
+                type: 'button',
+                onClick: handleExportData,
+                disabled: !profile || !hasDataToExport,
             },
             {
                 id: 'delete',
                 icon: 'Trash2',
                 label: 'Eliminar mis datos',
-                action: handleClearData,
-                type: 'button' as const,
+                type: 'button',
+                onClick: handleClearData,
+                disabled: !profile || !hasDataToDelete,
             },
         ],
     },
@@ -159,7 +136,7 @@ export const useSettings = () => {
         */
       ],
     },
-  ], [isDark, notificationsEnabled, profile, handleSignOut, toggleTheme, handleNotificationToggle]);
+  ], [isDark, profile, handleSignOut, toggleTheme]);
 
   return {
     settingsSections,
