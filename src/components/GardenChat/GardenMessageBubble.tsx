@@ -83,7 +83,7 @@ const GardenMessageBubble: React.FC<GardenMessageBubbleProps> = ({ message }) =>
           className={cn(
             'rounded-2xl px-4 py-3 break-words shadow-adaptive',
             isUser
-              ? 'rounded-br-lg bg-primary text-white ml-8'
+              ? 'rounded-br-lg bg-primary-700 text-white drop-shadow-sm ml-8'
               : 'rounded-bl-lg bg-contrast-surface text-contrast-medium mr-8 border border-contrast',
             'rounded-[12px]'
           )}

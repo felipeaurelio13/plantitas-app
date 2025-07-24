@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Send, CornerDownLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -16,12 +16,13 @@ const quickActions = [
 
 const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
   const [message, setMessage] = useState('');
-  const [isComposing, setIsComposing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = () => {
-    if (!message.trim()) return;
-    onSendMessage(message.trim());
-    setMessage('');
+    const value = inputRef.current?.value.trim();
+    if (!value) return;
+    onSendMessage(value);
+    if (inputRef.current) inputRef.current.value = '';
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -38,16 +39,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
           <div className="relative flex-1">
             <Input
               type="text"
-              value={message}
-              onChange={e => setMessage(e.target.value)}
-              onCompositionStart={() => setIsComposing(true)}
-              onCompositionEnd={() => setIsComposing(false)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
+              ref={inputRef}
+              onKeyDown={handleKeyDown}
               placeholder="Escribe un mensaje..."
               className="pr-12"
               disabled={isTyping}

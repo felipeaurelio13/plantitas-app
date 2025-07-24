@@ -10,16 +10,21 @@ interface PlantHealthEvolutionChartProps {
 
 function formatDate(date: Date | string) {
   const d = typeof date === 'string' ? new Date(date) : date;
+  // Fecha legible para tabla
   return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+function formatDateTime(date: Date | string) {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  // Fecha+hora para eje X único
+  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' }) + ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 }
 
 export const PlantHealthEvolutionChart: React.FC<PlantHealthEvolutionChartProps> = ({ images }) => {
   const [showModal, setShowModal] = useState(false);
 
-  // Prepara los datos para el gráfico y la tabla
-  const data = images
-    .filter(img => img.healthAnalysis && (typeof img.healthAnalysis.confidence === 'number' || img.healthAnalysis.overallHealth))
-    .map(img => {
+  // Prepara los datos para la tabla (todas las imágenes)
+  const tableData = images
+    .map((img) => {
       let score: number | undefined = undefined;
       const healthScoreMap: Record<string, number> = {
         'excellent': 95,
@@ -35,18 +40,22 @@ export const PlantHealthEvolutionChart: React.FC<PlantHealthEvolutionChartProps>
       return {
         id: img.id,
         date: formatDate(img.timestamp),
+        dateTime: formatDateTime(img.timestamp),
         rawDate: img.timestamp,
-        score: score ?? null,
+        score: typeof score === 'number' ? score : null,
         url: img.url
       };
     })
-    .filter(d => d.score !== null)
     .sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime());
+
+  // Prepara los datos para el gráfico: todas las fechas, score o null
+  const chartData = tableData.map(d => ({ dateTime: d.dateTime, score: d.score }));
 
   // Custom dot for chart
   const renderDot = (props: DotProps) => {
-    const { key, ...rest } = props;
-    return <circle key={key} {...rest} r={4} stroke="#2A7F3E" strokeWidth={2} fill="#fff" />;
+    // Excluir dataKey y cualquier prop no estándar de SVG
+    const { key, cx, cy } = props as React.SVGProps<SVGCircleElement>;
+    return <circle key={key} cx={cx} cy={cy} r={4} stroke="#2A7F3E" strokeWidth={2} fill="#fff" />;
   };
 
   return (
@@ -59,12 +68,14 @@ export const PlantHealthEvolutionChart: React.FC<PlantHealthEvolutionChartProps>
       </div>
       <div className="w-full h-48">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+          <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F8F5" />
-            <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#888' }} />
+            <XAxis dataKey="dateTime" tick={{ fontSize: 12, fill: '#888' }} />
             <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: '#888' }} width={32} />
-            <Tooltip contentStyle={{ fontSize: 13, borderRadius: 8 }} formatter={(v: any) => `${v}%`} />
-            <Line type="monotone" dataKey="score" stroke="#2A7F3E" strokeWidth={2} dot={renderDot} activeDot={{ r: 6 }} />
+            <Tooltip contentStyle={{ fontSize: 13, borderRadius: 8 }}
+              labelFormatter={(label) => `Fecha: ${label}`}
+              formatter={(v: any) => `${v}%`} />
+            <Line type="monotone" dataKey="score" stroke="#2A7F3E" strokeWidth={2} dot={renderDot} activeDot={{ r: 6 }} connectNulls={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -78,13 +89,13 @@ export const PlantHealthEvolutionChart: React.FC<PlantHealthEvolutionChartProps>
             </tr>
           </thead>
           <tbody>
-            {data.map((row) => (
+            {tableData.map((row) => (
               <tr key={row.id} className="bg-[#F9F9F9] hover:bg-[#F0F8F5] transition-colors">
                 <td className="px-2 py-1 whitespace-nowrap">{row.date}</td>
                 <td className="px-2 py-1">
                   <img src={row.url} alt="miniatura" className="w-10 h-10 object-cover rounded-md border" />
                 </td>
-                <td className="px-2 py-1 font-medium text-[#2A7F3E]">{row.score?.toFixed(0)}%</td>
+                <td className="px-2 py-1 font-medium text-[#2A7F3E]">{row.score !== null ? `${row.score.toFixed(0)}%` : <span className="text-[#bbb]">N/A</span>}</td>
               </tr>
             ))}
           </tbody>
@@ -113,12 +124,14 @@ export const PlantHealthEvolutionChart: React.FC<PlantHealthEvolutionChartProps>
               <h3 className="text-lg font-semibold mb-4 text-[#2A7F3E]">Evolución de Salud (Ampliado)</h3>
               <div className="w-full h-72 mb-6">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                  <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F8F5" />
-                    <XAxis dataKey="date" tick={{ fontSize: 13, fill: '#888' }} />
+                    <XAxis dataKey="dateTime" tick={{ fontSize: 13, fill: '#888' }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 13, fill: '#888' }} width={36} />
-                    <Tooltip contentStyle={{ fontSize: 14, borderRadius: 8 }} formatter={(v: any) => `${v}%`} />
-                    <Line type="monotone" dataKey="score" stroke="#2A7F3E" strokeWidth={2} dot={renderDot} activeDot={{ r: 7 }} />
+                    <Tooltip contentStyle={{ fontSize: 14, borderRadius: 8 }}
+                      labelFormatter={(label) => `Fecha: ${label}`}
+                      formatter={(v: any) => `${v}%`} />
+                  <Line type="monotone" dataKey="score" stroke="#2A7F3E" strokeWidth={2} dot={renderDot} activeDot={{ r: 7 }} connectNulls={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -132,13 +145,13 @@ export const PlantHealthEvolutionChart: React.FC<PlantHealthEvolutionChartProps>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.map((row) => (
+                    {tableData.map((row) => (
                       <tr key={row.id} className="bg-[#F9F9F9] hover:bg-[#F0F8F5] transition-colors">
                         <td className="px-2 py-1 whitespace-nowrap">{row.date}</td>
                         <td className="px-2 py-1">
                           <img src={row.url} alt="miniatura" className="w-12 h-12 object-cover rounded-md border" />
                         </td>
-                        <td className="px-2 py-1 font-medium text-[#2A7F3E]">{row.score?.toFixed(0)}%</td>
+                        <td className="px-2 py-1 font-medium text-[#2A7F3E]">{row.score !== null ? `${row.score.toFixed(0)}%` : <span className="text-[#bbb]">N/A</span>}</td>
                       </tr>
                     ))}
                   </tbody>

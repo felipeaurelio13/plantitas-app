@@ -211,4 +211,89 @@ MIT License - ver [LICENSE](./LICENSE) para detalles.
 
 ---
 
-**🌿 Hecho con ❤️ para amantes de las plantas en todo el mundo**
+Estilo:
+
+1. Paleta de Colores
+Primario: Verde bosque (#2A7F3E) para acentos y botones principales.
+
+Secundario: Verde claro (5 % opacidad de primario) para fondos de tags y estados.
+
+Neutros:
+
+Texto principal: #333
+
+Texto secundario/labels: #777
+
+Borde y separadores: #E5E5E5 / #EEE
+
+Fondo expandido: #FAFAFA
+
+2. Tipografía & Jerarquía
+Familia: Sans‑serif moderna, pesos 400–600.
+
+Tamaños:
+
+Títulos secciones: 24–28 px, peso 600
+
+Subtítulos/blocs: 16–18 px, peso 500–600
+
+Body text: 14–15 px, peso 400–500
+
+Labels (caps): 12 px, peso 500, letter‑spacing 0.4–0.6px
+
+Interlineado: 1.2–1.4 según contexto.
+
+3. Espaciado & Layout
+Grid base: 8 px como unidad mínima.
+
+Padding interno en cards/containers: 16 px.
+
+Gap entre columnas: 16–24 px.
+
+Margin entre secciones: 16 px (vertical).
+
+Bordes y radios:
+
+Bordes suaves 1 px, color #E5E5E5
+
+Radius general: 6–8 px
+
+4. Componentes Clave
+Botón principal (“+”)
+
+48×48 px, fondo #2A7F3E, icono blanco, shadow 0 2 4 rgba(0,0,0,0.1), hover shadow 0 4 8 rgba(0,0,0,0.15).
+
+Tags/Chips
+
+Padding 2px × 6px, radius 4 px, fondo suave (5 % opacidad), texto acento.
+
+Inputs & Dropdowns
+
+Borde 1 px #E0E0E0, radius 8 px, placeholder #777, padding vertical 12 px.
+
+Collapsibles
+
+Header con icono + título + caret, borde 1 px, radius 8 px, transition en caret (.2s).
+
+5. Iconografía
+Trazo lineal de 2 px, tamaño 20–24 px.
+
+Siempre en color #555 (neutro), salvo estados críticos (rojo para errores) o acentos (verde para bueno).
+
+6. Micro‑interacciones
+Hover/Press
+
+Items list: background-color: #F9F9F9 al pasar.
+
+Botones y pills: ligeros cambios de sombra ó fondo para feedback.
+
+Transitions
+
+Carets y cambios de estado en collapsibles: .2s ease.
+
+7. Accesibilidad & Legibilidad
+Contraste mínimo 4.5:1 (texto vs. fondo).
+
+Tamaños de fuente legibles (≥14 px).
+
+Áreas clicables ≥44×44 px.

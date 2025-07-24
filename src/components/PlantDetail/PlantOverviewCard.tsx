@@ -72,6 +72,14 @@ export const PlantOverviewCard: React.FC<PlantOverviewCardProps> = ({ plant }) =
       animate="visible"
     >
       <Card variant="glass" className="content-spacing-sm element-spacing">
+        {/* Descripción general de la planta */}
+        {plant.description && (
+          <div className="mb-4">
+            <p className="text-base text-neutral-700 dark:text-neutral-200 leading-relaxed">
+              {plant.description}
+            </p>
+          </div>
+        )}
         {/* Tag verde de estado */}
         <motion.div variants={itemVariants} className="w-full mb-3">
           <div className="w-full flex items-center justify-between bg-green-100 dark:bg-green-900/30 rounded-lg px-4 py-2 mb-2">

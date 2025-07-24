@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Send, CornerDownLeft, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../ui/Button';
@@ -19,15 +19,15 @@ const GardenChatInput: React.FC<GardenChatInputProps> = ({
 }) => {
   const [message, setMessage] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(true);
-  const [isComposing, setIsComposing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = async () => {
-    if (!message.trim() || isTyping) return;
-    
-    const messageToSend = message.trim();
-    setMessage('');
+    if (isTyping) return;
+    const value = inputRef.current?.value.trim();
+    if (!value) return;
     setShowSuggestions(false);
-    await onSendMessage(messageToSend);
+    if (inputRef.current) inputRef.current.value = '';
+    await onSendMessage(value);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -45,16 +45,6 @@ const GardenChatInput: React.FC<GardenChatInputProps> = ({
 
   const handleFocus = () => {
     if (suggestedQuestions.length > 0 && !message) {
-      setShowSuggestions(true);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMessage(e.target.value);
-    // Hide suggestions when user starts typing
-    if (e.target.value.length > 0) {
-      setShowSuggestions(false);
-    } else {
       setShowSuggestions(true);
     }
   };
@@ -102,16 +92,8 @@ const GardenChatInput: React.FC<GardenChatInputProps> = ({
           <div className="relative flex-1">
             <Input
               type="text"
-              value={message}
-              onChange={handleChange}
-              onCompositionStart={() => setIsComposing(true)}
-              onCompositionEnd={() => setIsComposing(false)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
+              ref={inputRef}
+              onKeyDown={handleKeyDown}
               onFocus={handleFocus}
               placeholder="Pregúntame sobre tu jardín..."
               className="pr-12"

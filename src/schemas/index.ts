@@ -27,6 +27,19 @@ export const ChatMessageSchema = z.object({
   content: z.string().min(1, 'Message content cannot be empty'),
   timestamp: z.date(),
   emotion: z.enum(['alegre', 'triste', 'enojado', 'neutral', 'juguetón', 'agradecido', 'happy', 'sad', 'excited', 'worried', 'grateful']).optional(),
+  context: z.object({
+    insights: z.array(z.object({
+      type: z.enum(['tip', 'warning', 'observation', 'recommendation']),
+      title: z.string(),
+      description: z.string(),
+      affectedPlants: z.array(z.string()).optional(),
+    })).optional(),
+    suggestedActions: z.array(z.object({
+      action: z.string(),
+      priority: z.enum(['low', 'medium', 'high']),
+      plantIds: z.array(z.string()).optional(),
+    })).optional(),
+  }).optional(),
 });
 
 export const PlantNotificationSchema = z.object({

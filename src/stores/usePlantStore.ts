@@ -155,6 +155,7 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
       sender: 'user',
       content: userMessageContent,
       timestamp: new Date(),
+      // No context para el usuario
     };
 
     // Optimistic update
@@ -168,7 +169,8 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
         {
           sender: 'user',
           content: userMessageContent,
-          timestamp: tempUserMessage.timestamp
+          timestamp: tempUserMessage.timestamp,
+          // No context para el usuario
         },
         userId
       );

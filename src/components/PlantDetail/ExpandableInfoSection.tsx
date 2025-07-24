@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ChevronDown, Flower, HeartPulse, BookOpen, 
-  TrendingUp
+  ChevronDown, Flower, HeartPulse, 
+  TrendingUp, Sparkles
 } from 'lucide-react';
 import { Plant } from '@/schemas';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ import { PlantCharacteristics } from './PlantCharacteristics';
 import { HealthAnalysisCard } from './HealthAnalysisCard';
 import { DescriptionCard } from './DescriptionCard';
 import { PlantEvolutionTracker } from './PlantEvolutionTracker';
+import { Card } from '../ui/Card';
 
 interface ExpandableInfoSectionProps {
   plant: Plant;
@@ -65,73 +66,139 @@ export const ExpandableInfoSection: React.FC<ExpandableInfoSectionProps> = ({
       component: <PlantCharacteristics plant={plant} />,
       priority: plant.careProfile ? 2 : 1
     },
-    {
-      id: 'description',
-      title: 'Información General',
-      icon: <BookOpen className="w-5 h-5" />,
-      badge: plant.funFacts?.length ? `${plant.funFacts.length} datos` : undefined,
+    // Eliminar sección 'Información General', agregar solo si hay funFacts
+    ...(plant.funFacts && plant.funFacts.length > 0 ? [{
+      id: 'funfacts',
+      title: 'Datos Curiosos',
+      icon: <Sparkles className="w-5 h-5" />, // Usa el icono de Sparkles
       component: (
         <DescriptionCard
           species={plant.species}
-          description={plant.description}
           funFacts={plant.funFacts}
         />
       ),
       priority: 4
-    }
+    }] : [])
   ].filter(section => {
     // Only show health section if there's analysis
     if (section.id === 'health') return !!firstImageAnalysis;
     return true;
   }).sort((a, b) => a.priority - b.priority);
 
-  const getBadgeColor = (sectionId: string, badge?: string) => {
-    if (sectionId === 'health' && badge === 'Atención') {
-      return 'badge-error-contrast';
-    }
-    if (badge === 'Pendiente') {
-      return 'badge-warning-contrast';
-    }
-    if (badge === 'Nueva') {
-      return 'bg-blue-600 text-white font-semibold border border-blue-700 dark:bg-blue-500 dark:text-black dark:border-blue-600';
-    }
-    if (badge === 'Saludable' || badge === 'Completo') {
-      return 'badge-success-contrast';
-    }
-    // Default for data counts and other neutral badges
-    return 'badge-neutral-contrast';
-  };
-
   return (
     <div className="flex flex-col gap-y-1">
       {sections.map((section) => {
         const isExpanded = expandedSection === section.id;
+        const isHealthSection = section.id === 'health';
+        const isCareSection = section.id === 'care';
+        // Frame y header especial para Perfil de Cuidados
+        if (isCareSection) {
+          return (
+            <Card
+              key={section.id}
+              variant="default"
+              radius="default"
+              className={
+                cn(
+                  'border border-[#E5E5E5] rounded-[8px] transition-all duration-200',
+                  'bg-white',
+                  'p-0 mb-4'
+                )
+              }
+            >
+              <motion.button
+                onClick={() => setExpandedSection(isExpanded ? '' : section.id)}
+                className={
+                  cn(
+                    'w-full flex items-center justify-between px-4 py-3 min-h-12 text-left focus:outline-none',
+                    'bg-white',
+                    'rounded-t-[8px]'
+                  )
+                }
+                style={{ position: isExpanded ? 'sticky' : 'static', top: 0, zIndex: 2 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center min-w-0 flex-1">
+                  <span className="flex items-center justify-center mr-2" style={{width:20,height:20}}>
+                    {section.icon}
+                  </span>
+                  <span className="font-semibold text-[16px] truncate text-neutral-900 dark:text-neutral-100">
+                    {section.title}
+                  </span>
+                </div>
+                {/* Sin badge de estado aquí */}
+                <motion.div
+                  animate={{ rotate: isExpanded ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex-shrink-0 ml-2 align-middle"
+                  style={{display:'flex',alignItems:'center',marginRight:16,transition:'transform .2s'}}
+                >
+                  <ChevronDown className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
+                </motion.div>
+              </motion.button>
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 pb-3 pt-1 max-h-[60vh] overflow-y-auto" style={{lineHeight:'1.4'}}>
+                      {section.component}
+                      <div style={{paddingBottom:8}} />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Card>
+          );
+        }
         return (
-          <div key={section.id} className="rounded-xl bg-white/70 dark:bg-neutral-900/70 backdrop-blur-md transition-shadow duration-200">
+          <Card
+            key={section.id}
+            variant="default"
+            radius="default"
+            className={
+              cn(
+                'border border-[#E0E0E0] rounded-[8px] transition-all duration-200',
+                isExpanded && isHealthSection ? 'bg-[#FAFAFA]' : 'bg-white',
+                'p-0 mb-4'
+              )
+            }
+          >
             <motion.button
               onClick={() => setExpandedSection(isExpanded ? '' : section.id)}
-              className="w-full flex items-center justify-between px-3 py-[12px] sm:px-4 sm:py-3 min-h-12 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 active:bg-primary-50 dark:active:bg-primary-900/20"
-              style={{ position: isExpanded ? 'sticky' : 'static', top: 0, zIndex: 2, background: 'inherit' }}
+              className={
+                cn(
+                  'w-full flex items-center justify-between px-4 py-3 min-h-12 text-left focus:outline-none',
+                  isExpanded && isHealthSection ? 'bg-[#FAFAFA]' : 'bg-white',
+                  'rounded-t-[8px]'
+                )
+              }
+              style={{ position: isExpanded ? 'sticky' : 'static', top: 0, zIndex: 2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className="p-1.5 rounded-lg bg-primary/10 text-primary flex-shrink-0 flex items-center justify-center">
+              <div className="flex items-center min-w-0 flex-1">
+                <span className="flex items-center justify-center mr-2" style={{width:20,height:20}}>
                   {section.icon}
                 </span>
-                <span className="font-semibold text-lg truncate text-neutral-900 dark:text-neutral-100">
+                <span className="font-semibold text-[16px] truncate text-neutral-900 dark:text-neutral-100">
                   {section.title}
                 </span>
-                {section.badge && section.id === 'evolution' && (
-                  <span className="ml-2 px-[6px] py-[2px] text-xs font-medium rounded-full bg-[#F0F8F5] text-[#2A7F3E] align-middle" style={{lineHeight:'1.2'}}>
-                    {section.badge}
-                  </span>
-                )}
               </div>
+              {/* Badge solo para salud */}
+              {isHealthSection && (
+                <span className="ml-2 px-[6px] py-[2px] text-xs font-medium rounded-[4px] bg-[#E0F2E9] text-[#2A7F3E] align-middle" style={{lineHeight:'1.2'}}>
+                  {section.badge}
+                </span>
+              )}
               <motion.div
                 animate={{ rotate: isExpanded ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
                 className="flex-shrink-0 ml-2 align-middle"
-                style={{display:'flex',alignItems:'center'}}
+                style={{display:'flex',alignItems:'center',marginRight:16}}
               >
                 <ChevronDown className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
               </motion.div>
@@ -145,13 +212,15 @@ export const ExpandableInfoSection: React.FC<ExpandableInfoSectionProps> = ({
                   transition={{ duration: 0.3, ease: 'easeInOut' }}
                   className="overflow-hidden"
                 >
-                  <div className="px-3 pb-3 sm:px-4 sm:pb-4 max-h-[60vh] overflow-y-auto">
+                  <div className="px-4 pb-3 pt-1 max-h-[60vh] overflow-y-auto" style={{lineHeight:'1.4'}}>
                     {section.component}
+                    {/* Padding bottom extra al final */}
+                    {isHealthSection && <div style={{paddingBottom:8}} />}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </Card>
         );
       })}
     </div>
