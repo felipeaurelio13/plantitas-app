@@ -103,39 +103,12 @@ export const ExpandableInfoSection: React.FC<ExpandableInfoSectionProps> = ({
   };
 
   return (
-<<<<<<< HEAD
-    <div className="space-y-4">
-=======
     <div className="flex flex-col gap-y-1">
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
       {sections.map((section) => {
         const isExpanded = expandedSection === section.id;
         return (
           <div key={section.id} className="rounded-xl bg-white/70 dark:bg-neutral-900/70 backdrop-blur-md transition-shadow duration-200">
             <motion.button
-<<<<<<< HEAD
-              onClick={() => toggleSection(section.id)}
-              className="w-full p-4 flex items-center justify-between text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors interactive-contrast"
-              whileTap={{ scale: 0.995 }}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                  {section.icon}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-contrast-high">
-                    {section.title}
-                  </h3>
-                  {section.badge && (
-                    <span className={cn(
-                      "inline-block px-2 py-1 text-xs font-medium rounded-full mt-1",
-                      getBadgeColor(section.id, section.badge)
-                    )}>
-                      {section.badge}
-                    </span>
-                  )}
-                </div>
-=======
               onClick={() => setExpandedSection(isExpanded ? '' : section.id)}
               className="w-full flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 min-h-12 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 active:bg-primary-50 dark:active:bg-primary-900/20"
               style={{ position: isExpanded ? 'sticky' : 'static', top: 0, zIndex: 2, background: 'inherit' }}
@@ -156,23 +129,15 @@ export const ExpandableInfoSection: React.FC<ExpandableInfoSectionProps> = ({
                     {section.badge}
                   </span>
                 )}
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
               </div>
               <motion.div
                 animate={{ rotate: isExpanded ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
                 className="flex-shrink-0"
               >
-<<<<<<< HEAD
-                <ChevronDown className="w-5 h-5 text-contrast-soft" />
-              </motion.div>
-            </motion.button>
-
-=======
                 <ChevronDown className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
               </motion.div>
             </motion.button>
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
             <AnimatePresence>
               {isExpanded && (
                 <motion.div
@@ -182,15 +147,8 @@ export const ExpandableInfoSection: React.FC<ExpandableInfoSectionProps> = ({
                   transition={{ duration: 0.3, ease: 'easeInOut' }}
                   className="overflow-hidden"
                 >
-<<<<<<< HEAD
-                  <div className="px-4 pb-4">
-                    <div className="border-t border-contrast pt-4">
-                      {section.component}
-                    </div>
-=======
                   <div className="px-3 pb-3 sm:px-4 sm:pb-4 max-h-[60vh] overflow-y-auto">
                     {section.component}
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
                   </div>
                 </motion.div>
               )}
