@@ -16,6 +16,7 @@ const quickActions = [
 
 const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
   const [message, setMessage] = useState('');
+  const [isComposing, setIsComposing] = useState(false);
 
   const handleSend = () => {
     if (!message.trim()) return;
@@ -24,7 +25,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -38,8 +39,15 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
             <Input
               type="text"
               value={message}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onChange={e => setMessage(e.target.value)}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
               placeholder="Escribe un mensaje..."
               className="pr-12"
               disabled={isTyping}
@@ -57,7 +65,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
             <Send size={20} />
           </Button>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 mb-3">
           {quickActions.map((action) => (
             <Button
               key={action}

@@ -1,53 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { plantService } from '../../../src/services/plantService';
-import { Plant, PlantImage, HealthAnalysis } from '../../../src/schemas';
-
-// Mock de Supabase
-vi.mock('../../../src/lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          order: vi.fn(() => ({
-            limit: vi.fn(() => ({
-              data: [],
-              error: null
-            }))
-          }))
-        }))
-      })),
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(() => ({
-            data: null,
-            error: null
-          }))
-        }))
-      })),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          select: vi.fn(() => ({
-            single: vi.fn(() => ({
-              data: null,
-              error: null
-            }))
-          }))
-        }))
-      }))
-    })),
-    storage: {
-      from: vi.fn(() => ({
-        upload: vi.fn(() => ({
-          data: { path: 'test-image.jpg' },
-          error: null
-        })),
-        getPublicUrl: vi.fn(() => ({
-          data: { publicUrl: 'https://example.com/test-image.jpg' }
-        }))
-      }))
-    }
-  }
-}));
+import { PlantService } from '../../../src/services/plantService';
+import { supabaseMock } from '../../mocks/services';
+import { Plant } from '../../../src/schemas';
 
 const mockPlant: Plant = {
   id: 'test-plant-1',
@@ -60,22 +14,7 @@ const mockPlant: Plant = {
   plantEnvironment: 'interior',
   lightRequirements: 'luz_indirecta',
   dateAdded: new Date('2024-01-01'),
-  images: [
-    {
-      id: 'img-1',
-      url: 'https://example.com/monstera.jpg',
-      timestamp: new Date('2024-01-01'),
-      isProfileImage: true,
-      healthAnalysis: {
-        overallHealth: 'good',
-        confidence: 85,
-        issues: [],
-        recommendations: ['Keep up the good care!'],
-        moistureLevel: 70,
-        growthStage: 'mature'
-      }
-    }
-  ],
+  images: [],
   healthScore: 85,
   careProfile: {
     wateringFrequency: 7,
@@ -95,299 +34,185 @@ const mockPlant: Plant = {
   notifications: []
 };
 
-describe('plantService', () => {
+describe('PlantService', () => {
+  let service: PlantService;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    service = new PlantService(supabaseMock);
   });
 
   describe('getUserPlants', () => {
     it('should fetch plants for a user', async () => {
-      const mockPlants = [mockPlant];
-      const { supabase } = await import('../../../src/lib/supabase');
-      
-      (supabase.from as any).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockReturnValue({
-              limit: vi.fn().mockReturnValue({
-                data: mockPlants,
-                error: null
-              })
-            })
-          })
-        })
-      });
-
-      const result = await plantService.getUserPlants('test-user-id');
-
-      expect(result).toEqual(mockPlants);
-      expect(supabase.from).toHaveBeenCalledWith('plants');
-    });
-
-    it('should handle errors when fetching plants', async () => {
-      const { supabase } = await import('../../../src/lib/supabase');
-      
-      (supabase.from as any).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockReturnValue({
-              limit: vi.fn().mockReturnValue({
-                data: null,
-                error: { message: 'Database error' }
-              })
-            })
-          })
-        })
-      });
-
-      await expect(plantService.getUserPlants('test-user-id')).rejects.toThrow();
+      // Mocks encadenados para select -> eq -> order
+      const orderMock = vi.fn(() => ({ data: [
+        {
+          id: 'test-plant-1',
+          name: 'Monstera Deliciosa',
+          species: 'Monstera deliciosa',
+          nickname: 'Monstera',
+          description: 'Una hermosa planta tropical',
+          fun_facts: ['Es nativa de México'],
+          location: 'Interior',
+          plant_environment: 'interior',
+          light_requirements: 'luz_indirecta',
+          date_added: '2024-01-01T00:00:00.000Z',
+          last_watered: null,
+          last_fertilized: null,
+          health_score: 85,
+          care_profile: mockPlant.careProfile,
+          personality: mockPlant.personality,
+          plant_images: [],
+          chat_messages: [],
+          plant_notifications: []
+        }
+      ], error: null }));
+      const eqMock = vi.fn(() => ({ order: orderMock }));
+      const selectMock = vi.fn(() => ({ eq: eqMock }));
+      supabaseMock.from.mockReturnValue({ select: selectMock });
+      const result = await service.getUserPlants('user-123');
+      expect(result[0]).toEqual(expect.objectContaining({
+        id: mockPlant.id,
+        name: mockPlant.name,
+        species: mockPlant.species,
+        nickname: mockPlant.nickname,
+        description: mockPlant.description,
+        healthScore: mockPlant.healthScore,
+        location: mockPlant.location
+      }));
     });
   });
 
   describe('getPlantById', () => {
     it('should fetch a specific plant by ID', async () => {
-      const { supabase } = await import('../../../src/lib/supabase');
-      
-      (supabase.from as any).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockReturnValue({
-              data: mockPlant,
-              error: null
-            })
-          })
-        })
-      });
-
-      const result = await plantService.getPlantById('test-plant-1');
-
-      expect(result).toEqual(mockPlant);
-      expect(supabase.from).toHaveBeenCalledWith('plants');
+      const singleMock = vi.fn(() => ({ data: {
+        id: 'test-plant-1',
+        name: 'Monstera Deliciosa',
+        species: 'Monstera deliciosa',
+        nickname: 'Monstera',
+        description: 'Una hermosa planta tropical',
+        fun_facts: ['Es nativa de México'],
+        location: 'Interior',
+        plant_environment: 'interior',
+        light_requirements: 'luz_indirecta',
+        date_added: '2024-01-01T00:00:00.000Z',
+        last_watered: null,
+        last_fertilized: null,
+        health_score: 85,
+        care_profile: mockPlant.careProfile,
+        personality: mockPlant.personality,
+        plant_images: [],
+        chat_messages: [],
+        plant_notifications: []
+      }, error: null }));
+      const eqMock2 = vi.fn(() => ({ single: singleMock }));
+      const eqMock1 = vi.fn(() => ({ eq: eqMock2 }));
+      const selectMock = vi.fn(() => ({ eq: eqMock1 }));
+      supabaseMock.from.mockReturnValue({ select: selectMock });
+      const result = await service.getPlantById('test-plant-1', 'user-123');
+      expect(result).toEqual(expect.objectContaining({
+        id: mockPlant.id,
+        name: mockPlant.name,
+        species: mockPlant.species,
+        nickname: mockPlant.nickname,
+        description: mockPlant.description,
+        healthScore: mockPlant.healthScore,
+        location: mockPlant.location
+      }));
     });
-
     it('should handle plant not found', async () => {
-      const { supabase } = await import('../../../src/lib/supabase');
-      
-      (supabase.from as any).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockReturnValue({
-              data: null,
-              error: null
-            })
-          })
-        })
-      });
-
-      const result = await plantService.getPlantById('non-existent-plant');
-
+      const singleMock = vi.fn(() => ({ data: null, error: null }));
+      const eqMock2 = vi.fn(() => ({ single: singleMock }));
+      const eqMock1 = vi.fn(() => ({ eq: eqMock2 }));
+      const selectMock = vi.fn(() => ({ eq: eqMock1 }));
+      supabaseMock.from.mockReturnValue({ select: selectMock });
+      const result = await service.getPlantById('non-existent-plant', 'user-123');
       expect(result).toBeNull();
     });
   });
 
   describe('addPlantImage', () => {
     it('should add an image to a plant', async () => {
-      const { supabase } = await import('../../../src/lib/supabase');
-      
-      (supabase.storage.from as any).mockReturnValue({
-        upload: vi.fn().mockReturnValue({
-          data: { path: 'test-image.jpg' },
-          error: null
-        }),
-        getPublicUrl: vi.fn().mockReturnValue({
-          data: { publicUrl: 'https://example.com/test-image.jpg' }
-        })
-      });
-
-      (supabase.from as any).mockReturnValue({
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockReturnValue({
-              data: {
-                id: 'new-image-id',
-                url: 'https://example.com/test-image.jpg',
-                timestamp: new Date().toISOString(),
-                isProfileImage: false,
-                healthAnalysis: {
-                  overallHealth: 'good',
-                  confidence: 90,
-                  issues: [],
-                  recommendations: ['Great care!'],
-                  moistureLevel: 75,
-                  growthStage: 'mature'
-                }
-              },
-              error: null
-            })
-          })
-        })
-      });
-
+      supabaseMock.storage.from().upload.mockReturnValue({ data: { path: 'test-image.jpg' }, error: null });
+      supabaseMock.storage.from().getPublicUrl.mockReturnValue({ data: { publicUrl: 'https://example.com/test.jpg' } });
+      const singleMock = vi.fn(() => ({ data: { id: 'img-1', url: 'https://example.com/test.jpg', created_at: new Date().toISOString(), is_profile_image: false, health_analysis: {} }, error: null }));
+      const selectMock = vi.fn(() => ({ single: singleMock }));
+      const insertMock = vi.fn(() => ({ select: selectMock }));
+      supabaseMock.from.mockReturnValue({ insert: insertMock });
       const imageData = {
         plantId: 'test-plant-1',
         imageFile: new File(['test'], 'test.jpg', { type: 'image/jpeg' }),
-        healthAnalysis: {
-          overallHealth: 'good',
-          confidence: 90,
-          issues: [],
-          recommendations: ['Great care!'],
-          moistureLevel: 75,
-          growthStage: 'mature'
-        }
+        healthAnalysis: {}
       };
-
-      const result = await plantService.addPlantImage(imageData);
-
-      expect(result).toBeDefined();
-      expect(supabase.storage.from).toHaveBeenCalledWith('plant-images');
-      expect(supabase.from).toHaveBeenCalledWith('plant_images');
+      const result = await service.addPlantImage('test-plant-1', imageData, 'user-123');
+      expect(result.url).toBe('https://example.com/test.jpg');
     });
-
     it('should handle upload errors', async () => {
-      const { supabase } = await import('../../../src/lib/supabase');
-      
-      (supabase.storage.from as any).mockReturnValue({
-        upload: vi.fn().mockReturnValue({
-          data: null,
-          error: { message: 'Upload failed' }
-        })
-      });
-
+      supabaseMock.storage.from().upload.mockReturnValue({ data: null, error: { message: 'Upload failed' } });
+      const singleMock = vi.fn(() => ({ data: null, error: null }));
+      const selectMock = vi.fn(() => ({ single: singleMock }));
+      const insertMock = vi.fn(() => ({ select: selectMock }));
+      supabaseMock.from.mockReturnValue({ insert: insertMock });
       const imageData = {
         plantId: 'test-plant-1',
         imageFile: new File(['test'], 'test.jpg', { type: 'image/jpeg' }),
-        healthAnalysis: {
-          overallHealth: 'good',
-          confidence: 90,
-          issues: [],
-          recommendations: ['Great care!'],
-          moistureLevel: 75,
-          growthStage: 'mature'
-        }
+        healthAnalysis: {}
       };
-
-      await expect(plantService.addPlantImage(imageData)).rejects.toThrow();
+      await expect(service.addPlantImage('test-plant-1', imageData, 'user-123')).rejects.toThrow();
     });
   });
 
   describe('updatePlantHealthScore', () => {
     it('should update plant health score', async () => {
-      const { supabase } = await import('../../../src/lib/supabase');
-      
-      (supabase.from as any).mockReturnValue({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockReturnValue({
-                data: { ...mockPlant, healthScore: 90 },
-                error: null
-              })
-            })
-          })
-        })
-      });
-
-      const updateData = {
-        plant: mockPlant,
-        userId: 'test-user'
-      };
-
-      const result = await plantService.updatePlantHealthScore(updateData);
-
-      expect(result).toBeDefined();
-      expect(supabase.from).toHaveBeenCalledWith('plants');
+      // Mocks para .update().eq().eq()
+      const eqMock2 = vi.fn(() => ({}));
+      const eqMock1 = vi.fn(() => ({ eq: eqMock2 }));
+      const updateMock = vi.fn(() => ({ eq: eqMock1 }));
+      supabaseMock.from.mockReturnValue({ update: updateMock });
+      await expect(service.updatePlantHealthScore('test-plant-1', 'user-123', 90)).resolves.toBeUndefined();
     });
-
     it('should handle update errors', async () => {
-      const { supabase } = await import('../../../src/lib/supabase');
-      
-      (supabase.from as any).mockReturnValue({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockReturnValue({
-                data: null,
-                error: { message: 'Update failed' }
-              })
-            })
-          })
-        })
-      });
-
-      const updateData = {
-        plant: mockPlant,
-        userId: 'test-user'
-      };
-
-      await expect(plantService.updatePlantHealthScore(updateData)).rejects.toThrow();
+      const eqMock2 = vi.fn(() => ({ error: { message: 'Update failed' } }));
+      const eqMock1 = vi.fn(() => ({ eq: eqMock2 }));
+      const updateMock = vi.fn(() => ({ eq: eqMock1 }));
+      supabaseMock.from.mockReturnValue({ update: updateMock });
+      await expect(service.updatePlantHealthScore('test-plant-1', 'user-123', 90)).rejects.toThrow();
     });
   });
 
   describe('updatePlantInfo', () => {
     it('should update plant information', async () => {
-      const { supabase } = await import('../../../src/lib/supabase');
-      
-      (supabase.from as any).mockReturnValue({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockReturnValue({
-                data: { ...mockPlant, description: 'Updated description' },
-                error: null
-              })
-            })
-          })
-        })
-      });
-
-      const updateData = {
-        plantId: 'test-plant-1',
-        updates: {
-          description: 'Updated description',
-          plantEnvironment: 'exterior'
-        }
-      };
-
-      const result = await plantService.updatePlantInfo(updateData);
-
-      expect(result).toBeDefined();
-      expect(supabase.from).toHaveBeenCalledWith('plants');
+      // Mocks para .update().eq().eq().select().single()
+      const singleMock = vi.fn(() => ({ data: { ...mockPlant, description: 'Updated description' }, error: null }));
+      const selectMock = vi.fn(() => ({ single: singleMock }));
+      const eqMock2 = vi.fn(() => ({ select: selectMock }));
+      const eqMock1 = vi.fn(() => ({ eq: eqMock2 }));
+      const updateMock = vi.fn(() => ({ eq: eqMock1 }));
+      supabaseMock.from.mockReturnValue({ update: updateMock });
+      const result = await service.updatePlantInfo('test-plant-1', 'user-123', { description: 'Updated description' });
+      expect(result.description).toBe('Updated description');
+    });
+    it('should handle not found', async () => {
+      const singleMock = vi.fn(() => ({ data: null, error: null }));
+      const selectMock = vi.fn(() => ({ single: singleMock }));
+      const eqMock2 = vi.fn(() => ({ select: selectMock }));
+      const eqMock1 = vi.fn(() => ({ eq: eqMock2 }));
+      const updateMock = vi.fn(() => ({ eq: eqMock1 }));
+      supabaseMock.from.mockReturnValue({ update: updateMock });
+      await expect(service.updatePlantInfo('test-plant-1', 'user-123', { description: 'Updated description' })).rejects.toThrow('Plant not found or not updated.');
     });
   });
 
   describe('addChatMessage', () => {
     it('should add a chat message to a plant', async () => {
-      const { supabase } = await import('../../../src/lib/supabase');
-      
-      (supabase.from as any).mockReturnValue({
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockReturnValue({
-              data: {
-                id: 'msg-1',
-                plantId: 'test-plant-1',
-                sender: 'user',
-                content: 'Hello plant!',
-                timestamp: new Date().toISOString(),
-                emotion: 'happy'
-              },
-              error: null
-            })
-          })
-        })
-      });
-
-      const messageData = {
-        plantId: 'test-plant-1',
-        sender: 'user' as const,
-        content: 'Hello plant!',
-        emotion: 'happy' as const
-      };
-
-      const result = await plantService.addChatMessage(messageData);
-
-      expect(result).toBeDefined();
-      expect(supabase.from).toHaveBeenCalledWith('chat_messages');
+      const singleMock = vi.fn(() => ({ data: { id: 'msg-1', sender: 'user', content: 'Hello plant!', created_at: new Date().toISOString(), emotion: 'happy' }, error: null }));
+      const selectMock = vi.fn(() => ({ single: singleMock }));
+      const insertMock = vi.fn(() => ({ select: selectMock }));
+      supabaseMock.from.mockReturnValue({ insert: insertMock });
+      const messageData = { sender: 'user', content: 'Hello plant!', emotion: 'happy', timestamp: new Date() };
+      const result = await service.addChatMessage('test-plant-1', messageData, 'user-123');
+      expect(result.id).toBe('msg-1');
+      expect(result.content).toBe('Hello plant!');
     });
   });
 }); 

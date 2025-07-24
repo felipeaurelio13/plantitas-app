@@ -7,34 +7,6 @@ import PlantDetail from '../../../src/pages/PlantDetail';
 import { Plant } from '../../../src/schemas';
 
 // Mock de hooks y servicios
-vi.mock('../../../src/hooks/usePlantDetail', () => ({
-  usePlantDetail: () => ({
-    plant: mockPlant,
-    isLoading: false,
-    error: null
-  })
-}));
-
-vi.mock('../../../src/hooks/usePlantMutations', () => ({
-  usePlantMutations: () => ({
-    updatePlantHealthMutation: vi.fn(),
-    isUpdatingPlantHealth: false
-  })
-}));
-
-vi.mock('../../../src/stores/useAuthStore', () => ({
-  useAuthStore: () => ({
-    user: { id: 'test-user', email: 'test@example.com' },
-    isAuthenticated: true
-  })
-}));
-
-vi.mock('../../../src/components/ui/Toast', () => ({
-  useToast: () => ({
-    addToast: vi.fn()
-  })
-}));
-
 const mockPlant: Plant = {
   id: 'test-plant-1',
   name: 'Monstera Deliciosa',
@@ -81,6 +53,34 @@ const mockPlant: Plant = {
   notifications: []
 };
 
+vi.mock('../../../src/hooks/usePlantDetail', () => ({
+  usePlantDetail: vi.fn(() => ({
+    plant: mockPlant,
+    isLoading: false,
+    error: null
+  }))
+}));
+
+vi.mock('../../../src/hooks/usePlantMutations', () => ({
+  usePlantMutations: () => ({
+    updatePlantHealthMutation: vi.fn(),
+    isUpdatingPlantHealth: false
+  })
+}));
+
+vi.mock('../../../src/stores/useAuthStore', () => ({
+  useAuthStore: () => ({
+    user: { id: 'test-user', email: 'test@example.com' },
+    isAuthenticated: true
+  })
+}));
+
+vi.mock('../../../src/components/ui/Toast', () => ({
+  useToast: () => ({
+    addToast: vi.fn()
+  })
+}));
+
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -109,8 +109,6 @@ describe('PlantDetail Component', () => {
         <PlantDetail />
       </TestWrapper>
     );
-
-    // Verificar información básica de la planta
     expect(screen.getByText('Monstera Deliciosa')).toBeInTheDocument();
     expect(screen.getByText('Monstera')).toBeInTheDocument();
     expect(screen.getByText('Interior')).toBeInTheDocument();
@@ -123,7 +121,6 @@ describe('PlantDetail Component', () => {
         <PlantDetail />
       </TestWrapper>
     );
-
     expect(screen.getByText('Una hermosa planta tropical con hojas características')).toBeInTheDocument();
     expect(screen.getByText('Es nativa de México')).toBeInTheDocument();
     expect(screen.getByText('Puede crecer hasta 20 metros')).toBeInTheDocument();
@@ -135,8 +132,6 @@ describe('PlantDetail Component', () => {
         <PlantDetail />
       </TestWrapper>
     );
-
-    // Verificar información de cuidados
     expect(screen.getByText(/7 días/i)).toBeInTheDocument();
     expect(screen.getByText(/luz indirecta/i)).toBeInTheDocument();
     expect(screen.getByText(/alta/i)).toBeInTheDocument();
@@ -148,8 +143,6 @@ describe('PlantDetail Component', () => {
         <PlantDetail />
       </TestWrapper>
     );
-
-    // Verificar información de salud
     expect(screen.getByText(/saludable/i)).toBeInTheDocument();
     expect(screen.getByText(/85%/i)).toBeInTheDocument();
     expect(screen.getByText(/Keep up the good care!/i)).toBeInTheDocument();
@@ -161,7 +154,6 @@ describe('PlantDetail Component', () => {
         <PlantDetail />
       </TestWrapper>
     );
-
     const image = screen.getByAltText('Monstera Deliciosa');
     expect(image).toBeInTheDocument();
     expect(image).toHaveAttribute('src', 'https://example.com/monstera.jpg');
@@ -173,8 +165,6 @@ describe('PlantDetail Component', () => {
         <PlantDetail />
       </TestWrapper>
     );
-
-    // Verificar botones de navegación
     expect(screen.getByRole('button', { name: /agregar foto/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /chat/i })).toBeInTheDocument();
   });
@@ -185,12 +175,12 @@ describe('PlantDetail Component', () => {
         <PlantDetail />
       </TestWrapper>
     );
-
     expect(screen.getByText(/interior/i)).toBeInTheDocument();
     expect(screen.getByText(/luz indirecta/i)).toBeInTheDocument();
   });
 
   it('should handle missing optional fields gracefully', () => {
+    const { usePlantDetail } = require('../../../src/hooks/usePlantDetail');
     const plantWithoutOptionalFields: Plant = {
       ...mockPlant,
       description: undefined,
@@ -198,56 +188,47 @@ describe('PlantDetail Component', () => {
       plantEnvironment: undefined,
       lightRequirements: undefined
     };
-
-    // Mock el hook para retornar planta sin campos opcionales
-    vi.mocked(require('../../../src/hooks/usePlantDetail').usePlantDetail).mockReturnValue({
+    usePlantDetail.mockReturnValue({
       plant: plantWithoutOptionalFields,
       isLoading: false,
       error: null
     });
-
     render(
       <TestWrapper>
         <PlantDetail />
       </TestWrapper>
     );
-
-    // Debería renderizar sin errores
     expect(screen.getByText('Monstera Deliciosa')).toBeInTheDocument();
     expect(screen.getByText('Monstera')).toBeInTheDocument();
   });
 
   it('should display loading state', () => {
-    // Mock el hook para retornar estado de carga
-    vi.mocked(require('../../../src/hooks/usePlantDetail').usePlantDetail).mockReturnValue({
+    const { usePlantDetail } = require('../../../src/hooks/usePlantDetail');
+    usePlantDetail.mockReturnValue({
       plant: null,
       isLoading: true,
       error: null
     });
-
     render(
       <TestWrapper>
         <PlantDetail />
       </TestWrapper>
     );
-
     expect(screen.getByText(/cargando/i)).toBeInTheDocument();
   });
 
   it('should display error state', () => {
-    // Mock el hook para retornar error
-    vi.mocked(require('../../../src/hooks/usePlantDetail').usePlantDetail).mockReturnValue({
+    const { usePlantDetail } = require('../../../src/hooks/usePlantDetail');
+    usePlantDetail.mockReturnValue({
       plant: null,
       isLoading: false,
       error: new Error('Failed to load plant')
     });
-
     render(
       <TestWrapper>
         <PlantDetail />
       </TestWrapper>
     );
-
     expect(screen.getByText(/error/i)).toBeInTheDocument();
   });
 }); 

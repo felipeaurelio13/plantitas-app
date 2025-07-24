@@ -9,7 +9,6 @@ import { navigation } from '@/lib/navigation';
 
 import PlantCard from '@/components/PlantCard';
 import PlantCardSkeleton from '@/components/PlantCardSkeleton';
-import AddPlantMenu from '@/components/AddPlantMenu';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -101,32 +100,43 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="container-spacing element-spacing">
-        <header className="flex items-center justify-between">
-            <div>
-                <h1 className="text-3xl font-bold text-contrast-high">Mi Jardín</h1>
-                <p className="text-contrast-medium">{plants.length} {plants.length === 1 ? 'planta' : 'plantas'} en tu colección</p>
+    <div className="container-spacing element-spacing bg-white" style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom))' }}>
+        <header className="flex items-center justify-between border-b-2 border-[#E0F2E9] bg-white pb-2 mb-4">
+            <div className="flex items-center gap-3">
+                {/* Icono hoja minimal */}
+                <Leaf size={20} strokeWidth={2} className="text-[#2A7F3E] flex-shrink-0" />
+                <h1 className="font-semibold text-[28px] leading-[1.2] text-[#222]">Mi Jardín</h1>
+                {/* Contador como pill */}
+                <span className="ml-2 bg-[#E0F2E9]/50 text-[#2A7F3E] text-sm font-medium rounded-full px-[6px] py-[2px]">
+                  {plants.length} {plants.length === 1 ? 'planta' : 'plantas'}
+                </span>
             </div>
-            <AddPlantMenu />
         </header>
 
-        <div className="flex flex-col sm:flex-row element-spacing-sm">
+        {/* Buscador y orden: centrados y con margen superior */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6 mb-6">
             <Input
                 type="text"
                 placeholder="Buscar por nombre o especie..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-grow"
+                className="max-w-md w-full mx-auto"
             />
-            <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortByType)}
-                className="bg-contrast-surface border border-contrast rounded-lg px-4 py-2 h-10 text-contrast-medium focus-contrast"
-            >
-                <option value="name">Ordenar por Nombre</option>
-                <option value="health">Ordenar por Salud</option>
-                <option value="lastWatered">Ordenar por Riego</option>
-            </select>
+            <div className="relative w-full max-w-xs">
+              <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortByType)}
+                  className="appearance-none bg-white border border-green-300 rounded-[8px] px-4 py-2 h-10 text-green-700 font-medium shadow-sm focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-colors duration-150 w-full pr-8"
+                  style={{ borderWidth: '1px' }}
+              >
+                  <option value="name">Ordenar por Nombre</option>
+                  <option value="health">Ordenar por Salud</option>
+                  <option value="lastWatered">Ordenar por Riego</option>
+              </select>
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-green-400 text-base">
+                ▼
+              </span>
+            </div>
         </div>
 
         <AnimatePresence>

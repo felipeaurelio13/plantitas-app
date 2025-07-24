@@ -19,6 +19,7 @@ const GardenChatInput: React.FC<GardenChatInputProps> = ({
 }) => {
   const [message, setMessage] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [isComposing, setIsComposing] = useState(false);
 
   const handleSend = async () => {
     if (!message.trim() || isTyping) return;
@@ -29,7 +30,7 @@ const GardenChatInput: React.FC<GardenChatInputProps> = ({
     await onSendMessage(messageToSend);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -69,19 +70,19 @@ const GardenChatInput: React.FC<GardenChatInputProps> = ({
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="space-y-2"
+              className="space-y-2 mb-4"
             >
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Sparkles size={12} />
                 <span>Preguntas sugeridas</span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mb-3">
                 {suggestedQuestions.slice(0, 4).map((suggestion, index) => (
                   <motion.button
                     key={suggestion}
                     onClick={() => handleSuggestionClick(suggestion)}
                     disabled={isTyping}
-                    className="px-3 py-1.5 text-xs bg-muted hover:bg-muted/80 rounded-full border border-border/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                    className="px-3 py-1.5 text-xs bg-muted hover:bg-[#F0F0F0] active:bg-[#F0F0F0] rounded-full border border-border/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.1 }}
@@ -103,7 +104,14 @@ const GardenChatInput: React.FC<GardenChatInputProps> = ({
               type="text"
               value={message}
               onChange={handleChange}
-              onKeyPress={handleKeyPress}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
               onFocus={handleFocus}
               placeholder="Pregúntame sobre tu jardín..."
               className="pr-12"

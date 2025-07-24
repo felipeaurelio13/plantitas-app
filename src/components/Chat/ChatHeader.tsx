@@ -40,12 +40,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ plant }) => {
           <h1 className="font-bold text-foreground truncate">
             {plant.nickname || plant.name}
           </h1>
-          <p className="text-xs text-muted-foreground capitalize">
+          <p className="text-xs text-neutral-600 dark:text-neutral-400 capitalize">
             Se siente {getPlantMood()}
           </p>
         </div>
         
-        <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+        <div className="flex items-center gap-2 text-sm font-semibold text-green-600 dark:text-green-400">
           <Heart className="w-4 h-4" />
           <span>{plant.healthScore}%</span>
         </div>

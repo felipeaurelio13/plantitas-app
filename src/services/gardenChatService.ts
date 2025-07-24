@@ -6,28 +6,28 @@ import {
   GardenChatMessage,
 } from '../schemas';
 import { toastService } from './toastService';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export class GardenChatService {
-  private static instance: GardenChatService;
+  private supabase: SupabaseClient;
+  private cache: typeof gardenCacheService;
 
-  static getInstance(): GardenChatService {
-    if (!GardenChatService.instance) {
-      GardenChatService.instance = new GardenChatService();
-    }
-    return GardenChatService.instance;
+  constructor(supabaseClient: SupabaseClient, cacheService: typeof gardenCacheService) {
+    this.supabase = supabaseClient;
+    this.cache = cacheService;
   }
 
   async sendMessage(message: string, sessionId: string, userId: string): Promise<GardenAIResponse> {
     try {
       // Obtener el JWT token del usuario autenticado
-      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      const { data: { session }, error: authError } = await this.supabase.auth.getSession();
       
       if (authError || !session?.access_token) {
         console.error('User session not available:', authError);
         throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
       }
 
-      const { data, error } = await supabase.functions.invoke('garden-ai-chat', {
+      const { data, error } = await this.supabase.functions.invoke('garden-ai-chat', {
         body: { message, sessionId, userId },
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -78,14 +78,14 @@ export class GardenChatService {
       }
 
       // Obtener el JWT token del usuario autenticado
-      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      const { data: { session }, error: authError } = await this.supabase.auth.getSession();
       
       if (authError || !session?.access_token) {
         console.error('User session not available:', authError);
         throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
       }
 
-      const { data, error } = await supabase.functions.invoke('garden-ai-chat', {
+      const { data, error } = await this.supabase.functions.invoke('garden-ai-chat', {
         body: { 
           userMessage: message,
           gardenContext,
@@ -111,6 +111,9 @@ export class GardenChatService {
 
       // VALIDACIÓN DE CALIDAD DE RESPUESTA IA
       const aiResponse = typeof data === 'string' ? JSON.parse(data) : data;
+      if (import.meta.env.DEV) {
+        console.log('[DEBUG][gardenChatService] Objeto aiResponse parseado:', aiResponse);
+      }
       const lowerContent = (aiResponse.content || '').toLowerCase();
       const isGeneric =
         !aiResponse.content ||
@@ -125,13 +128,27 @@ export class GardenChatService {
         }
       }
 
+      if (import.meta.env.DEV) {
+        console.log('[DEBUG][gardenChatService] Objeto retornado a la UI:', {
+          content: aiResponse.content || 'Lo siento, no pude procesar tu mensaje.',
+          insights: aiResponse.insights || [],
+          suggestedActions: aiResponse.suggestedActions || []
+        });
+      }
+
       return {
         content: aiResponse.content || 'Lo siento, no pude procesar tu mensaje.',
         insights: aiResponse.insights || [],
         suggestedActions: aiResponse.suggestedActions || []
       };
     } catch (error) {
-      console.error('Error sending message to garden AI:', error);
+      if (import.meta.env.DEV) {
+        console.error('[DEBUG][gardenChatService] Error completo en sendMessageToGardenAI:', error);
+        if (error instanceof Error) {
+          console.error('[DEBUG][gardenChatService] Error stack:', error.stack);
+          console.error('[DEBUG][gardenChatService] Error message:', error.message);
+        }
+      }
       throw error;
     }
   }
@@ -159,14 +176,14 @@ export class GardenChatService {
       };
 
       // Obtener el JWT token del usuario autenticado
-      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      const { data: { session }, error: authError } = await this.supabase.auth.getSession();
       
       if (authError || !session?.access_token) {
         console.error('User session not available:', authError);
         throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
       }
 
-      const { data, error } = await supabase.functions.invoke('garden-ai-chat', {
+      const { data, error } = await this.supabase.functions.invoke('garden-ai-chat', {
         body: testPayload,
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -211,7 +228,7 @@ export class GardenChatService {
   }> {
     try {
       // Try to get from cache first
-      const cachedSummary = gardenCacheService.getGardenSummary(userId);
+      const cachedSummary = this.cache.getGardenSummary(userId);
       if (cachedSummary) {
         return cachedSummary;
       }
@@ -230,7 +247,7 @@ export class GardenChatService {
       };
 
       // Cache the summary
-      gardenCacheService.setGardenSummary(userId, summary);
+      this.cache.setGardenSummary(userId, summary);
 
       return summary;
     } catch (error) {
@@ -314,13 +331,13 @@ export class GardenChatService {
   async buildGardenContext(userId: string): Promise<GardenAnalysisContext> {
     try {
       // Try to get from cache first
-      const cachedContext = gardenCacheService.getGardenContext(userId);
+      const cachedContext = this.cache.getGardenContext(userId);
       if (cachedContext) {
         return cachedContext;
       }
 
       // Simplified version - fetch plants data
-      const { data: dbPlants, error } = await supabase
+      const { data: dbPlants, error } = await this.supabase
         .from('plants')
         .select(`
           id,
@@ -402,7 +419,7 @@ export class GardenChatService {
       };
 
       // Cache the context
-      gardenCacheService.setGardenContext(userId, context);
+      this.cache.setGardenContext(userId, context);
 
       return context;
     } catch (error) {
@@ -412,10 +429,10 @@ export class GardenChatService {
   }
 
   invalidateCache(userId: string): void {
-    gardenCacheService.invalidateCache(userId);
+    this.cache.invalidateCache(userId);
     console.log('Cache invalidated for user:', userId);
   }
 }
 
-// Export singleton instance
-export const gardenChatService = GardenChatService.getInstance(); 
+// En la app, se crea la instancia con las dependencias reales
+export const gardenChatService = new GardenChatService(supabase, gardenCacheService); 

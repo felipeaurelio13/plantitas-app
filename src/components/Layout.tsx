@@ -9,6 +9,9 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const { isDark } = useThemeStore();
 
+  // Detectar si estamos en la cámara
+  const isCamera = location.pathname === '/camera';
+
   // Announce route changes to screen readers
   const announceRouteChange = () => {
     const routeNames: Record<string, string> = {
@@ -74,7 +77,7 @@ const Layout: React.FC = () => {
         id="main-content"
         role="main"
         aria-label="Contenido principal"
-        className="pb-24 min-h-screen focus:outline-none"
+        className="pb-28 min-h-screen focus:outline-none"
         tabIndex={-1}
       >
         <AnimatePresence mode="wait">
@@ -100,9 +103,11 @@ const Layout: React.FC = () => {
       </aside>
 
       {/* Navigation landmark */}
-      <nav role="navigation" aria-label="Navegación inferior">
-        <BottomNavigation />
-      </nav>
+      {!isCamera && (
+        <nav role="navigation" aria-label="Navegación inferior">
+          <BottomNavigation />
+        </nav>
+      )}
 
       {/* High contrast mode detection and styles */}
       <style>{`

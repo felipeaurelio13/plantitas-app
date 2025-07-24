@@ -145,6 +145,17 @@ export const GardenChatMessageSchema = z.object({
   context: z.object({
     plantsAnalyzed: z.array(z.string()).optional(), // Plant IDs referenced in this conversation
     queryType: z.enum(['general', 'health_analysis', 'care_comparison', 'disease_prevention', 'growth_tracking']).optional(),
+    insights: z.array(z.object({
+      type: z.enum(['tip', 'warning', 'observation', 'recommendation']),
+      title: z.string(),
+      description: z.string(),
+      affectedPlants: z.array(z.string()).optional(),
+    })).optional(),
+    suggestedActions: z.array(z.object({
+      action: z.string(),
+      priority: z.enum(['low', 'medium', 'high']),
+      plantIds: z.array(z.string()).optional(),
+    })).optional(),
   }).optional(),
 });
 

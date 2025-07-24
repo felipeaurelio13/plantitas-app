@@ -57,11 +57,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           'max-w-xs rounded-2xl px-4 py-2 sm:max-w-sm md:max-w-md shadow-adaptive',
           isUser
             ? 'rounded-br-lg bg-primary text-white'
-            : 'rounded-bl-lg bg-contrast-surface text-contrast-medium border border-contrast'
+            : 'rounded-bl-lg bg-contrast-surface text-contrast-medium border border-contrast',
+          'rounded-[12px]'
         )}
       >
         <p className="text-sm">{message.content}</p>
-        <p className={cn("mt-1 text-xs", isUser ? "text-white/80" : "text-contrast-soft")}>
+        <p className={cn("mt-1 text-xs", isUser ? "text-white/80" : "text-contrast-soft", 'text-[#888] text-[12px]')}>
           {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true, locale: es })}
         </p>
         {/* Feedback IA */}
