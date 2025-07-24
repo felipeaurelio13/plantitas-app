@@ -101,11 +101,7 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-<<<<<<< HEAD
-    <div className="p-4 sm:p-6 space-y-6">
-=======
     <div className="container-spacing element-spacing">
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
         <header className="flex items-center justify-between">
             <div>
                 <h1 className="text-3xl font-bold text-contrast-high">Mi Jardín</h1>
@@ -114,11 +110,7 @@ const Dashboard: React.FC = () => {
             <AddPlantMenu />
         </header>
 
-<<<<<<< HEAD
-        <div className="flex flex-col sm:flex-row gap-4">
-=======
         <div className="flex flex-col sm:flex-row element-spacing-sm">
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
             <Input
                 type="text"
                 placeholder="Buscar por nombre o especie..."
@@ -140,11 +132,7 @@ const Dashboard: React.FC = () => {
         <AnimatePresence>
             {filteredAndSortedPlants.length > 0 ? (
                 <motion.div
-<<<<<<< HEAD
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-=======
                     className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 element-spacing"
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
                     initial="hidden"
                     animate="visible"
                     variants={{

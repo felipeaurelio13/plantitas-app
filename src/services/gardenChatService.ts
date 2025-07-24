@@ -244,20 +244,10 @@ export class GardenChatService {
       const context = await this.buildGardenContext(userId);
       const suggestions: string[] = [];
 
-<<<<<<< HEAD
-      // Add context-specific suggestions
-      if (context.careScheduleSummary.needsWatering.length > 0) {
-        suggestions.push('¿Qué plantas necesitan riego?');
-      }
-
-      if (context.careScheduleSummary.healthConcerns.length > 0) {
-        suggestions.push('¿Qué plantas tienen problemas de salud?');
-=======
       if (context.totalPlants === 0) {
         suggestions.push('¿Cómo agrego mi primera planta?');
         suggestions.push('¿Qué tipo de planta me recomiendas para empezar?');
         return suggestions;
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
       }
 
       // Siempre relevante
