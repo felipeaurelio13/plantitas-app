@@ -1,18 +1,12 @@
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useMemo } from 'react';
 import { 
   Camera, 
-  TrendingUp, 
-  TrendingDown, 
   BarChart3,
-  ImageIcon,
-  Plus,
-  ArrowRight
+  Plus
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Plant, PlantImage } from '../../schemas';
-import LazyImage from '../LazyImage';
 import { PlantHealthEvolutionChart } from './PlantHealthEvolutionChart';
 
 interface PlantEvolutionTrackerProps {
@@ -34,7 +28,6 @@ export const PlantEvolutionTracker: React.FC<PlantEvolutionTrackerProps> = ({
   plant,
   onAddPhoto
 }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   
   // Agrupa las imágenes por períodos de tiempo (30 días)
   const evolutionPeriods = useMemo(() => {
@@ -148,36 +141,6 @@ export const PlantEvolutionTracker: React.FC<PlantEvolutionTrackerProps> = ({
     return periods;
   }, [plant.images]);
   
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-  
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'improving':
-        return <TrendingUp className="w-4 h-4 text-success-500" />;
-      case 'declining':
-        return <TrendingDown className="w-4 h-4 text-error-500" />;
-      default:
-        return <BarChart3 className="w-4 h-4 text-warning-500" />;
-    }
-  };
-  
-  const getTrendColor = (trend: string) => {
-    switch (trend) {
-      case 'improving':
-        return 'text-success-500 bg-success-50 border-success-200';
-      case 'declining':
-        return 'text-error-500 bg-error-50 border-error-200';
-      default:
-        return 'text-warning-500 bg-warning-50 border-warning-200';
-    }
-  };
-
   // Calcula la tendencia global de salud
   function getTrend(healthScores: number[]) {
     if (healthScores.length < 2) return null;

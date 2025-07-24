@@ -533,16 +533,20 @@ export class PlantService {
 
     // 2. Generate the plant's response
     const plantResponse = await generatePlantResponse(plant, userMessage.content);
-    
+    // 2.1. Si plantResponse tiene insights o acciones, incluirlas en context
+    const context: any = {};
+    if (plantResponse.insights) context.insights = plantResponse.insights;
+    if (plantResponse.suggestedActions) context.suggestedActions = plantResponse.suggestedActions;
+
     // 3. Save the plant's response
     const plantChatMessage: Omit<ChatMessage, 'id'> = {
       sender: 'plant',
       content: plantResponse.content,
       emotion: plantResponse.emotion,
       timestamp: new Date(),
+      ...(Object.keys(context).length > 0 ? { context } : {}),
     };
     const savedPlantMessage = await this.addChatMessage(plant.id, plantChatMessage, userId);
-    
     // 4. Return both persisted messages
     return [savedUserMessage, savedPlantMessage];
   }
@@ -550,34 +554,33 @@ export class PlantService {
   async addChatMessage(plantId: string, message: Omit<ChatMessage, 'id'>, userId: string): Promise<ChatMessage> {
     try {
       if (import.meta.env.DEV) console.log('💬 Adding chat message:', { plantId, message, userId });
-      
-      const insertData = {
+      const insertData: any = {
         plant_id: plantId,
         user_id: userId,
         sender: message.sender,
         content: message.content,
         emotion: message.emotion || null,
       };
-      
+      if (message.context) {
+        insertData.context = message.context;
+      }
       if (import.meta.env.DEV) console.log('📤 Insert data:', insertData);
-      
       const { data, error } = await this.supabase
         .from('chat_messages')
         .insert(insertData)
         .select()
         .single();
-
       if (error) {
         console.error('❌ Supabase error:', error);
         throw error;
       }
-
       return {
         id: data.id,
         sender: data.sender as 'user' | 'plant',
         content: data.content,
         timestamp: new Date(data.created_at!),
         emotion: data.emotion as any,
+        context: data.context || undefined,
       };
     } catch (error) {
       console.error('Error adding chat message:', error);

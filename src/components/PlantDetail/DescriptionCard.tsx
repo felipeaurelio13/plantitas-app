@@ -8,7 +8,7 @@ interface DescriptionCardProps {
   funFacts?: string[];
 }
 
-export const DescriptionCard: React.FC<DescriptionCardProps> = ({ description, funFacts }) => {
+export const DescriptionCard: React.FC<DescriptionCardProps> = ({ funFacts }) => {
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -32,20 +32,6 @@ export const DescriptionCard: React.FC<DescriptionCardProps> = ({ description, f
       initial="hidden"
       animate="visible"
     >
-      {/* Description Section */}
-      <motion.div className="mb-4" variants={itemVariants}>
-        <p className="text-base text-foreground mb-2">
-          {description}
-        </p>
-        {funFacts && funFacts.length > 0 && (
-          <ul className="list-disc pl-5 text-sm text-muted-foreground">
-            {funFacts.map((fact, i) => (
-              <li key={i}>{fact}</li>
-            ))}
-          </ul>
-        )}
-      </motion.div>
-
       {/* Fun Facts Section */}
       {funFacts && funFacts.length > 0 && (
         <motion.div variants={itemVariants}>
@@ -62,7 +48,6 @@ export const DescriptionCard: React.FC<DescriptionCardProps> = ({ description, f
               </p>
             </div>
           </div>
-          
           <div className="grid gap-4">
             {funFacts.map((fact, index) => (
               <motion.div 
@@ -86,15 +71,14 @@ export const DescriptionCard: React.FC<DescriptionCardProps> = ({ description, f
           </div>
         </motion.div>
       )}
-
       {/* Empty state for fun facts */}
-      {(!funFacts || funFacts.length === 0) && description && (
+      {(!funFacts || funFacts.length === 0) && (
         <motion.div 
           className="mt-8 flex items-center justify-center p-6 bg-muted/30 rounded-xl border border-dashed border-muted-foreground/20"
           variants={itemVariants}
         >
           <div className="text-center">
-            <Sparkles className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+            <Sparkles className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
             <p className="text-muted-foreground font-medium">
               No hay datos curiosos disponibles
             </p>

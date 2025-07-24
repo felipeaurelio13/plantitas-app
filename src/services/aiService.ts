@@ -53,7 +53,7 @@ export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResp
 export const generatePlantResponse = async (
   plant: Plant,
   userMessage: string
-): Promise<PlantResponse> => {
+): Promise<PlantResponse & { insights?: any[]; suggestedActions?: any[] }> => {
   if (import.meta.env.DEV) {
     console.log('[DEBUG][aiService] Prompt enviado a generate-plant-response:', { plant, userMessage });
   }
@@ -70,7 +70,7 @@ export const generatePlantResponse = async (
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   // Obtener insights de la planta (tendencias, consejos, alertas)
-  let insights = [];
+  let insights: any[] = [];
   try {
     insights = await generateInsights(plant);
     if (import.meta.env.DEV) {
@@ -131,7 +131,11 @@ export const generatePlantResponse = async (
     }
   }
 
-  return data as PlantResponse;
+  return {
+    ...(data as PlantResponse),
+    insights: data?.insights || insights || [],
+    suggestedActions: data?.suggestedActions || [],
+  };
 };
 
 /**
