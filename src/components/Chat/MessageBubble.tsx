@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import { ChatMessage } from '../../schemas';
 import { cn } from '../../lib/utils';
+import { toastService } from '../../services/toastService';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -27,6 +28,17 @@ const getEmotionIcon = (emotion?: string) => {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.sender === 'user';
+
+  const handleFeedback = (useful: boolean) => {
+    toastService.success('¡Gracias por tu feedback!', useful ? 'Nos alegra que la respuesta te haya sido útil.' : 'Trabajaremos para mejorar las respuestas.');
+    if (import.meta.env.DEV) {
+      console.log('[Feedback][Chat IA Planta]', {
+        messageId: message.id,
+        content: message.content,
+        useful
+      });
+    }
+  };
 
   return (
     <motion.div
@@ -52,6 +64,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         <p className={cn("mt-1 text-xs", isUser ? "text-white/80" : "text-contrast-soft")}>
           {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true, locale: es })}
         </p>
+        {/* Feedback IA */}
+        {!isUser && (
+          <div className="flex gap-2 mt-2">
+            <button
+              aria-label="Respuesta útil"
+              className="text-green-600 hover:text-green-800 text-lg focus:outline-none"
+              onClick={() => handleFeedback(true)}
+            >
+              👍
+            </button>
+            <button
+              aria-label="Respuesta no útil"
+              className="text-red-500 hover:text-red-700 text-lg focus:outline-none"
+              onClick={() => handleFeedback(false)}
+            >
+              👎
+            </button>
+          </div>
+        )}
       </div>
     </motion.div>
   );

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { navigation } from '../../lib/navigation';
 
 interface CameraErrorStateProps {
   error: string;
@@ -34,7 +35,7 @@ export const CameraErrorState: React.FC<CameraErrorStateProps> = ({ error, onRet
             </Button>
             
             <Button
-              onClick={() => navigate('/')}
+              onClick={() => navigate(navigation.toDashboard())}
               variant="secondary"
             >
               Go Back

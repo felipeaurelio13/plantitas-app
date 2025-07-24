@@ -9,6 +9,7 @@ import { useCamera } from '@/hooks/useCamera';
 import { CameraErrorState } from '../components/camera/CameraErrorState';
 import { ImagePreview } from '../components/camera/ImagePreview';
 import { CameraCaptureView } from '../components/camera/CameraCaptureView';
+import { navigation } from '../lib/navigation';
 
 const CameraPage: React.FC = () => {
   const navigate = useNavigate();
@@ -42,10 +43,10 @@ const CameraPage: React.FC = () => {
         onSuccess: (newPlant) => {
           // We navigate to the new plant's detail page on success.
           if (newPlant?.id) {
-            navigate(`/plant/${newPlant.id}`);
+            navigate(navigation.toPlantDetail(newPlant.id));
           } else {
             // Fallback to the dashboard if for some reason the new plant has no ID.
-            navigate('/');
+            navigate(navigation.toDashboard());
           }
           resolve(newPlant);
         },

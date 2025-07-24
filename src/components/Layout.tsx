@@ -69,11 +69,6 @@ const Layout: React.FC = () => {
       {/* Screen reader only title */}
       <h1 className="sr-only">Plantitas - Aplicación de cuidado de plantas</h1>
 
-      {/* Main navigation landmark */}
-      <nav aria-label="Navegación principal" className="sr-only">
-        <BottomNavigation />
-      </nav>
-
       {/* Main content area */}
       <main 
         id="main-content"

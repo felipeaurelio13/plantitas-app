@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart } from 'lucide-react';
 import { Plant } from '../../schemas';
+import { navigation } from '../../lib/navigation';
 
 interface ChatHeaderProps {
   plant: Plant;
@@ -29,7 +30,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ plant }) => {
     <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-muted">
       <div className="flex items-center gap-2 p-4 pt-safe-top">
         <button
-          onClick={() => navigate(`/plant/${plant.id}`)}
+          onClick={() => navigate(navigation.toPlantDetail(plant.id))}
           className="btn btn-ghost btn-circle"
         >
           <ArrowLeft size={20} />

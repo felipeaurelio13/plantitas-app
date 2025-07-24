@@ -87,9 +87,31 @@ export function ImageGallery({ images }: ImageGalleryProps) {
             {/* Overlay con información */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <div className="absolute bottom-0 left-0 right-0 p-3">
-                <div className="flex items-center text-white text-xs">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  {formatDate(image.timestamp)}
+                <div className="flex items-center text-white text-xs gap-2">
+                  <span className="flex items-center">
+                    <Calendar className="w-3 h-3 mr-1" />
+                    {formatDate(image.timestamp)}
+                  </span>
+                  {(() => {
+                    const analysis = image.healthAnalysis;
+                    if (!analysis) return null;
+                    const healthScoreMap = {
+                      'excellent': 95,
+                      'good': 80,
+                      'fair': 60,
+                      'poor': 30
+                    };
+                    let score = undefined;
+                    if (analysis.overallHealth && healthScoreMap[analysis.overallHealth]) {
+                      score = healthScoreMap[analysis.overallHealth];
+                    } else if (typeof analysis.confidence === 'number') {
+                      score = analysis.confidence <= 1 ? analysis.confidence * 100 : analysis.confidence;
+                    }
+                    if (score !== undefined) {
+                      return <span className="ml-2">{Math.round(score)}% salud</span>;
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
             </div>
@@ -167,6 +189,37 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     {selectedImageIndex + 1} de {sortedImages.length}
                   </span>
                 </div>
+<<<<<<< HEAD
+=======
+                {/* Health status summary */}
+                <div className="mt-2 text-sm flex items-center gap-2">
+                  {(() => {
+                    const analysis = sortedImages[selectedImageIndex].healthAnalysis;
+                    if (!analysis) return <span className="italic text-white/60">Sin análisis</span>;
+                    let emoji = '🌱', label = 'Excelente';
+                    switch (analysis.overallHealth) {
+                      case 'excellent': emoji = '🌱'; label = 'Excelente'; break;
+                      case 'good': emoji = '🌿'; label = 'Buena'; break;
+                      case 'fair': emoji = '🍃'; label = 'Regular'; break;
+                      case 'poor': emoji = '🥀'; label = 'Baja'; break;
+                      default: emoji = '🌱'; label = analysis.overallHealth;
+                    }
+                    let score = undefined;
+                    const healthScoreMap = {
+                      'excellent': 95,
+                      'good': 80,
+                      'fair': 60,
+                      'poor': 30
+                    };
+                    if (analysis.overallHealth && healthScoreMap[analysis.overallHealth]) {
+                      score = healthScoreMap[analysis.overallHealth];
+                    } else if (typeof analysis.confidence === 'number') {
+                      score = analysis.confidence <= 1 ? analysis.confidence * 100 : analysis.confidence;
+                    }
+                    return <span>Salud: <span className="font-semibold">{label}</span> <span>{emoji}</span>{score !== undefined && <span className="ml-2">({Math.round(score)}%)</span>}</span>;
+                  })()}
+                </div>
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
                 {sortedImages[selectedImageIndex].isProfileImage && (
                   <div className="mt-2">
                     <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">

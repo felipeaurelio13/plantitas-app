@@ -53,7 +53,7 @@ const AddPlantMenu: React.FC = () => {
       color: 'bg-green-500',
       action: () => {
         setIsOpen(false);
-        navigate('/add-plant/manual'); // Navigate to a future form
+        navigate(navigation.toAddPlantManual ? navigation.toAddPlantManual() : '/add-plant/manual'); // Navigate to a future form
       },
     }, */
   ];

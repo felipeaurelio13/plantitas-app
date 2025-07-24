@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 export const generateInsights = async (plant: Plant): Promise<Insight[]> => {
   try {
-    console.log('[insightService] Generating insights for plant:', plant);
+    if (import.meta.env.DEV) console.log('[insightService] Generating insights for plant:', plant);
     
     // Obtener el JWT token del usuario autenticado
     const { data: { session }, error: authError } = await supabase.auth.getSession();
@@ -21,14 +21,14 @@ export const generateInsights = async (plant: Plant): Promise<Insight[]> => {
       },
     });
 
-    console.log('[insightService] Raw response:', { data, error });
+    if (import.meta.env.DEV) console.log('[insightService] Raw response:', { data, error });
 
     if (error) {
       throw new Error(`Failed to generate insights: ${error.message}`);
     }
 
     const validatedData = InsightResponseSchema.parse(data);
-    console.log('[insightService] Validated insights:', validatedData);
+    if (import.meta.env.DEV) console.log('[insightService] Validated insights:', validatedData);
     return validatedData;
 
   } catch (error) {

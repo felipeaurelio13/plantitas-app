@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Sparkles, Lightbulb, Info } from 'lucide-react';
+import { Sparkles, Lightbulb } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface DescriptionCardProps {
@@ -8,7 +8,7 @@ interface DescriptionCardProps {
   funFacts?: string[];
 }
 
-export const DescriptionCard: React.FC<DescriptionCardProps> = ({ species, description, funFacts }) => {
+export const DescriptionCard: React.FC<DescriptionCardProps> = ({ description, funFacts }) => {
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -27,46 +27,22 @@ export const DescriptionCard: React.FC<DescriptionCardProps> = ({ species, descr
 
   return (
     <motion.div 
-      className="bg-gradient-to-br from-background via-background to-muted/30 p-6 rounded-2xl shadow-lg border border-border/50 w-full"
+      className="bg-white/0 dark:bg-transparent p-3 sm:p-4 w-full"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       {/* Description Section */}
-      <motion.div className="mb-8" variants={itemVariants}>
-        <div className="flex items-center mb-6">
-          <div className="p-3 bg-primary/10 rounded-full mr-4">
-            <BookOpen className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-foreground">
-              Acerca de tu {species}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Conoce más sobre esta fascinante especie
-            </p>
-          </div>
-        </div>
-        
-        {description ? (
-          <div className="relative">
-            <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-primary to-primary/30 rounded-full"></div>
-            <p className="text-foreground/90 leading-relaxed text-base pl-6 font-light">
-              {description}
-            </p>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center p-8 bg-muted/50 rounded-xl border-2 border-dashed border-muted-foreground/20">
-            <div className="text-center">
-              <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground font-medium">
-                No hay descripción disponible
-              </p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
-                Información sobre esta planta no está disponible en este momento
-              </p>
-            </div>
-          </div>
+      <motion.div className="mb-4" variants={itemVariants}>
+        <p className="text-base text-foreground mb-2">
+          {description}
+        </p>
+        {funFacts && funFacts.length > 0 && (
+          <ul className="list-disc pl-5 text-sm text-muted-foreground">
+            {funFacts.map((fact, i) => (
+              <li key={i}>{fact}</li>
+            ))}
+          </ul>
         )}
       </motion.div>
 

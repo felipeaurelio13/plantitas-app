@@ -59,7 +59,25 @@ export const PlantEvolutionTracker: React.FC<PlantEvolutionTrackerProps> = ({
         // Crear período anterior y comenzar nuevo período
         if (periodImages.length > 0) {
           const healthScores = periodImages
-            .map(img => img.healthAnalysis?.confidence)
+            .map(img => {
+              const analysis = img.healthAnalysis;
+              if (!analysis) return undefined;
+              // Usa el mismo mapeo que healthScore general
+              const healthScoreMap = {
+                'excellent': 95,
+                'good': 80,
+                'fair': 60,
+                'poor': 30
+              };
+              if (analysis.overallHealth && healthScoreMap[analysis.overallHealth]) {
+                return healthScoreMap[analysis.overallHealth];
+              }
+              if (typeof analysis.confidence === 'number') {
+                // Si viene en 0-1, pásalo a 0-100
+                return analysis.confidence <= 1 ? analysis.confidence * 100 : analysis.confidence;
+              }
+              return undefined;
+            })
             .filter(score => score !== undefined) as number[];
           
           const avgHealth = healthScores.length > 0 
@@ -87,7 +105,25 @@ export const PlantEvolutionTracker: React.FC<PlantEvolutionTrackerProps> = ({
       // Último período
       if (index === sortedImages.length - 1 && periodImages.length > 0) {
         const healthScores = periodImages
-          .map(img => img.healthAnalysis?.confidence)
+          .map(img => {
+            const analysis = img.healthAnalysis;
+            if (!analysis) return undefined;
+            // Usa el mismo mapeo que healthScore general
+            const healthScoreMap = {
+              'excellent': 95,
+              'good': 80,
+              'fair': 60,
+              'poor': 30
+            };
+            if (analysis.overallHealth && healthScoreMap[analysis.overallHealth]) {
+              return healthScoreMap[analysis.overallHealth];
+            }
+            if (typeof analysis.confidence === 'number') {
+              // Si viene en 0-1, pásalo a 0-100
+              return analysis.confidence <= 1 ? analysis.confidence * 100 : analysis.confidence;
+            }
+            return undefined;
+          })
           .filter(score => score !== undefined) as number[];
         
         const avgHealth = healthScores.length > 0 
@@ -141,6 +177,15 @@ export const PlantEvolutionTracker: React.FC<PlantEvolutionTrackerProps> = ({
     }
   };
 
+  // Calcula la tendencia global de salud
+  function getTrend(healthScores: number[]) {
+    if (healthScores.length < 2) return null;
+    const diff = healthScores[healthScores.length - 1] - healthScores[0];
+    if (diff > 5) return { icon: '⬆️', label: 'Mejorando', color: 'text-green-600 bg-green-50' };
+    if (diff < -5) return { icon: '⬇️', label: 'Declive', color: 'text-red-600 bg-red-50' };
+    return { icon: '➡️', label: 'Estable', color: 'text-gray-600 bg-gray-50' };
+  }
+
   if (evolutionPeriods.length === 0) {
     return (
       <Card className="mt-6">
@@ -167,26 +212,52 @@ export const PlantEvolutionTracker: React.FC<PlantEvolutionTrackerProps> = ({
     );
   }
 
+  const healthScores = evolutionPeriods.map(p => p.avgHealthScore ?? 0);
+  const trend = getTrend(healthScores);
+
+  // Logs temporales para depuración
+  if (import.meta.env.DEV) {
+    console.log('[PlantEvolutionTracker] evolutionPeriods:', evolutionPeriods);
+    console.log('[PlantEvolutionTracker] trend:', trend);
+    if (trend) {
+      console.log('[PlantEvolutionTracker] trend.icon:', trend.icon);
+      console.log('[PlantEvolutionTracker] trend.label:', trend.label);
+    }
+  }
+
   return (
     <Card className="mt-6">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center">
-            <BarChart3 className="w-5 h-5 mr-2 text-primary" />
-            Evolución de tu Planta
-          </CardTitle>
-          <Button 
-            variant="secondary" 
-            size="sm" 
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <CardTitle className="flex items-center min-w-0">
+              <BarChart3 className="w-5 h-5 mr-2 text-primary shrink-0" />
+              <span className="truncate">Evolución de tu Planta</span>
+            </CardTitle>
+            {/* Badge de tendencia global */}
+            {evolutionPeriods.length > 1 && trend && trend.icon && trend.label && (
+              <span
+                className={`inline-flex items-center min-w-[90px] justify-center px-2 py-1 rounded-full text-xs font-medium border border-neutral-200 ${trend.color}`}
+                aria-label={`Tendencia: ${trend.label}`}
+              >
+                <span className="mr-1" role="img" aria-label={trend.label}>{trend.icon}</span>
+                {trend.label}
+              </span>
+            )}
+          </div>
+          <Button
+            variant="primary"
+            size="default"
             onClick={onAddPhoto}
-            className="gap-2"
+            aria-label="Agregar nueva foto de evolución"
+            className="gap-1 rounded-full px-5 shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 w-full sm:w-auto"
           >
-            <Plus className="w-4 h-4" />
-            Nueva Foto
+            <Plus className="w-5 h-5" />
+            Agregar Foto
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="mt-4 space-y-6">
         {/* Línea de tiempo */}
         <div className="space-y-4">
           <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
@@ -231,7 +302,7 @@ export const PlantEvolutionTracker: React.FC<PlantEvolutionTrackerProps> = ({
                           {period.photoCount} fotos
                         </span>
                         <span>
-                          Salud promedio: {period.avgHealthScore.toFixed(0)}%
+                          Salud promedio: {Math.max(0, Math.min(100, period.avgHealthScore)).toFixed(0)}%
                         </span>
                       </div>
                     </div>
@@ -269,9 +340,6 @@ export const PlantEvolutionTracker: React.FC<PlantEvolutionTrackerProps> = ({
                 
                 return (
                   <div className="space-y-4">
-                    <h4 className="font-medium">
-                      Fotos del período: {formatDate(period.startDate)} - {formatDate(period.endDate)}
-                    </h4>
                     
                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                       {period.images.map((image, imgIndex) => (

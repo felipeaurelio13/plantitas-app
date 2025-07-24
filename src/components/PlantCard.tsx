@@ -1,7 +1,11 @@
 import React, { memo, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+<<<<<<< HEAD
 import { MessageCircle, Droplets, Sun, Heart, Sparkles } from 'lucide-react';
+=======
+import { MessageCircle, Sun, Heart, Sparkles, AlertTriangle } from 'lucide-react';
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
 import { PlantSummary } from '../schemas';
 import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 import { es } from 'date-fns/locale';
@@ -124,8 +128,13 @@ const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
         className="overflow-hidden border-2 hover:border-primary-300 dark:hover:border-primary-600 transition-all duration-200" // Reduced from 300ms
       >
         {/* Header con imagen y info básica */}
+<<<<<<< HEAD
         <CardHeader className="p-4 pb-2">
           <div className="flex items-start space-x-4">
+=======
+        <CardHeader className="content-spacing-sm pb-2 flex-shrink-0">
+          <div className="flex items-start space-x-3 sm:space-x-4">
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
             {/* Imagen de la planta */}
             <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950 dark:to-primary-900 flex-shrink-0 border border-primary-200 dark:border-primary-800">
               {plant.profileImageUrl ? (
@@ -178,10 +187,29 @@ const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
 
             {/* Info de la planta */}
             <div className="flex-1 min-w-0">
+<<<<<<< HEAD
               <CardTitle className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 truncate mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                 {plant.nickname || plant.name}
               </CardTitle>
               <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate mb-2">
+=======
+              <CardTitle
+                className="text-heading-4 text-neutral-900 dark:text-neutral-100 truncate mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors"
+                title={plant.nickname || plant.name}
+              >
+                {plant.nickname || plant.name}
+              </CardTitle>
+              {/* Si hay nickname, muestra el nombre real debajo */}
+              {plant.nickname && (
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mb-1" title={plant.name}>
+                  {plant.name}
+                </p>
+              )}
+              <p
+                className="text-body-small text-neutral-600 dark:text-neutral-400 truncate mb-2"
+                title={plant.species}
+              >
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
                 {plant.species}
               </p>
               <div className="flex items-center text-xs text-neutral-500 dark:text-neutral-500">
@@ -193,6 +221,7 @@ const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
           </div>
         </CardHeader>
         
+<<<<<<< HEAD
         {/* Indicador de salud */}
         <CardContent className="px-4 pb-2">
           <PlantHealthIndicator score={plant.healthScore} />
@@ -200,6 +229,37 @@ const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
 
         {/* Footer con acciones */}
         <CardFooter className="px-4 py-3 bg-neutral-50/80 dark:bg-neutral-900/50 backdrop-blur-sm border-t border-neutral-200/50 dark:border-neutral-700/50">
+=======
+        {/* Indicador de salud - Mejorado */}
+        <CardContent className="content-spacing-sm flex-1">
+          <div className="element-spacing-sm">
+            <div className="mb-2">
+              <PlantHealthIndicator score={plant.healthScore} />
+            </div>
+            {/* Badge de alerta si salud < 40 */}
+            {plant.healthScore < 40 && (
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex items-center px-2 py-0.5 bg-error-100 text-error-700 dark:bg-error-900/30 dark:text-error-300 rounded-full text-xs font-semibold">
+                  <AlertTriangle className="w-3 h-3 mr-1" aria-label="Atención" />¡Atención!
+                </span>
+                <span className="text-xs text-error-600 dark:text-error-300">Salud muy baja</span>
+              </div>
+            )}
+            {/* Información adicional de salud */}
+            <div className="flex items-center justify-between text-caption text-neutral-500 dark:text-neutral-400 mt-2 mb-2">
+              <span>Salud general</span>
+              <span className="font-medium">
+                {plant.healthScore >= 80 ? 'Excelente' : 
+                 plant.healthScore >= 60 ? 'Buena' : 
+                 plant.healthScore >= 40 ? 'Regular' : 'Necesita atención'}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+
+        {/* Footer con acciones - Mejorado */}
+        <CardFooter className="content-spacing-sm bg-neutral-50/80 dark:bg-neutral-900/50 backdrop-blur-sm border-t border-neutral-200/50 dark:border-neutral-700/50 flex-shrink-0 mt-2">
+>>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
           <div className="flex justify-between items-center w-full">
             {/* Info de último riego */}
             <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">

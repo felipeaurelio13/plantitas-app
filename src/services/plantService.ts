@@ -561,7 +561,7 @@ export class PlantService {
 
   async addChatMessage(plantId: string, message: Omit<ChatMessage, 'id'>, userId: string): Promise<ChatMessage> {
     try {
-      console.log('💬 Adding chat message:', { plantId, message, userId });
+      if (import.meta.env.DEV) console.log('💬 Adding chat message:', { plantId, message, userId });
       
       const insertData = {
         plant_id: plantId,
@@ -571,7 +571,7 @@ export class PlantService {
         emotion: message.emotion || null,
       };
       
-      console.log('📤 Insert data:', insertData);
+      if (import.meta.env.DEV) console.log('📤 Insert data:', insertData);
       
       const { data, error } = await supabase
         .from('chat_messages')

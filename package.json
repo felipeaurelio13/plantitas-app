@@ -11,7 +11,13 @@
     "preview": "vite preview",
     "clean": "rm -rf node_modules .vite",
     "test": "vitest",
+    "test:unit": "vitest tests/unit",
+    "test:integration": "vitest tests/integration",
+    "test:e2e": "playwright test",
+    "test:coverage": "vitest --coverage",
+    "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",
+    "test:debug": "vitest --inspect-brk",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
@@ -45,6 +51,8 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@playwright/experimental-ct-react": "^1.54.1",
+    "@playwright/test": "^1.54.1",
     "@tailwindcss/postcss": "^4.1.11",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",

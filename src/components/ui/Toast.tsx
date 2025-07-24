@@ -116,6 +116,9 @@ const ToastContainer: React.FC = () => {
             exit={{ opacity: 0, x: 300, scale: 0.8 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className={`max-w-sm w-full rounded-lg border p-4 shadow-lg ${getToastStyles(toast.type)}`}
+            role="alert"
+            aria-live="assertive"
+            tabIndex={0}
           >
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0 mt-0.5">
@@ -134,6 +137,7 @@ const ToastContainer: React.FC = () => {
               <button
                 onClick={() => removeToast(toast.id)}
                 className="flex-shrink-0 ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                aria-label="Cerrar notificación"
               >
                 <X size={16} />
               </button>

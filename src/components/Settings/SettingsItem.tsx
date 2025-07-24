@@ -9,7 +9,8 @@ interface SettingsItemProps {
   value?: string;
   onClick?: () => void;
   isLast?: boolean;
-  type?: 'button' | 'toggle';
+  type?: 'button' | 'toggle'; // Mantener toggle solo para theme
+  disabled?: boolean;
   toggleState?: boolean;
   onToggleChange?: (checked: boolean) => void;
 }
@@ -21,6 +22,7 @@ const SettingsItem = ({
   onClick,
   isLast = false,
   type = 'button',
+  disabled = false,
   toggleState = false,
   onToggleChange,
 }: SettingsItemProps) => {
@@ -61,7 +63,7 @@ const SettingsItem = ({
 
   if (type === 'button') {
     return (
-      <button onClick={onClick} className={itemClasses}>
+      <button onClick={onClick} className={itemClasses} disabled={disabled}>
         {content}
       </button>
     );
