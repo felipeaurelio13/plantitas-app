@@ -100,19 +100,6 @@ const BottomNavigation: React.FC = () => {
                     />
                   </motion.div>
 
-<<<<<<< HEAD
-                  {/* Label */}
-                  <motion.span 
-                    animate={{ 
-                      scale: isActive ? 1.05 : 1,
-                      fontWeight: isActive ? 600 : 500
-                    }}
-                    transition={{ duration: 0.2 }}
-                    className="text-xs mt-1 relative z-10"
-                  >
-                    {item.label}
-                  </motion.span>
-=======
                   {/* Label + underline */}
                   <span className="relative z-10 flex flex-col items-center">
                     <motion.span 
@@ -140,7 +127,6 @@ const BottomNavigation: React.FC = () => {
                       )}
                     </AnimatePresence>
                   </span>
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
 
                   {/* Active dot indicator */}
                   <AnimatePresence>
@@ -161,19 +147,6 @@ const BottomNavigation: React.FC = () => {
         </div>
       </nav>
 
-<<<<<<< HEAD
-      {/* Floating Action Button */}
-      <motion.div
-        className="fixed bottom-24 right-6 z-40"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
-      >
-        <Link
-          to={routes.camera}
-          className="touch-target flex items-center justify-center w-14 h-14 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-200 group"
-          aria-label="Agregar nueva planta"
-=======
       {/* Floating Action Button: solo mostrar si no es detalle de planta */}
       {!isPlantDetail && (
         <motion.div
@@ -181,7 +154,6 @@ const BottomNavigation: React.FC = () => {
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
         >
           <Link
             to={routes.camera}
@@ -191,25 +163,6 @@ const BottomNavigation: React.FC = () => {
             )}
             aria-label="Agregar nueva planta"
           >
-<<<<<<< HEAD
-            <Plus size={28} strokeWidth={2.5} />
-          </motion.div>
-          
-          {/* Ripple effect */}
-          <motion.div
-            className="absolute inset-0 rounded-2xl bg-white/20"
-            initial={{ scale: 0, opacity: 0 }}
-            whileTap={{ scale: 1.2, opacity: 1 }}
-            transition={{ duration: 0.15 }}
-          />
-        </Link>
-
-        {/* Tooltip */}
-        <div className="absolute bottom-full mb-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-          <div className="bg-neutral-900 text-white text-xs px-2 py-1 rounded-lg whitespace-nowrap dark:bg-neutral-100 dark:text-neutral-900">
-            Agregar planta
-            <div className="absolute top-full right-2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-neutral-900 dark:border-t-neutral-100"></div>
-=======
             <motion.div
               whileHover={{ rotate: 90 }}
               whileTap={{ scale: 0.9 }}
@@ -231,7 +184,6 @@ const BottomNavigation: React.FC = () => {
               Agregar planta
               <div className="absolute top-full right-2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-neutral-900 dark:border-t-neutral-100"></div>
             </div>
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
           </div>
         </motion.div>
       )}

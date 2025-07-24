@@ -189,8 +189,6 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     {selectedImageIndex + 1} de {sortedImages.length}
                   </span>
                 </div>
-<<<<<<< HEAD
-=======
                 {/* Health status summary */}
                 <div className="mt-2 text-sm flex items-center gap-2">
                   {(() => {
@@ -219,7 +217,6 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     return <span>Salud: <span className="font-semibold">{label}</span> <span>{emoji}</span>{score !== undefined && <span className="ml-2">({Math.round(score)}%)</span>}</span>;
                   })()}
                 </div>
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
                 {sortedImages[selectedImageIndex].isProfileImage && (
                   <div className="mt-2">
                     <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
