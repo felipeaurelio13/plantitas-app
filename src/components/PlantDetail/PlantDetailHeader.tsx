@@ -214,7 +214,6 @@ const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
           </Button>
 
           <div className="flex items-center space-x-2">
-<<<<<<< HEAD
             <Button
               aria-label="Compartir"
               variant="ghost"
@@ -224,8 +223,6 @@ const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
             >
               <Share2 size={20} />
             </Button>
-=======
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
             <div className="relative">
               <Button
                 aria-label="Más opciones"

@@ -176,14 +176,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             {leftIcon}
           </span>
         )}
-<<<<<<< HEAD
-        
-        <span className={cn(
-          "flex items-center justify-center",
-          loading && "opacity-70"
-        )}>
-          {typeof children === 'string' || typeof children === 'number' || React.isValidElement(children) ? children : null}
-=======
         <span
           className={cn(
             "flex items-center justify-center",
@@ -203,7 +195,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               React.isValidElement(children))
             ? children
             : null}
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
         </span>
         
         {rightIcon && (

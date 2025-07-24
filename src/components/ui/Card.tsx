@@ -63,10 +63,7 @@ const cardVariants = cva(
 export interface CardProps extends HTMLMotionProps<'div'>, VariantProps<typeof cardVariants> {
   hover?: boolean;
   loading?: boolean;
-<<<<<<< HEAD
-=======
   ariaLabel?: string;
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
@@ -79,10 +76,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     hover = false,
     loading = false,
     children,
-<<<<<<< HEAD
-=======
     ariaLabel,
->>>>>>> 6e07996 (✅ Tests unitarios robustos: creación de plantita y subida de imagen 100% funcionales. Validación de tamaño y mocks alineados a lógica real.)
     ...props 
   }, ref) => {
     return (
