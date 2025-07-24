@@ -64,7 +64,7 @@ const Chat: React.FC = () => {
     <div className="flex flex-col h-screen bg-background text-foreground">
       <ChatHeader plant={plant} />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom))' }}>
         <AnimatePresence>
           {plant.chatHistory.length === 0 ? (
             <EmptyChat plantName={plant.nickname || plant.name} />

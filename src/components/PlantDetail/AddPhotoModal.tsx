@@ -186,7 +186,7 @@ export const AddPhotoModal: React.FC<AddPhotoModalProps> = ({
       </div>
 
       {selectedImage && (
-        <div className="space-y-4">
+        <div className="space-y-4 pb-8 sm:pb-0">
           <div className="aspect-video max-h-80 mx-auto rounded-lg overflow-hidden border">
             <img
               src={selectedImage}

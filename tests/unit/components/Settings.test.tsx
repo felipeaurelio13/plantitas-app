@@ -6,44 +6,46 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Settings } from '../../../src/pages/Settings';
 
 // Mock de hooks y servicios
+const baseSettings = {
+  notifications: {
+    enabled: true,
+    wateringReminders: true,
+    healthAlerts: true,
+    growthUpdates: true
+  },
+  theme: {
+    mode: 'light',
+    primaryColor: '#10b981',
+    accentColor: '#059669'
+  },
+  privacy: {
+    dataSharing: false,
+    analytics: true,
+    crashReports: false
+  },
+  accessibility: {
+    highContrast: false,
+    largeText: false,
+    reducedMotion: true
+  }
+};
+
 vi.mock('../../../src/hooks/useSettings', () => ({
-  useSettings: () => ({
-    settings: {
-      notifications: {
-        enabled: true,
-        wateringReminders: true,
-        healthAlerts: true,
-        growthUpdates: true
-      },
-      theme: {
-        mode: 'light',
-        primaryColor: '#10b981',
-        accentColor: '#059669'
-      },
-      privacy: {
-        dataSharing: false,
-        analytics: true,
-        crashReports: false
-      },
-      accessibility: {
-        highContrast: false,
-        largeText: false,
-        reducedMotion: true
-      }
-    },
+  useSettings: vi.fn(() => ({
+    settings: { ...baseSettings },
     updateSettings: vi.fn(),
     resetSettings: vi.fn(),
     isLoading: false,
     error: null
-  })
+  }))
 }));
 
 vi.mock('../../../src/stores/useAuthStore', () => ({
-  useAuthStore: () => ({
+  useAuthStore: vi.fn(() => ({
     user: { id: 'test-user', email: 'test@example.com' },
     isAuthenticated: true,
     signOut: vi.fn()
-  })
+  }))
 }));
 
 vi.mock('../../../src/components/ui/Toast', () => ({

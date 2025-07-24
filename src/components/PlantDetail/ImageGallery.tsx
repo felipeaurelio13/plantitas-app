@@ -73,7 +73,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
         {sortedImages.map((image, index) => (
           <motion.div 
             key={image.id} 
-            className="aspect-square relative rounded-xl overflow-hidden cursor-pointer group"
+            className="aspect-square relative rounded-[8px] overflow-hidden cursor-pointer group w-[80px] h-[80px]"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => openModal(index)}
@@ -81,7 +81,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
             <LazyImage
               src={image.url}
               alt={`Imagen de planta del ${formatDate(image.timestamp)}`}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 rounded-[8px]"
             />
             
             {/* Overlay con información */}
@@ -92,26 +92,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     <Calendar className="w-3 h-3 mr-1" />
                     {formatDate(image.timestamp)}
                   </span>
-                  {(() => {
-                    const analysis = image.healthAnalysis;
-                    if (!analysis) return null;
-                    const healthScoreMap = {
-                      'excellent': 95,
-                      'good': 80,
-                      'fair': 60,
-                      'poor': 30
-                    };
-                    let score = undefined;
-                    if (analysis.overallHealth && healthScoreMap[analysis.overallHealth]) {
-                      score = healthScoreMap[analysis.overallHealth];
-                    } else if (typeof analysis.confidence === 'number') {
-                      score = analysis.confidence <= 1 ? analysis.confidence * 100 : analysis.confidence;
-                    }
-                    if (score !== undefined) {
-                      return <span className="ml-2">{Math.round(score)}% salud</span>;
-                    }
-                    return null;
-                  })()}
+                  {/* Aquí puedes agregar el overlay de icono de chat si es necesario */}
                 </div>
               </div>
             </div>

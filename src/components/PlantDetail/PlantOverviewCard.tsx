@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   Droplets, Sun, Thermometer, Calendar, MapPin, 
   AlertTriangle, CheckCircle, Info,
-  Bot, Lightbulb
+  Bot
 } from 'lucide-react';
 import { Plant } from '@/schemas';
 import { Card } from '../ui/Card';
@@ -72,29 +72,20 @@ export const PlantOverviewCard: React.FC<PlantOverviewCardProps> = ({ plant }) =
       animate="visible"
     >
       <Card variant="glass" className="content-spacing-sm element-spacing">
-        {/* Quick Stats Header - Simplified */}
-        <motion.div variants={itemVariants} className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className={cn(
-              "flex items-center space-x-2 px-3 py-2 rounded-full",
-              healthScore >= 70 ? "bg-green-100 dark:bg-green-900/30" : 
-              healthScore >= 50 ? "bg-yellow-100 dark:bg-yellow-900/30" : 
-              "bg-red-100 dark:bg-red-900/30"
-            )}>
-              <span className="text-lg">{healthStatus.emoji}</span>
-              <span className={cn("font-semibold text-sm", healthStatus.color)}>
-                {healthScore}% {healthStatus.text}
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-2 text-contrast-soft">
-            <Calendar className="w-4 h-4" />
-            <span className="text-sm">Día {daysSinceAdded}</span>
+        {/* Tag verde de estado */}
+        <motion.div variants={itemVariants} className="w-full mb-3">
+          <div className="w-full flex items-center justify-between bg-green-100 dark:bg-green-900/30 rounded-lg px-4 py-2 mb-2">
+            <span className="flex items-center gap-2 text-green-700 text-base font-bold">
+              <CheckCircle className="w-5 h-5" />
+              {healthScore}% {healthStatus.text}
+            </span>
+            <span className="flex items-center gap-1 text-contrast-soft text-sm align-baseline">
+              <Calendar className="w-4 h-4" />
+              Día {daysSinceAdded}
+            </span>
           </div>
         </motion.div>
-
-        {/* Key Care Info */}
+        {/* Key Care Info y Environment/Temperature en grid 2 columnas */}
         <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
           <div className={cn(
             "flex items-center space-x-3 p-3 rounded-lg",
@@ -128,36 +119,31 @@ export const PlantOverviewCard: React.FC<PlantOverviewCardProps> = ({ plant }) =
               )}
             </div>
           </div>
+
+          {plant.plantEnvironment && (
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+              <MapPin className="w-5 h-5 text-purple-500" />
+              <div>
+                <p className="text-xs text-contrast-soft">Ambiente</p>
+                <p className="font-semibold text-sm text-purple-600 dark:text-purple-400 capitalize">
+                  {plant.plantEnvironment === 'ambos' ? 'Interior/Exterior' : plant.plantEnvironment}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {careProfile?.temperatureRange && (
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+              <Thermometer className="w-5 h-5 text-orange-500" />
+              <div>
+                <p className="text-xs text-contrast-soft">Temperatura</p>
+                <p className="font-semibold text-sm text-orange-600 dark:text-orange-400">
+                  {careProfile.temperatureRange.min}°-{careProfile.temperatureRange.max}°C
+                </p>
+              </div>
+            </div>
+          )}
         </motion.div>
-
-        {/* Environment & Temperature */}
-        {(plant.plantEnvironment || careProfile?.temperatureRange) && (
-          <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
-            {plant.plantEnvironment && (
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20">
-                <MapPin className="w-5 h-5 text-purple-500" />
-                <div>
-                  <p className="text-xs text-contrast-soft">Ambiente</p>
-                  <p className="font-semibold text-sm text-purple-600 dark:text-purple-400 capitalize">
-                    {plant.plantEnvironment === 'ambos' ? 'Interior/Exterior' : plant.plantEnvironment}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {careProfile?.temperatureRange && (
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20">
-                <Thermometer className="w-5 h-5 text-orange-500" />
-                <div>
-                  <p className="text-xs text-contrast-soft">Temperatura</p>
-                  <p className="font-semibold text-sm text-orange-600 dark:text-orange-400">
-                    {careProfile.temperatureRange.min}°-{careProfile.temperatureRange.max}°C
-                  </p>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
 
         {/* Health Issues Alert */}
         {firstImageAnalysis?.issues && firstImageAnalysis.issues.length > 0 && (
@@ -180,31 +166,8 @@ export const PlantOverviewCard: React.FC<PlantOverviewCardProps> = ({ plant }) =
           </motion.div>
         )}
 
-        {/* Fun Fact Preview */}
-        {plant.funFacts && plant.funFacts.length > 0 && (
-          <motion.div 
-            variants={itemVariants}
-            className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800"
-          >
-            <div className="flex items-start space-x-3">
-              <Lightbulb className="w-5 h-5 text-yellow-500 mt-0.5" />
-              <div>
-                <p className="font-semibold text-yellow-700 dark:text-yellow-300 text-sm mb-1">
-                  💡 Dato curioso
-                </p>
-                <p className="text-xs text-yellow-600 dark:text-yellow-400 leading-relaxed">
-                  {plant.funFacts[0]}
-                </p>
-                {plant.funFacts.length > 1 && (
-                  <p className="text-xs text-yellow-500 mt-1">
-                    +{plant.funFacts.length - 1} dato{plant.funFacts.length > 2 ? 's' : ''} más
-                  </p>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
+        
+        <br/>
         {/* Personality Hint */}
         {plant.personality?.communicationStyle && (
           <motion.div 

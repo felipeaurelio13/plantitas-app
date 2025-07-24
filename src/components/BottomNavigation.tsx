@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Settings, Bot, Plus } from 'lucide-react';
+import { Home, Settings, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { routes, isActiveRoute } from '../lib/navigation';
-import { usePlantsQuery } from '../hooks/usePlantsQuery';
+import AddPlantMenu from './AddPlantMenu';
 
 // Simplified navigation - 3 main tabs + FAB
 const navItems = [
@@ -33,11 +33,6 @@ const BottomNavigation: React.FC = () => {
 
   // Ocultar FAB en rutas de detalle de planta para evitar solapamientos
   const isPlantDetail = location.pathname.startsWith('/plant/');
-
-  // Detectar si estamos en Dashboard y el jardín está vacío
-  const { data: plants = [] } = usePlantsQuery ? usePlantsQuery() : { data: [] };
-  const isDashboard = location.pathname === '/';
-  const isGardenEmpty = isDashboard && plants.length === 0;
 
   return (
     <>
@@ -91,7 +86,12 @@ const BottomNavigation: React.FC = () => {
                       y: isActive ? -2 : 0
                     }}
                     transition={{ duration: 0.2 }}
-                    className="relative z-10"
+                    className={cn(
+                      "relative z-10",
+                      isActive
+                        ? "text-[#2A7F3E]"
+                        : "text-[#888]"
+                    )}
                   >
                     <item.icon 
                       size={24} 
@@ -100,33 +100,17 @@ const BottomNavigation: React.FC = () => {
                     />
                   </motion.div>
 
-                  {/* Label + underline */}
-                  <span className="relative z-10 flex flex-col items-center">
-                    <motion.span 
-                      animate={{ 
-                        scale: isActive ? 1.05 : 1,
-                        fontWeight: isActive ? 600 : 500
-                      }}
-                      transition={{ duration: 0.2 }}
-                      className="text-xs mt-0.5 sm:mt-1"
-                    >
-                      {item.label}
-                    </motion.span>
-                    {/* Minimal underline for active tab */}
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.div
-                          key="underline"
-                          initial={{ scaleX: 0, opacity: 0 }}
-                          animate={{ scaleX: 1, opacity: 1 }}
-                          exit={{ scaleX: 0, opacity: 0 }}
-                          transition={{ duration: 0.18 }}
-                          className="w-4 h-0.5 mt-0.5 rounded-full bg-primary-500 dark:bg-primary-400"
-                          style={{ originX: 0.5 }}
-                        />
-                      )}
-                    </AnimatePresence>
-                  </span>
+                  {/* Label */}
+                  <motion.span 
+                    animate={{ 
+                      scale: isActive ? 1.05 : 1,
+                      fontWeight: isActive ? 600 : 500
+                    }}
+                    transition={{ duration: 0.2 }}
+                    className="text-xs mt-1 relative z-10"
+                  >
+                    {item.label}
+                  </motion.span>
 
                   {/* Active dot indicator */}
                   <AnimatePresence>
@@ -136,7 +120,7 @@ const BottomNavigation: React.FC = () => {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="absolute -bottom-1 w-1 h-1 bg-primary-500 dark:bg-primary-400 rounded-full"
+                        className="absolute left-1/2 -translate-x-1/2 w-1 h-1 bg-primary-500 dark:bg-primary-400 rounded-full mt-1.5" // 4px debajo del icono
                       />
                     )}
                   </AnimatePresence>
@@ -149,43 +133,9 @@ const BottomNavigation: React.FC = () => {
 
       {/* Floating Action Button: solo mostrar si no es detalle de planta */}
       {!isPlantDetail && (
-        <motion.div
-          className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-40"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.3, type: 'spring', stiffness: 300 }}
-        >
-          <Link
-            to={routes.camera}
-            className={cn(
-              "touch-target flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-200 group",
-              isGardenEmpty && "animate-glow"
-            )}
-            aria-label="Agregar nueva planta"
-          >
-            <motion.div
-              whileHover={{ rotate: 90 }}
-              whileTap={{ scale: 0.9 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Plus size={24} className="sm:w-7 sm:h-7" strokeWidth={2.5} />
-            </motion.div>
-            {/* Ripple effect */}
-            <motion.div
-              className="absolute inset-0 rounded-2xl bg-white/20"
-              initial={{ scale: 0, opacity: 0 }}
-              whileTap={{ scale: 1.2, opacity: 1 }}
-              transition={{ duration: 0.15 }}
-            />
-          </Link>
-          {/* Tooltip */}
-          <div className="absolute bottom-full mb-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-            <div className="bg-neutral-900 text-white text-xs px-2 py-1 rounded-lg whitespace-nowrap dark:bg-neutral-100 dark:text-neutral-900">
-              Agregar planta
-              <div className="absolute top-full right-2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-neutral-900 dark:border-t-neutral-100"></div>
-            </div>
-          </div>
-        </motion.div>
+        <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-40">
+          <AddPlantMenu />
+        </div>
       )}
     </>
   );

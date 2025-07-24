@@ -193,6 +193,7 @@ const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
         variants={overlayVariants}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.6)] to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/30" />
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background/60 to-transparent" />
       </motion.div>
@@ -214,15 +215,6 @@ const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
           </Button>
 
           <div className="flex items-center space-x-2">
-            <Button
-              aria-label="Compartir"
-              variant="ghost"
-              size="icon"
-              onClick={handleShare}
-              className="bg-black/30 text-white backdrop-blur-lg rounded-full border border-white/20 hover:bg-black/50 transition-all duration-300"
-            >
-              <Share2 size={20} />
-            </Button>
             <div className="relative">
               <Button
                 aria-label="Más opciones"
@@ -302,13 +294,13 @@ const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
           {/* Main Title */}
           <div className="space-y-2">
             <motion.h1 
-              className="text-3xl font-bold text-white drop-shadow-lg"
+              className="text-[24px] font-bold text-white drop-shadow-lg"
               variants={itemVariants}
             >
               {plant.nickname || plant.name}
             </motion.h1>
             <motion.p 
-              className="text-lg text-white/90 font-medium"
+              className="text-[16px] text-white/90 font-medium"
               variants={itemVariants}
             >
               {plant.species}
@@ -317,7 +309,7 @@ const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
 
           {/* Plant Details */}
           <motion.div 
-            className="flex flex-wrap gap-4 pt-2"
+            className="flex flex-wrap gap-2 pt-2 max-h-32 overflow-y-auto"
             variants={itemVariants}
           >
             {plant.location && (

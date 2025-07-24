@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { completeePlantInfo } from '../services/aiService';
+import { completePlantInfo } from '../services/aiService';
 import { PlantService } from '../services/plantService';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useToast } from '../components/ui/Toast';
@@ -49,7 +49,7 @@ export const usePlantInfoCompletion = () => {
         if (import.meta.env.DEV) console.log('🔄 [COMPLETAR IA] Consultando IA para generar información faltante...');
         
         // Llamar a la IA para obtener la información faltante
-        const aiResult = await completeePlantInfo(species, commonName);
+        const aiResult = await completePlantInfo(species, commonName);
         
         if (import.meta.env.DEV) console.log('✅ [COMPLETAR IA] IA respondió exitosamente:', {
           ambiente: aiResult.plantEnvironment,

@@ -28,7 +28,7 @@ const GardenChatHeader: React.FC<GardenChatHeaderProps> = ({
 
   const getHealthColor = (score: number) => {
     if (score >= 80) return 'text-green-500';
-    if (score >= 60) return 'text-yellow-500';
+    if (score >= 60) return 'text-green-400'; // Usar verde acento suave para 'Buena'
     return 'text-red-500';
   };
 
@@ -57,21 +57,21 @@ const GardenChatHeader: React.FC<GardenChatHeaderProps> = ({
               <Sprout className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <h1 className="font-bold text-foreground">
+              <h1 className="font-bold text-foreground tracking-[0.2px]">
                 Asistente de Jardín
               </h1>
               {gardenSummary && (
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
                   <span className="flex items-center gap-1">
                     <Activity size={12} />
                     {gardenSummary.totalPlants} plantas
                   </span>
-                  <span className={`font-medium ${getHealthColor(gardenSummary.averageHealth)}`}>
+                  <span className={`font-medium ${getHealthColor(gardenSummary.averageHealth)} text-xs px-2 py-0.5 rounded-full`} style={{ fontSize: '11px', padding: '2px 8px' }}>
                     {getHealthStatus(gardenSummary.averageHealth)}
                   </span>
                   {gardenSummary.urgentActions > 0 && (
                     <motion.span 
-                      className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full"
+                      className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full text-xs font-medium" style={{ fontSize: '11px', padding: '2px 8px' }}
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 0.2 }}

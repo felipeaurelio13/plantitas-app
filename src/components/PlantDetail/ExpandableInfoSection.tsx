@@ -110,7 +110,7 @@ export const ExpandableInfoSection: React.FC<ExpandableInfoSectionProps> = ({
           <div key={section.id} className="rounded-xl bg-white/70 dark:bg-neutral-900/70 backdrop-blur-md transition-shadow duration-200">
             <motion.button
               onClick={() => setExpandedSection(isExpanded ? '' : section.id)}
-              className="w-full flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 min-h-12 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 active:bg-primary-50 dark:active:bg-primary-900/20"
+              className="w-full flex items-center justify-between px-3 py-[12px] sm:px-4 sm:py-3 min-h-12 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 active:bg-primary-50 dark:active:bg-primary-900/20"
               style={{ position: isExpanded ? 'sticky' : 'static', top: 0, zIndex: 2, background: 'inherit' }}
               whileTap={{ scale: 0.98 }}
             >
@@ -121,11 +121,8 @@ export const ExpandableInfoSection: React.FC<ExpandableInfoSectionProps> = ({
                 <span className="font-semibold text-lg truncate text-neutral-900 dark:text-neutral-100">
                   {section.title}
                 </span>
-                {section.badge && (
-                  <span className={cn(
-                    "ml-auto px-2 py-0.5 text-xs font-medium rounded-full",
-                    getBadgeColor(section.id, section.badge)
-                  )}>
+                {section.badge && section.id === 'evolution' && (
+                  <span className="ml-2 px-[6px] py-[2px] text-xs font-medium rounded-full bg-[#F0F8F5] text-[#2A7F3E] align-middle" style={{lineHeight:'1.2'}}>
                     {section.badge}
                   </span>
                 )}
@@ -133,7 +130,8 @@ export const ExpandableInfoSection: React.FC<ExpandableInfoSectionProps> = ({
               <motion.div
                 animate={{ rotate: isExpanded ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
-                className="flex-shrink-0"
+                className="flex-shrink-0 ml-2 align-middle"
+                style={{display:'flex',alignItems:'center'}}
               >
                 <ChevronDown className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
               </motion.div>

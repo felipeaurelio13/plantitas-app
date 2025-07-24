@@ -131,6 +131,8 @@ Veo que tienes ${summary.totalPlants} plantas en tu jardín con una salud promed
         context: {
           plantsAnalyzed: extractPlantIdsFromResponse(aiResponse),
           queryType: inferQueryType(content),
+          insights: aiResponse.insights || [],
+          suggestedActions: aiResponse.suggestedActions || []
         },
       };
 

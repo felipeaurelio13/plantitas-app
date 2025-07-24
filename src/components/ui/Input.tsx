@@ -186,8 +186,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 leftIcon && 'pl-10',
                 (rightIcon || showPasswordToggle || loading) && 'pr-10',
                 floatingLabel && hasContent && 'pt-6 pb-2',
+                // Ajuste de padding vertical para tamaño default
+                (!size || size === 'default') && 'py-[12px]',
+                // Color de placeholder
+                'placeholder-[#777]',
                 className
               )}
+              style={{ ...props.style }}
               onFocus={handleFocus}
               onBlur={handleBlur}
               onChange={handleChange}

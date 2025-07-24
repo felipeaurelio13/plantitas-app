@@ -106,41 +106,55 @@ const AddPlantMenu: React.FC = () => {
   return (
     <>
       {/* Main button */}
-      <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-12 h-12 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center disabled:cursor-not-allowed"
-        whileHover={{ scale: isCreatingPlant ? 1 : 1.05 }}
-        whileTap={{ scale: isCreatingPlant ? 1 : 0.95 }}
-        disabled={isCreatingPlant}
-        aria-label={isOpen ? 'Cerrar menú' : 'Agregar planta'}
-        aria-expanded={isOpen}
-      >
-        <AnimatePresence mode="wait">
-          {isCreatingPlant ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-            >
-              <LoaderCircle className="w-6 h-6 animate-spin" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="plus"
-              initial={{ opacity: 0, rotate: -180 }}
-              animate={{ 
-                opacity: 1, 
-                rotate: isOpen ? 45 : 0 
-              }}
-              exit={{ opacity: 0, rotate: 180 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Plus className="w-6 h-6" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.button>
+      <div className="relative flex items-center">
+        <motion.button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-12 h-12 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center disabled:cursor-not-allowed"
+          whileHover={{ scale: isCreatingPlant ? 1 : 1.05 }}
+          whileTap={{ scale: isCreatingPlant ? 1 : 0.95 }}
+          disabled={isCreatingPlant}
+          aria-label={isOpen ? 'Cerrar menú' : 'Agregar planta'}
+          aria-expanded={isOpen}
+        >
+          <AnimatePresence mode="wait">
+            {isCreatingPlant ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+              >
+                <LoaderCircle className="w-6 h-6 animate-spin" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="plus"
+                initial={{ opacity: 0, rotate: -180 }}
+                animate={{ 
+                  opacity: 1, 
+                  rotate: isOpen ? 45 : 0 
+                }}
+                exit={{ opacity: 0, rotate: 180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Plus className="w-6 h-6" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+        {/* Microetiqueta visible al expandirse */}
+        {isOpen && (
+          <motion.span
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 16 }}
+            exit={{ opacity: 0, x: 10 }}
+            transition={{ duration: 0.2 }}
+            className="ml-3 px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-medium shadow-md whitespace-nowrap z-50"
+          >
+            Agregar planta
+          </motion.span>
+        )}
+      </div>
 
       {/* Menu items */}
       <AnimatePresence>

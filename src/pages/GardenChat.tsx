@@ -148,7 +148,7 @@ const GardenChat: React.FC = () => {
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom))' }}>
         <div className="p-4 space-y-4 max-w-4xl mx-auto">
           <AnimatePresence>
             {messages.map((message) => (

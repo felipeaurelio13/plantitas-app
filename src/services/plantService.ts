@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase as supabaseDefault } from '../lib/supabase';
 import { Database } from '../lib/database.types';
 import {
   Plant,
@@ -54,10 +54,15 @@ const transformDBPlantToPlant = (
 };
 
 export class PlantService {
+  private supabase: typeof supabaseDefault;
+  constructor(supabaseInstance: typeof supabaseDefault = supabaseDefault) {
+    this.supabase = supabaseInstance;
+  }
+
   async getUserPlantSummaries(userId: string): Promise<PlantSummary[]> {
     try {
       // First, get all plants data (without JOIN to avoid complex query)
-      const { data: dbPlants, error: plantsError } = await supabase
+      const { data: dbPlants, error: plantsError } = await this.supabase
         .from('plants')
         .select(`
           id,
@@ -78,7 +83,7 @@ export class PlantService {
       
       // Get profile images in a separate optimized query
       const plantIds = dbPlants.map(plant => plant.id);
-      const { data: profileImages, error: imagesError } = await supabase
+      const { data: profileImages, error: imagesError } = await this.supabase
         .from('plant_images')
         .select('plant_id, url')
         .in('plant_id', plantIds)
@@ -119,7 +124,7 @@ export class PlantService {
 
   async getUserPlants(userId: string): Promise<Plant[]> {
     try {
-      const { data: dbPlants, error } = await supabase
+      const { data: dbPlants, error } = await this.supabase
         .from('plants')
         .select(`
           *,
@@ -175,7 +180,7 @@ export class PlantService {
 
   async getPlantById(plantId: string, userId: string): Promise<Plant | null> {
     try {
-      const { data: plant, error } = await supabase
+      const { data: plant, error } = await this.supabase
         .from('plants')
         .select(`
           *,
@@ -235,10 +240,10 @@ export class PlantService {
     location: string
   ): Promise<Plant> {
     try {
-      // Step 1: Get AI analysis (can be slow)
+      console.log('[PlantService] Iniciando análisis IA...');
       const analysis = await analyzeImage(imageDataUrl);
+      console.log('[PlantService] Resultado IA:', analysis);
 
-      // Step 2: Create the initial plant object to insert in DB
       const plantToCreate: Omit<Plant, 'id' | 'images' | 'chatHistory' | 'notifications'> = {
         name: analysis.commonName,
         species: analysis.species,
@@ -247,7 +252,6 @@ export class PlantService {
         variety: analysis.variety ?? undefined,
         nickname: analysis.commonName,
         location,
-        // Incluir los nuevos campos desde el análisis de IA
         plantEnvironment: analysis.plantEnvironment,
         lightRequirements: analysis.lightRequirements,
         dateAdded: new Date(),
@@ -255,80 +259,64 @@ export class PlantService {
         careProfile: analysis.careProfile,
         personality: analysis.personality,
       };
+      console.log('[PlantService] Payload a createPlant:', plantToCreate);
 
-      // Step 3: Create the plant record in the database
       const newPlant = await this.createPlant(plantToCreate, userId);
+      console.log('[PlantService] Planta creada:', newPlant);
 
-      // Step 4: Return the plant to the UI immediately.
-      // The rest of the operations will happen in the background.
-      
-      // Fire-and-forget background tasks
       (async () => {
         let imageUploadSuccess = false;
         let chatInitSuccess = false;
-        
         try {
-          // Step 5 (background): Upload the image and get URL
           console.log(`[PlantService] Starting image upload for plant ${newPlant.id}`);
           const imageUrl = await uploadImage(
             imageDataUrl, 
-            'plant-images', // bucket
-            `${userId}/${newPlant.id}` // path (directory only, filename will be auto-generated)
+            'plant-images',
+            `${userId}/${newPlant.id}`
           );
-          
-          // Step 6 (background): Add image record to the database
+          console.log(`[PlantService] Imagen subida:`, imageUrl);
           await this.addPlantImage(newPlant.id, {
             url: imageUrl,
             timestamp: new Date(),
             isProfileImage: true,
             healthAnalysis: analysis.health,
           }, userId);
-
           imageUploadSuccess = true;
           console.log(`[PlantService] Image upload completed for plant ${newPlant.id}`);
-
-          // Note: The UI will get the images through the plant queries that refetch data
-
         } catch (imageError) {
           console.error(`[PlantService] Image upload failed for plant ${newPlant.id}:`, imageError);
+          alert('Error subiendo imagen: ' + (imageError instanceof Error ? imageError.message : JSON.stringify(imageError)));
         }
-
         try {
-          // Step 7 (background): Generate initial greeting from the plant
           console.log(`[PlantService] Starting chat initialization for plant ${newPlant.id}`);
           const greetingResponse = await generatePlantResponse(newPlant, "¡Hola! Acabo de llegar. ¿Cómo te llamas?");
-          
-          // Step 8 (background): Add greeting to the database
+          console.log(`[PlantService] Respuesta IA chat:`, greetingResponse);
           await this.addChatMessage(newPlant.id, {
             sender: 'plant',
             content: greetingResponse.content,
             timestamp: new Date(),
             emotion: greetingResponse.emotion,
           }, userId);
-          
           chatInitSuccess = true;
           console.log(`[PlantService] Chat initialization completed for plant ${newPlant.id}`);
-
         } catch (chatError) {
           console.error(`[PlantService] Chat initialization failed for plant ${newPlant.id}:`, chatError);
+          alert('Error inicializando chat: ' + (chatError instanceof Error ? chatError.message : JSON.stringify(chatError)));
         }
-
-        // Success notification if everything went well
         if (imageUploadSuccess && chatInitSuccess) {
           console.log(`[PlantService] All background tasks for plant ${newPlant.id} completed successfully.`);
         } else if (imageUploadSuccess || chatInitSuccess) {
           console.log(`[PlantService] Background tasks for plant ${newPlant.id} partially completed.`);
         }
-
       })().catch((backgroundError) => {
         console.error(`[PlantService] Error during background tasks for plant ${newPlant.id}:`, backgroundError);
+        alert('Error en tareas de fondo: ' + (backgroundError instanceof Error ? backgroundError.message : JSON.stringify(backgroundError)));
       });
-
       return newPlant;
     } catch (error) {
       console.error('Error adding plant from analysis:', error);
-      // Ensure the original error is re-thrown so the mutation fails
-      throw new Error('Failed to create plant from image analysis.');
+      alert('Error creando planta: ' + (error instanceof Error ? error.message : JSON.stringify(error)));
+      throw error;
     }
   }
 
@@ -346,7 +334,6 @@ export class PlantService {
         description: plantData.description || null,
         fun_facts: plantData.funFacts || null,
         location: plantData.location,
-        // Nuevos campos para ambiente y luz
         plant_environment: plantData.plantEnvironment || null,
         light_requirements: plantData.lightRequirements || null,
         date_added: plantData.dateAdded.toISOString(),
@@ -357,29 +344,30 @@ export class PlantService {
         personality: plantData.personality as any,
         updated_at: null,
       };
-
-      const { data: newDbPlant, error } = await supabase
+      console.log('[PlantService] Payload a Supabase:', dbPlant);
+      const { data: newDbPlant, error } = await this.supabase
         .from('plants')
         .insert(dbPlant)
         .select('*')
         .single();
-      
+      console.log('[PlantService] Respuesta Supabase:', newDbPlant, error);
       if (error) {
         console.error('Supabase error:', {
           message: error.message,
           details: error.details,
           code: error.code,
         });
+        alert('Error Supabase: ' + error.message);
         throw new Error(`Supabase error creating plant: ${error.message}`);
       }
-
       if (!newDbPlant) {
+        alert('No se pudo crear la planta en la base de datos, no se devolvieron datos.');
         throw new Error('Failed to create plant in the database, no data returned.');
       }
-      
       return transformDBPlantToPlant(newDbPlant, [], [], []);
     } catch (error) {
       console.error('Error creating plant:', error);
+      alert('Error creando planta: ' + (error instanceof Error ? error.message : JSON.stringify(error)));
       throw error;
     }
   }
@@ -413,7 +401,7 @@ export class PlantService {
         updateData.fun_facts = updates.funFacts;
       }
 
-      const { data: updatedPlant, error } = await supabase
+      const { data: updatedPlant, error } = await this.supabase
         .from('plants')
         .update(updateData)
         .eq('id', plantId)
@@ -456,7 +444,7 @@ export class PlantService {
       });
 
       // Actualizar el health score de la planta
-      const { error: plantError } = await supabase
+      const { error: plantError } = await this.supabase
         .from('plants')
         .update({ health_score: healthScore })
         .eq('id', plantId)
@@ -471,7 +459,7 @@ export class PlantService {
       if (healthAnalysis && imageId) {
         console.log('📸 [DB] Actualizando análisis de salud en imagen:', imageId);
         
-        const { error: imageError } = await supabase
+        const { error: imageError } = await this.supabase
           .from('plant_images')
           .update({ health_analysis: healthAnalysis })
           .eq('id', imageId)
@@ -507,7 +495,7 @@ export class PlantService {
         last_fertilized: plant.lastFertilized?.toISOString(),
       };
 
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('plants')
         .update(updateData)
         .eq('id', plant.id)
@@ -526,7 +514,7 @@ export class PlantService {
 
   async deletePlant(plantId: string, userId: string): Promise<void> {
     try {
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('plants')
         .delete()
         .eq('id', plantId)
@@ -573,7 +561,7 @@ export class PlantService {
       
       if (import.meta.env.DEV) console.log('📤 Insert data:', insertData);
       
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('chat_messages')
         .insert(insertData)
         .select()
@@ -616,7 +604,7 @@ export class PlantService {
         storagePath = `${userId}/${plantId}/${Date.now()}.jpg`;
       }
       
-              const { data, error } = await supabase
+              const { data, error } = await this.supabase
         .from('plant_images')
         .insert({
           plant_id: plantId,
@@ -651,14 +639,14 @@ export class PlantService {
   async setProfileImage(plantId: string, imageId: string, userId: string): Promise<void> {
     try {
       // Primero, quitar la marca de perfil de todas las imágenes existentes
-      await supabase
+      await this.supabase
         .from('plant_images')
         .update({ is_profile_image: false })
         .eq('plant_id', plantId)
         .eq('user_id', userId);
 
       // Luego, marcar la imagen seleccionada como de perfil
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('plant_images')
         .update({ is_profile_image: true })
         .eq('id', imageId)
@@ -677,7 +665,7 @@ export class PlantService {
   async deleteImage(imageId: string, userId: string): Promise<void> {
     try {
       // Obtener información de la imagen antes de eliminar
-      const { data: imageData, error: fetchError } = await supabase
+      const { data: imageData, error: fetchError } = await this.supabase
         .from('plant_images')
         .select('storage_path')
         .eq('id', imageId)
@@ -688,13 +676,13 @@ export class PlantService {
 
       // Eliminar imagen de Storage si existe path
       if (imageData?.storage_path) {
-        await supabase.storage
+        await this.supabase.storage
           .from('plant-images')
           .remove([imageData.storage_path]);
       }
 
       // Eliminar registro de la base de datos
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('plant_images')
         .delete()
         .eq('id', imageId)
@@ -708,4 +696,4 @@ export class PlantService {
   }
 }
 
-export const plantService = new PlantService(); 
+export const plantService = new PlantService(supabaseDefault); 

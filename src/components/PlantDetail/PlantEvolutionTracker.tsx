@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Plant, PlantImage } from '../../schemas';
 import LazyImage from '../LazyImage';
+import { PlantHealthEvolutionChart } from './PlantHealthEvolutionChart';
 
 interface PlantEvolutionTrackerProps {
   plant: Plant;
@@ -227,143 +228,9 @@ export const PlantEvolutionTracker: React.FC<PlantEvolutionTrackerProps> = ({
 
   return (
     <Card className="mt-6">
-      <CardHeader>
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <CardTitle className="flex items-center min-w-0">
-              <BarChart3 className="w-5 h-5 mr-2 text-primary shrink-0" />
-              <span className="truncate">Evolución de tu Planta</span>
-            </CardTitle>
-            {/* Badge de tendencia global */}
-            {evolutionPeriods.length > 1 && trend && trend.icon && trend.label && (
-              <span
-                className={`inline-flex items-center min-w-[90px] justify-center px-2 py-1 rounded-full text-xs font-medium border border-neutral-200 ${trend.color}`}
-                aria-label={`Tendencia: ${trend.label}`}
-              >
-                <span className="mr-1" role="img" aria-label={trend.label}>{trend.icon}</span>
-                {trend.label}
-              </span>
-            )}
-          </div>
-          <Button
-            variant="primary"
-            size="default"
-            onClick={onAddPhoto}
-            aria-label="Agregar nueva foto de evolución"
-            className="gap-1 rounded-full px-5 shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 w-full sm:w-auto"
-          >
-            <Plus className="w-5 h-5" />
-            Agregar Foto
-          </Button>
-        </div>
-      </CardHeader>
       <CardContent className="mt-4 space-y-6">
-        {/* Línea de tiempo */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-            Períodos de Evolución
-          </h4>
-          
-          <div className="space-y-3">
-            {evolutionPeriods.map((period, index) => (
-              <motion.div
-                key={period.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
-                  selectedPeriod === period.id 
-                    ? 'border-primary-300 bg-primary-50 shadow-sm' 
-                    : 'border-neutral-200 hover:border-neutral-300 hover:shadow-sm'
-                }`}
-                onClick={() => setSelectedPeriod(
-                  selectedPeriod === period.id ? null : period.id
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-lg border ${getTrendColor(period.trend)}`}>
-                      {getTrendIcon(period.trend)}
-                    </div>
-                    
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">
-                          {formatDate(period.startDate)}
-                        </span>
-                        <ArrowRight className="w-3 h-3 text-muted-foreground" />
-                        <span className="font-medium">
-                          {formatDate(period.endDate)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                        <span className="flex items-center gap-1">
-                          <ImageIcon className="w-3 h-3" />
-                          {period.photoCount} fotos
-                        </span>
-                        <span>
-                          Salud promedio: {Math.max(0, Math.min(100, period.avgHealthScore)).toFixed(0)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Miniatura de la última imagen del período */}
-                  {period.images.length > 0 && (
-                    <div className="w-12 h-12 rounded-lg overflow-hidden border border-neutral-200">
-                      <LazyImage
-                        src={period.images[period.images.length - 1].url}
-                        alt={`Evolución ${formatDate(period.endDate)}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-        
-        {/* Detalles del período seleccionado */}
-        <AnimatePresence>
-          {selectedPeriod && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="border-t pt-6"
-            >
-              {(() => {
-                const period = evolutionPeriods.find(p => p.id === selectedPeriod);
-                if (!period) return null;
-                
-                return (
-                  <div className="space-y-4">
-                    
-                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                      {period.images.map((image, imgIndex) => (
-                        <motion.div
-                          key={image.id}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: imgIndex * 0.05 }}
-                          className="aspect-square rounded-lg overflow-hidden border border-neutral-200 hover:border-primary-300 transition-colors cursor-pointer group"
-                        >
-                          <LazyImage
-                            src={image.url}
-                            alt={`Evolución ${formatDate(new Date(image.timestamp))}`}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Gráfico y tabla de evolución de salud */}
+        <PlantHealthEvolutionChart images={plant.images || []} />
       </CardContent>
     </Card>
   );

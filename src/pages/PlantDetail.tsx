@@ -212,7 +212,7 @@ const PlantDetail = () => {
           transition={{ duration: 0.5 }}
         >
           <PlantDetailHeader plant={plant} />
-          <main className="p-3 sm:p-4 space-y-3 sm:space-y-4 pb-20">
+          <main className="p-3 sm:p-4 space-y-3 sm:space-y-4" style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom))' }}>
             {/* Overview Card - Main info at a glance */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}

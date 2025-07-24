@@ -1,0 +1,11 @@
+import{z as g,r,j as a,A as h,m as d,W as x}from"./index-DJn3qQTM.js";/**
+ * @license lucide-react v0.411.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const f=g("Droplets",[["path",{d:"M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z",key:"1ptgy4"}],["path",{d:"M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97",key:"1sl1rz"}]]);/**
+ * @license lucide-react v0.411.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const k=g("Wind",[["path",{d:"M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2",key:"1k4u03"}],["path",{d:"M9.6 4.6A2 2 0 1 1 11 8H2",key:"b7d0fd"}],["path",{d:"M12.6 19.4A2 2 0 1 0 14 16H2",key:"1p5cb3"}]]),j=({src:s,alt:i,className:c="",fallback:l,onLoad:e,onError:t})=>{const[n,m]=r.useState(!1),[o,u]=r.useState(!1),y=r.useCallback(()=>{m(!0),e==null||e()},[e]),p=r.useCallback(()=>{u(!0),t==null||t()},[t]);return o&&l?a.jsx(a.Fragment,{children:l}):o?a.jsx("div",{className:`bg-gray-200 dark:bg-gray-700 flex items-center justify-center ${c}`,children:a.jsx("span",{className:"text-gray-400 text-sm",children:"No image"})}):a.jsxs("div",{className:`relative overflow-hidden ${c}`,children:[a.jsx(h,{children:!n&&a.jsx(d.div,{initial:{opacity:1},exit:{opacity:0},transition:{duration:.2},className:"absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse"})}),a.jsx(d.img,{src:s,alt:i,className:`w-full h-full object-cover ${n?"opacity-100":"opacity-0"}`,loading:"lazy",decoding:"async",onLoad:y,onError:p,initial:{opacity:0},animate:{opacity:n?1:0},transition:{duration:.2}})]})};function b({className:s,...i}){return a.jsx("div",{className:x("animate-shimmer rounded-md","bg-[linear-gradient(110deg,var(--color-neutral-200)_8%,var(--color-neutral-300)_18%,var(--color-neutral-200)_33%)]","dark:bg-[linear-gradient(110deg,var(--color-neutral-800)_8%,var(--color-neutral-700)_18%,var(--color-neutral-800)_33%)]","bg-[length:200%_100%]",s),...i})}export{f as D,j as L,b as S,k as W};
