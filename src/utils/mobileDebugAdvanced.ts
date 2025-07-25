@@ -65,7 +65,7 @@ export const initAdvancedMobileDebug = () => {
   
   const safeStringify = (obj: any) => {
     const seen = new WeakSet();
-    return JSON.stringify(obj, function(key, value) {
+    return JSON.stringify(obj, function(_key, value) {
       if (typeof value === "object" && value !== null) {
         if (seen.has(value)) return "[Circular]";
         seen.add(value);
