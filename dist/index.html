@@ -1,8 +1,6 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <script type="module" crossorigin src="/plantitas-app/assets/js/polyfills-BZM2rK6y.js"></script>
-
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/plantitas-app/plant-icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
@@ -122,15 +120,13 @@
       document.documentElement.classList.add('js-loading');
       console.log('[HTML] Loading class added');
     </script>
-    <script type="module" crossorigin src="/plantitas-app/assets/js/index-CzObIAIM.js"></script>
-    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/vendor-CWIcSd2s.js">
-    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/query-tHw9dKVh.js">
-    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/supabase-u3H8V9hM.js">
-    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/router-CqOyMAvc.js">
-    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/ui-CgrjAsfp.js">
-    <link rel="stylesheet" crossorigin href="/plantitas-app/assets/css/index-DceEKBs6.css">
-    <script type="module">import.meta.url;import("_").catch(()=>1);(async function*(){})().next();if(location.protocol!="file:"){window.__vite_is_modern_browser=true}</script>
-    <script type="module">!function(){if(window.__vite_is_modern_browser)return;console.warn("vite: loading legacy chunks, syntax error above and the same error below should be ignored");var e=document.getElementById("vite-legacy-polyfill"),n=document.createElement("script");n.src=e.src,n.onload=function(){System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))},document.body.appendChild(n)}();</script>
+    <script type="module" crossorigin src="/plantitas-app/assets/js/index-B5IhfQU1.js"></script>
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/vendor-ohv-86MT.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/query-D9cK7eLy.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/supabase-ChG5PfJU.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/router-Lz5I7iQY.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/ui-BaGPRaSD.js">
+    <link rel="stylesheet" crossorigin href="/plantitas-app/assets/css/index-CNF8mRJU.css">
   <link rel="manifest" href="/plantitas-app/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/plantitas-app/registerSW.js"></script></head>
   <body>
     <div id="root">
@@ -142,43 +138,22 @@
       </div>
     </div>
     
-    <!-- Module script with error handling -->
+    <!-- Emergency simplified script -->
     <script>
-      console.log('[HTML] Loading main script...');
+      console.log('[HTML] Emergency load started');
       
-      // Remove loading class when app starts
+      // Simple loading management
       window.addEventListener('load', function() {
-        console.log('[HTML] Window load event fired');
         setTimeout(function() {
-          document.documentElement.classList.remove('js-loading');
-          console.log('[HTML] Loading class removed');
-        }, 100);
+          if (document.documentElement.classList) {
+            document.documentElement.classList.remove('js-loading');
+          }
+        }, 500); // Más tiempo para cargar
       });
       
-      // Error handling for module loading
-      window.addEventListener('error', function(e) {
-        console.error('[HTML] Critical error:', e.error);
-        
-        // Show error message
-        var root = document.getElementById('root');
-        if (root) {
-          root.innerHTML = `
-            <div class="critical-loading">
-              <div style="color: #ff6b6b; font-size: 2rem; margin-bottom: 1rem;">⚠️</div>
-              <div class="critical-loading-text">Error de compatibilidad</div>
-              <div class="critical-loading-subtext">
-                Tu navegador no es compatible con esta aplicación.
-                <br><br>
-                Intenta actualizar tu navegador o usar Chrome/Safari más reciente.
-              </div>
-            </div>
-          `;
-        }
-      });
+      // Remover error handling que está causando problemas
+      // NO interceptar errores - dejar que React los maneje
     </script>
     
-    <script nomodule>!function(){var e=document,t=e.createElement("script");if(!("noModule"in t)&&"onbeforeload"in t){var n=!1;e.addEventListener("beforeload",(function(e){if(e.target===t)n=!0;else if(!e.target.hasAttribute("nomodule")||!n)return;e.preventDefault()}),!0),t.type="module",t.src=".",e.head.appendChild(t),t.remove()}}();</script>
-    <script nomodule crossorigin id="vite-legacy-polyfill" src="/plantitas-app/assets/js/polyfills-legacy-CK3abMBA.js"></script>
-    <script nomodule crossorigin id="vite-legacy-entry" data-src="/plantitas-app/assets/js/index-legacy-DnOd2aa_.js">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>
   </body>
 </html>
