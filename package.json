@@ -22,6 +22,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@juggle/resize-observer": "^3.4.0",
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
     "@supabase/auth-ui-react": "^0.4.7",

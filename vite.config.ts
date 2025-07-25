@@ -10,19 +10,50 @@ export default defineConfig({
   base: '/plantitas-app/',
   plugins: [
     react(),
-    // Legacy support temporalmente deshabilitado para debugging
-    // legacy({
-    //   targets: ['iOS >= 13', 'Safari >= 13'],
-    //   additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
-    //   renderLegacyChunks: true,
-    //   polyfills: [
-    //     'es.promise.finally',
-    //     'es.array.flat',
-    //     'es.array.flat-map',
-    //     'es.object.from-entries',
-    //     'es.string.match-all'
-    //   ]
-    // }),
+    // Legacy support para iOS Safari 12+ y browsers antiguos - CONFIGURACIÓN 2025 
+    legacy({
+      // Targets optimizados para iPhone 12 (iOS 14+) y compatibilidad amplia
+      targets: [
+        'iOS >= 12',
+        'Safari >= 12', 
+        'Chrome >= 64',
+        'Firefox >= 67',
+        'Edge >= 79',
+        'and_chr >= 64',
+        'and_ff >= 67',
+        'samsung >= 8.2'
+      ],
+      
+      // Modern targets para browsers que soportan ESM pero no todas las features
+      modernTargets: [
+        'iOS >= 12',
+        'Safari >= 12', 
+        'Chrome >= 64',
+        'Firefox >= 67',
+        'Edge >= 79'
+      ],
+      
+      // CRÍTICO: modernPolyfills=true para apps complejas (mejores prácticas 2025)
+      modernPolyfills: true,
+      
+      // Polyfills automáticos para legacy browsers
+      polyfills: true,
+      
+      // Polyfills adicionales para DOM APIs que necesitamos
+      additionalLegacyPolyfills: [
+        'regenerator-runtime/runtime'
+      ],
+      
+      // También para modern browsers que puedan necesitar polyfills específicos
+      additionalModernPolyfills: [
+        'regenerator-runtime/runtime'
+      ],
+      
+      // Configuraciones para máxima compatibilidad
+      renderLegacyChunks: true,
+      renderModernChunks: true,
+      externalSystemJS: false
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['plant-icon.svg', 'manifest.json'],
@@ -52,7 +83,7 @@ export default defineConfig({
     },
   },
           build: {
-      target: ['es2018', 'safari13'], // iOS compatibility direct
+      // Target será manejado por legacy plugin
       minify: 'esbuild',
       sourcemap: false,
       modulePreload: { polyfill: true },
