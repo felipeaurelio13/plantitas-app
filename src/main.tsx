@@ -6,7 +6,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores/useAuthStore';
 import { plantService } from './services/plantService';
-import { initAdvancedMobileDebug, runCompatibilityTests, logCriticalError } from './utils/mobileDebugAdvanced';
+import { initAdvancedMobileDebug, logCriticalError } from './utils/mobileDebugAdvanced';
 
 // 🚨 CRITICAL POLYFILLS para iOS Safari compatibility
 import { ResizeObserver as ResizeObserverPolyfill } from '@juggle/resize-observer';
@@ -30,12 +30,8 @@ try {
   console.error('[MOBILE] Debug system failed:', error);
 }
 
-// Test de compatibilidad
-try {
-  runCompatibilityTests();
-} catch (error) {
-  logCriticalError('COMPATIBILITY_TESTS', error);
-}
+// Test de compatibilidad desactivado temporalmente
+// El problema podría estar en los compatibility tests
 
 const queryClient = new QueryClient();
 

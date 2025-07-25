@@ -10,38 +10,8 @@ export default defineConfig({
   base: '/plantitas-app/',
   plugins: [
     react(),
-    // 🚨 EMERGENCY FIX: Solo legacy bundles para máxima compatibilidad iPhone 12
-    legacy({
-      // Targets ultra conservadores para iPhone 12 y anteriores
-      targets: [
-        'iOS >= 10',
-        'Safari >= 10', 
-        'Chrome >= 60',
-        'Firefox >= 60',
-        'Edge >= 15',
-        'and_chr >= 60',
-        'and_ff >= 60',
-        'samsung >= 7'
-      ],
-      
-      // CRÍTICO: Solo legacy bundles, SIN modern chunks
-      renderModernChunks: false,
-      renderLegacyChunks: true,
-      
-      // Polyfills automáticos más agresivos
-      polyfills: true,
-      
-      // Polyfills adicionales esenciales
-      additionalLegacyPolyfills: [
-        'regenerator-runtime/runtime',
-        'core-js/es6/promise',
-        'core-js/es6/object',
-        'core-js/es6/array'
-      ],
-      
-      // SystemJS incluido para máxima compatibilidad
-      externalSystemJS: false
-    }),
+    // 🚨 DESACTIVAR LEGACY PLUGIN COMPLETAMENTE
+    // El problema podría ser el legacy plugin mismo
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['plant-icon.svg', 'manifest.json'],
@@ -71,11 +41,10 @@ export default defineConfig({
     },
   },
           build: {
-      // Target ultra conservador para máxima compatibilidad
-      target: 'es5',
-      minify: 'terser', // Terser es más compatible que esbuild
+      // Target moderno - tu iPhone 12 lo soporta
+      target: 'es2020',
+      minify: 'esbuild',
       sourcemap: false,
-      modulePreload: false, // Desactivar module preload
       rollupOptions: {
         output: {
           // Optimización de chunks

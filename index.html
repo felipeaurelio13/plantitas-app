@@ -144,11 +144,8 @@
         }, 500); // Más tiempo para cargar
       });
       
-      // Simplified error handling
-      window.addEventListener('error', function(e) {
-        console.error('[HTML] Error:', e);
-        // No mostrar error automáticamente - dejar que legacy bundle intente cargar
-      });
+      // Remover error handling que está causando problemas
+      // NO interceptar errores - dejar que React los maneje
     </script>
     
     <script type="module" src="/src/main.tsx"></script>
