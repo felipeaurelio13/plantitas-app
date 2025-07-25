@@ -58,34 +58,27 @@ const FullScreenLoader: React.FC<{ message: string }> = ({ message }) => (
 
 // Smart basename detection para mobile compatibility
 const getBasename = (): string => {
-  console.log('[ROUTER] Detecting basename...');
-  console.log('[ROUTER] Hostname:', window.location.hostname);
-  console.log('[ROUTER] Pathname:', window.location.pathname);
-  
   // Local development
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    console.log('[ROUTER] Local development detected, using "/"');
     return '/';
   }
   
   // GitHub Pages detection
   if (window.location.pathname.startsWith('/plantitas-app')) {
-    console.log('[ROUTER] GitHub Pages detected, using "/plantitas-app/"');
     return '/plantitas-app/';
   }
   
   // Fallback
-  console.log('[ROUTER] Using fallback basename "/"');
   return '/';
 };
 
 const App: React.FC = () => {
   const { session, isInitialized, initialize } = useAuthStore();
   
-  console.log('[APP] App component mounting...');
-  console.log('[APP] Session:', !!session);
-  console.log('[APP] Initialized:', isInitialized);
-  console.log('[APP] Session status:', { hasSession: !!session, hasUser: !!session?.user });
+  // Solo log en desarrollo para debugging
+  if (import.meta.env.DEV) {
+    console.log('[APP] App component mounting... Session:', !!session, 'Initialized:', isInitialized);
+  }
   
   // Monitoreo de performance en desarrollo
   usePerformanceMonitoring();
@@ -132,12 +125,9 @@ const App: React.FC = () => {
     return () => clearTimeout(emergencyTimeout);
   }, [isInitialized]);
 
-  if (!isInitialized && !forceRender) {
-    console.log('[APP] Not initialized, showing loader...');
-    return <FullScreenLoader message="Inicializando..." />;
-  }
-  
-  console.log('[APP] Rendering app (initialized:', isInitialized, 'forced:', forceRender, ')');
+      if (!isInitialized && !forceRender) {
+      return <FullScreenLoader message="Inicializando..." />;
+    }
 
   const PrivateRoutes = () => (
     <Routes>
@@ -178,23 +168,11 @@ const App: React.FC = () => {
               <Routes>
                 <Route
                   path={routes.auth}
-                  element={(() => {
-                    console.log('[ROUTER] Auth route - session exists:', !!session);
-                    return !session ? <AuthPage /> : <Navigate to={routes.dashboard} replace />;
-                  })()}
+                  element={!session ? <AuthPage /> : <Navigate to={routes.dashboard} replace />}
                 />
                 <Route
                   path="/*"
-                  element={(() => {
-                    console.log('[ROUTER] Main route - session exists:', !!session);
-                    if (session) {
-                      console.log('[ROUTER] Rendering PrivateRoutes');
-                      return <PrivateRoutes />;
-                    } else {
-                      console.log('[ROUTER] No session, redirecting to auth');
-                      return <Navigate to={routes.auth} replace />;
-                    }
-                  })()}
+                  element={session ? <PrivateRoutes /> : <Navigate to={routes.auth} replace />}
                 />
               </Routes>
             </Suspense>

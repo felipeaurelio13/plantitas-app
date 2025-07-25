@@ -160,7 +160,7 @@ const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
         hover
         onClick={handleCardClick}
         onMouseEnter={handleMouseEnter}
-        className="overflow-hidden border-2 hover:border-primary-300 dark:hover:border-primary-600 transition-all duration-200 p-4 mb-4"
+        className="overflow-hidden border border-green-200/60 hover:border-green-300/80 dark:hover:border-green-600 transition-all duration-300 p-4 mb-4 shadow-sm hover:shadow-lg hover:shadow-green-100/30 bg-white/80 backdrop-blur-sm"
       >
         {/* Header con imagen y nombre */}
         <CardHeader className="pb-2 flex-shrink-0 space-y-0">
