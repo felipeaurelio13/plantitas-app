@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useThemeStore, useAuthStore } from '../stores';
 import { storageService } from '../services/storageService';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,7 @@ export const useSettings = () => {
   const { isDark, toggleTheme } = useThemeStore();
   const { signOut, profile } = useAuthStore();
   const navigate = useNavigate();
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Local state for settings that don't have a store
   // TODO: Reemplazar por lógica real si se requiere
@@ -27,23 +28,8 @@ export const useSettings = () => {
   };
 
   
-  const handleExportData = async () => {
-    try {
-      const data = await storageService.exportData();
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `plantitas-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      // Show success toast
-    } catch (error) {
-      console.error('Error exporting data:', error);
-      // Show error toast
-    }
+  const handleExportData = () => {
+    setIsExportModalOpen(true);
   };
   
   const handleClearData = async () => {
@@ -140,5 +126,7 @@ export const useSettings = () => {
 
   return {
     settingsSections,
+    isExportModalOpen,
+    setIsExportModalOpen,
   };
 }; 

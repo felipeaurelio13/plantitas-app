@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 import { usePlantMutations } from '@/hooks/usePlantMutations';
+// import { LoadingStates } from '@/components/ui/LoadingState'; // Commented out as not used
 import { useCamera } from '@/hooks/useCamera';
 
 import { CameraErrorState } from '../components/camera/CameraErrorState';
@@ -57,7 +58,7 @@ const CameraPage: React.FC = () => {
     });
 
     toast.promise(promise, {
-      loading: 'Analizando imagen... La IA está trabajando.',
+      loading: 'Analizando imagen con IA...',
       success: (data: any) => `¡Planta "${data.name}" creada con éxito!`,
       error: (err) => `Error: ${err.message}`,
     });
