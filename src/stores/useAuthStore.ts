@@ -40,13 +40,17 @@ export const useAuthStore = create<AuthStore>((set, _get) => ({
   isInitialized: false,
 
   initialize: async () => {
+    console.log('[AUTH] 🚀 Initialize started');
+    
     // 1. Unsubscribe from any existing listener
     if (authListener?.subscription) {
+      console.log('[AUTH] Unsubscribing existing listener');
       authListener.subscription.unsubscribe();
     }
     
     // 2. Check for an existing session on startup with timeout
     try {
+      console.log('[AUTH] Getting session with timeout...');
       // Create timeout wrapper for mobile compatibility
       const sessionPromise = supabase.auth.getSession();
       const timeoutPromise = new Promise<never>((_, reject) => 
@@ -58,11 +62,14 @@ export const useAuthStore = create<AuthStore>((set, _get) => ({
         timeoutPromise
       ]);
       
+      console.log('[AUTH] Session result:', { hasSession: !!session, error: error?.message });
+      
       if (error) {
-        console.warn('Session error:', error.message);
+        console.warn('[AUTH] Session error:', error.message);
         // Don't throw, allow app to continue without session
       }
       
+      console.log('[AUTH] Setting session state...');
       set({ session, user: session?.user ?? null });
 
       if (session?.user) {
@@ -105,8 +112,24 @@ export const useAuthStore = create<AuthStore>((set, _get) => ({
       });
     } finally {
       // 3. Mark as initialized AFTER the initial check is complete
+      console.log('[AUTH] ✅ Marking as initialized');
       set({ isInitialized: true });
     }
+    
+    // 🚨 EMERGENCY: Forzar inicialización después de 5 segundos si aún no se ha completado
+    setTimeout(() => {
+      const currentState = _get();
+      if (!currentState.isInitialized) {
+        console.warn('[AUTH] 🚨 Emergency timeout - forcing initialization');
+        set({ 
+          isInitialized: true, 
+          session: null, 
+          user: null, 
+          profile: null,
+          error: null 
+        });
+      }
+    }, 5000);
 
     // 4. Set up the real-time listener for subsequent auth changes
     const { data } = supabase.auth.onAuthStateChange(
