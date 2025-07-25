@@ -28,13 +28,35 @@ class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     });
 
-    // Log error to console in development
-    if (import.meta.env.DEV) {
-      console.error('Error caught by boundary:', error, errorInfo);
-    }
+    // Enhanced mobile debugging
+    const mobileInfo = {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      isOnline: navigator.onLine,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
+      url: window.location.href,
+      timestamp: new Date().toISOString(),
+    };
 
-    // In production, you would send this to an error reporting service
-    // Example: Sentry.captureException(error, { extra: errorInfo });
+    // Log error to console with mobile context
+    console.error('[ErrorBoundary] Error caught:', {
+      error: error.message,
+      stack: error.stack,
+      errorInfo,
+      mobileInfo,
+    });
+
+    // In production, send enhanced error info to monitoring service
+    if (!import.meta.env.DEV) {
+      // Example: Send to Sentry, LogRocket, etc. with mobile context
+      console.warn('[ErrorBoundary] Production error detected:', {
+        message: error.message,
+        mobile: mobileInfo,
+      });
+    }
   }
 
   handleReload = () => {

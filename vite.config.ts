@@ -38,9 +38,10 @@ export default defineConfig({
     },
   },
   build: {
-    target: 'esnext',
+    target: ['es2018', 'safari13'], // iOS compatibility
     minify: 'esbuild',
-    sourcemap: false, // Desactivar en producción para mejor performance
+    sourcemap: false,
+    modulePreload: { polyfill: true }, // Desactivar en producción para mejor performance
     rollupOptions: {
       output: {
         // Optimización de chunks
