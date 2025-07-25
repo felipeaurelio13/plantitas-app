@@ -10,48 +10,36 @@ export default defineConfig({
   base: '/plantitas-app/',
   plugins: [
     react(),
-    // Legacy support para iOS Safari 12+ y browsers antiguos - CONFIGURACIÓN 2025 
+    // 🚨 EMERGENCY FIX: Solo legacy bundles para máxima compatibilidad iPhone 12
     legacy({
-      // Targets optimizados para iPhone 12 (iOS 14+) y compatibilidad amplia
+      // Targets ultra conservadores para iPhone 12 y anteriores
       targets: [
-        'iOS >= 12',
-        'Safari >= 12', 
-        'Chrome >= 64',
-        'Firefox >= 67',
-        'Edge >= 79',
-        'and_chr >= 64',
-        'and_ff >= 67',
-        'samsung >= 8.2'
+        'iOS >= 10',
+        'Safari >= 10', 
+        'Chrome >= 60',
+        'Firefox >= 60',
+        'Edge >= 15',
+        'and_chr >= 60',
+        'and_ff >= 60',
+        'samsung >= 7'
       ],
       
-      // Modern targets para browsers que soportan ESM pero no todas las features
-      modernTargets: [
-        'iOS >= 12',
-        'Safari >= 12', 
-        'Chrome >= 64',
-        'Firefox >= 67',
-        'Edge >= 79'
-      ],
+      // CRÍTICO: Solo legacy bundles, SIN modern chunks
+      renderModernChunks: false,
+      renderLegacyChunks: true,
       
-      // CRÍTICO: modernPolyfills=true para apps complejas (mejores prácticas 2025)
-      modernPolyfills: true,
-      
-      // Polyfills automáticos para legacy browsers
+      // Polyfills automáticos más agresivos
       polyfills: true,
       
-      // Polyfills adicionales para DOM APIs que necesitamos
+      // Polyfills adicionales esenciales
       additionalLegacyPolyfills: [
-        'regenerator-runtime/runtime'
+        'regenerator-runtime/runtime',
+        'core-js/es6/promise',
+        'core-js/es6/object',
+        'core-js/es6/array'
       ],
       
-      // También para modern browsers que puedan necesitar polyfills específicos
-      additionalModernPolyfills: [
-        'regenerator-runtime/runtime'
-      ],
-      
-      // Configuraciones para máxima compatibilidad
-      renderLegacyChunks: true,
-      renderModernChunks: true,
+      // SystemJS incluido para máxima compatibilidad
       externalSystemJS: false
     }),
     VitePWA({
@@ -83,10 +71,11 @@ export default defineConfig({
     },
   },
           build: {
-      // Target será manejado por legacy plugin
-      minify: 'esbuild',
+      // Target ultra conservador para máxima compatibilidad
+      target: 'es5',
+      minify: 'terser', // Terser es más compatible que esbuild
       sourcemap: false,
-      modulePreload: { polyfill: true },
+      modulePreload: false, // Desactivar module preload
       rollupOptions: {
         output: {
           // Optimización de chunks

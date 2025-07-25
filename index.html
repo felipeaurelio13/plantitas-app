@@ -131,38 +131,23 @@
       </div>
     </div>
     
-    <!-- Module script with error handling -->
+    <!-- Emergency simplified script -->
     <script>
-      console.log('[HTML] Loading main script...');
+      console.log('[HTML] Emergency load started');
       
-      // Remove loading class when app starts
+      // Simple loading management
       window.addEventListener('load', function() {
-        console.log('[HTML] Window load event fired');
         setTimeout(function() {
-          document.documentElement.classList.remove('js-loading');
-          console.log('[HTML] Loading class removed');
-        }, 100);
+          if (document.documentElement.classList) {
+            document.documentElement.classList.remove('js-loading');
+          }
+        }, 500); // Más tiempo para cargar
       });
       
-      // Error handling for module loading
+      // Simplified error handling
       window.addEventListener('error', function(e) {
-        console.error('[HTML] Critical error:', e.error);
-        
-        // Show error message
-        var root = document.getElementById('root');
-        if (root) {
-          root.innerHTML = `
-            <div class="critical-loading">
-              <div style="color: #ff6b6b; font-size: 2rem; margin-bottom: 1rem;">⚠️</div>
-              <div class="critical-loading-text">Error de compatibilidad</div>
-              <div class="critical-loading-subtext">
-                Tu navegador no es compatible con esta aplicación.
-                <br><br>
-                Intenta actualizar tu navegador o usar Chrome/Safari más reciente.
-              </div>
-            </div>
-          `;
-        }
+        console.error('[HTML] Error:', e);
+        // No mostrar error automáticamente - dejar que legacy bundle intente cargar
       });
     </script>
     
