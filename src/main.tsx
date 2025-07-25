@@ -6,6 +6,28 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores/useAuthStore';
 import { plantService } from './services/plantService';
+import { initAdvancedMobileDebug, runCompatibilityTests, logCriticalError } from './utils/mobileDebugAdvanced';
+
+// 🚨 CRITICAL MOBILE DEBUG - Inicializar INMEDIATAMENTE
+console.log('[MOBILE] 🚨 Main.tsx loading started');
+console.log('[MOBILE] Location:', window.location.href);
+console.log('[MOBILE] Pathname:', window.location.pathname);
+console.log('[MOBILE] User Agent:', navigator.userAgent);
+
+// Inicializar debug system ANTES que nada
+try {
+  initAdvancedMobileDebug();
+  console.log('[MOBILE] Debug system initialized');
+} catch (error) {
+  console.error('[MOBILE] Debug system failed:', error);
+}
+
+// Test de compatibilidad
+try {
+  runCompatibilityTests();
+} catch (error) {
+  logCriticalError('COMPATIBILITY_TESTS', error);
+}
 
 const queryClient = new QueryClient();
 
@@ -24,13 +46,33 @@ function PrefetchOnLogin() {
   return null;
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <PrefetchOnLogin />
-        <App />
-      </QueryClientProvider>
-    </ThemeProvider>
-  </React.StrictMode>
-);
+console.log('[MOBILE] Looking for root container...');
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  logCriticalError('ROOT_CONTAINER', 'Root container not found');
+  throw new Error('Root container not found');
+}
+
+console.log('[MOBILE] Root container found, creating React root...');
+
+try {
+  const root = ReactDOM.createRoot(rootElement);
+  console.log('[MOBILE] React root created, rendering App...');
+  
+  root.render(
+    <React.StrictMode>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <PrefetchOnLogin />
+          <App />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </React.StrictMode>
+  );
+  
+  console.log('[MOBILE] App render called successfully');
+} catch (error) {
+  logCriticalError('REACT_RENDER', error);
+  throw error;
+}

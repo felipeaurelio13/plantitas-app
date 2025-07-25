@@ -13,6 +13,7 @@ import { ToastProvider } from './components/ui/Toast';
 import { usePerformanceMonitoring } from './hooks/usePerformanceMonitoring';
 import { initViewportFix, getMobileDeviceInfo } from './utils/mobileViewport';
 import { MobileDebugPanel } from './components/MobileDebugPanel';
+import { logCriticalError } from './utils/mobileDebugAdvanced';
 
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -55,32 +56,72 @@ const FullScreenLoader: React.FC<{ message: string }> = ({ message }) => (
   </div>
 );
 
+// Smart basename detection para mobile compatibility
+const getBasename = (): string => {
+  console.log('[ROUTER] Detecting basename...');
+  console.log('[ROUTER] Hostname:', window.location.hostname);
+  console.log('[ROUTER] Pathname:', window.location.pathname);
+  
+  // Local development
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log('[ROUTER] Local development detected, using "/"');
+    return '/';
+  }
+  
+  // GitHub Pages detection
+  if (window.location.pathname.startsWith('/plantitas-app')) {
+    console.log('[ROUTER] GitHub Pages detected, using "/plantitas-app/"');
+    return '/plantitas-app/';
+  }
+  
+  // Fallback
+  console.log('[ROUTER] Using fallback basename "/"');
+  return '/';
+};
+
 const App: React.FC = () => {
   const { session, isInitialized, initialize } = useAuthStore();
+  
+  console.log('[APP] App component mounting...');
+  console.log('[APP] Session:', !!session);
+  console.log('[APP] Initialized:', isInitialized);
   
   // Monitoreo de performance en desarrollo
   usePerformanceMonitoring();
 
   useEffect(() => {
-    // Initialize viewport fix for mobile compatibility
-    const cleanupViewport = initViewportFix();
+    console.log('[APP] useEffect running...');
     
-    // Log mobile device info for debugging
-    if (import.meta.env.DEV) {
-      console.log('[Mobile Debug]', getMobileDeviceInfo());
+    try {
+      // Initialize viewport fix for mobile compatibility
+      const cleanupViewport = initViewportFix();
+      
+      // Log mobile device info for debugging
+      if (import.meta.env.DEV) {
+        console.log('[Mobile Debug]', getMobileDeviceInfo());
+      }
+      
+      // The initialize function is now async and handles its own lifecycle.
+      console.log('[APP] Calling initialize...');
+      initialize();
+      console.log('[APP] Initialize called');
+      
+      return () => {
+        console.log('[APP] Cleanup running...');
+        cleanupViewport();
+      };
+    } catch (error) {
+      logCriticalError('APP_INITIALIZATION', error);
+      throw error;
     }
-    
-    // The initialize function is now async and handles its own lifecycle.
-    initialize();
-    
-    return () => {
-      cleanupViewport();
-    };
   }, [initialize]);
 
   if (!isInitialized) {
+    console.log('[APP] Not initialized, showing loader...');
     return <FullScreenLoader message="Inicializando..." />;
   }
+  
+  console.log('[APP] Initialized, rendering main app...');
 
   const PrivateRoutes = () => (
     <Routes>
@@ -109,7 +150,7 @@ const App: React.FC = () => {
         <ToastProvider>
           <ErrorBoundary>
             <Router 
-              basename="/plantitas-app/"
+              basename={getBasename()}
               future={{
                 v7_startTransition: true,
                 v7_relativeSplatPath: true,
