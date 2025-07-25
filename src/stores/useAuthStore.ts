@@ -115,21 +115,6 @@ export const useAuthStore = create<AuthStore>((set, _get) => ({
       console.log('[AUTH] ✅ Marking as initialized');
       set({ isInitialized: true });
     }
-    
-    // 🚨 EMERGENCY: Forzar inicialización después de 5 segundos si aún no se ha completado
-    setTimeout(() => {
-      const currentState = _get();
-      if (!currentState.isInitialized) {
-        console.warn('[AUTH] 🚨 Emergency timeout - forcing initialization');
-        set({ 
-          isInitialized: true, 
-          session: null, 
-          user: null, 
-          profile: null,
-          error: null 
-        });
-      }
-    }, 5000);
 
     // 4. Set up the real-time listener for subsequent auth changes
     const { data } = supabase.auth.onAuthStateChange(
