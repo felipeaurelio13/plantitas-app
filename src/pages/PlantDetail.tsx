@@ -215,18 +215,18 @@ const PlantDetail = () => {
           <main className="p-3 sm:p-4 space-y-3 sm:space-y-4" style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom))' }}>
             {/* Overview Card - Main info at a glance */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.1, duration: 0.2 }}
             >
               <PlantOverviewCard plant={plant} />
             </motion.div>
             
             {/* Expandable Detailed Information */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
+              transition={{ delay: 0.15, duration: 0.2 }}
             >
               <ExpandableInfoSection 
                 plant={plant} 
@@ -236,9 +236,9 @@ const PlantDetail = () => {
 
             {/* Gallery - Always visible for quick photo access */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.2, duration: 0.2 }}
             >
               <ImageGallery images={plant.images} />
             </motion.div>
@@ -247,9 +247,9 @@ const PlantDetail = () => {
           {/* Floating Action Buttons - Simplified for PlantDetail */}
           <motion.div
             className="fixed bottom-24 right-4 z-40 flex flex-col-reverse gap-3"
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.25, duration: 0.2 }}
           >
             {/* Add Photo Button */}
             <motion.button

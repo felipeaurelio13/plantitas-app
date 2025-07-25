@@ -74,8 +74,22 @@ export const usePlantDetail = (plantId: string | undefined) => {
     error 
   } = useQuery<Plant, Error>({
     queryKey: ['plant', plantId],
-    queryFn: () => fetchPlantById(plantId!),
+    queryFn: async () => {
+      if (import.meta.env.DEV) {
+        const start = performance.now();
+        const result = await fetchPlantById(plantId!);
+        const end = performance.now();
+        console.log(`[usePlantDetail] Loaded plant ${plantId} in ${(end - start).toFixed(2)}ms`);
+        return result;
+      }
+      return fetchPlantById(plantId!);
+    },
     enabled: !!plantId,
+    staleTime: 1000 * 60 * 10, // 10 minutos de cache
+    gcTime: 1000 * 60 * 30,    // 30 minutos en memoria
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,     // No refetch si ya hay datos
+    retry: 1,
   });
 
   const setPlant = usePlantStore((state) => state.setPlant);

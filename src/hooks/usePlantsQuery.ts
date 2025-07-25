@@ -1,23 +1,33 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/useAuthStore';
 import { plantService } from '../services/plantService';
+import { PERFORMANCE_CONFIG } from '../lib/performance';
 
 export const usePlantsQuery = () => {
   const user = useAuthStore((state) => state.user);
 
   return useQuery({
     queryKey: ['plants', user?.id],
-    queryFn: () => {
+    queryFn: async () => {
       if (!user) {
         return Promise.resolve([]);
+      }
+      // Agregar timing para debug en desarrollo
+      if (import.meta.env.DEV) {
+        const start = performance.now();
+        const result = await plantService.getUserPlantSummaries(user.id);
+        const end = performance.now();
+        console.log(`[usePlantsQuery] Loaded ${result.length} plants in ${(end - start).toFixed(2)}ms`);
+        return result;
       }
       return plantService.getUserPlantSummaries(user.id);
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 2, // Reduced from 5 minutes to 2 minutes
-    gcTime: 1000 * 60 * 10, // 10 minutes cache time
-    refetchOnWindowFocus: false, // Disabled for better performance
-    refetchOnMount: true,
+    staleTime: PERFORMANCE_CONFIG.QUERY.STALE_TIME.MEDIUM,
+    gcTime: PERFORMANCE_CONFIG.QUERY.GC_TIME.LONG,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     refetchOnReconnect: true,
+    placeholderData: [],
   });
 }; 

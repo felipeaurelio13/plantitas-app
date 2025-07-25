@@ -26,12 +26,56 @@ export default defineConfig({
         ],
       },
     }),
-    visualizer({ open: true }),
+    visualizer({ 
+      open: false, // No abrir automáticamente en build
+      filename: 'stats.html',
+      gzipSize: true,
+    }),
   ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    sourcemap: false, // Desactivar en producción para mejor performance
+    rollupOptions: {
+      output: {
+        // Optimización de chunks
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          query: ['@tanstack/react-query'],
+          ui: ['framer-motion', 'lucide-react'],
+          supabase: ['@supabase/supabase-js'],
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+      },
+    },
+    // Configuraciones de optimización
+    chunkSizeWarningLimit: 1000, // 1MB warning limit
+  },
+  // Optimizaciones del dev server
+  server: {
+    hmr: {
+      overlay: false, // Menos intrusivo en desarrollo
+    },
+  },
+  // Optimizaciones de dependencias
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@tanstack/react-query',
+      'framer-motion',
+      'zustand',
+    ],
+    exclude: ['@supabase/auth-ui-react'], // Excluir deps que pueden causar problemas
   },
   test: {
     globals: true,

@@ -9,21 +9,41 @@ import { useAuthStore } from './stores/useAuthStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ToastProvider } from './components/ui/Toast';
+import { usePerformanceMonitoring } from './hooks/usePerformanceMonitoring';
 
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { routes } from './lib/navigation';
+import { PERFORMANCE_CONFIG } from './lib/performance';
 import { Leaf } from 'lucide-react';
 
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const PlantDetail = lazy(() => import('./pages/PlantDetail'));
+// Importaciones directas para páginas core (mejor UX)
+import Dashboard from './pages/Dashboard';
+import PlantDetail from './pages/PlantDetail';
+import CameraPage from './pages/Camera';
+import ChatPage from './pages/Chat';
+import GardenChatPage from './pages/GardenChat';
+
+// Lazy loading solo para páginas secundarias
 const Settings = lazy(() => import('./pages/Settings'));
 const AuthPage = lazy(() => import('./pages/Auth'));
-const CameraPage = lazy(() => import('./pages/Camera'));
-const ChatPage = lazy(() => import('./pages/Chat'));
-const GardenChatPage = lazy(() => import('./pages/GardenChat'));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: PERFORMANCE_CONFIG.QUERY.STALE_TIME.MEDIUM,
+      gcTime: PERFORMANCE_CONFIG.QUERY.GC_TIME.MEDIUM,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: PERFORMANCE_CONFIG.QUERY.RETRY.COUNT,
+      retryDelay: attemptIndex => Math.min(PERFORMANCE_CONFIG.QUERY.RETRY.DELAY * 2 ** attemptIndex, 30000),
+    },
+    mutations: {
+      retry: PERFORMANCE_CONFIG.QUERY.RETRY.COUNT,
+      retryDelay: PERFORMANCE_CONFIG.QUERY.RETRY.DELAY,
+    },
+  },
+});
 
 const FullScreenLoader: React.FC<{ message: string }> = ({ message }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
@@ -34,6 +54,9 @@ const FullScreenLoader: React.FC<{ message: string }> = ({ message }) => (
 
 const App: React.FC = () => {
   const { session, isInitialized, initialize } = useAuthStore();
+  
+  // Monitoreo de performance en desarrollo
+  usePerformanceMonitoring();
 
   useEffect(() => {
     // The initialize function is now async and handles its own lifecycle.
@@ -79,7 +102,7 @@ const App: React.FC = () => {
             }}
           >
             <Toaster position="top-center" richColors />
-            <Suspense fallback={<FullScreenLoader message="Cargando página..." />}>
+            <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
             <Routes>
               <Route
                 path={routes.auth}
