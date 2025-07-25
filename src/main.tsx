@@ -22,6 +22,23 @@ console.log('[MOBILE] Location:', window.location.href);
 console.log('[MOBILE] Pathname:', window.location.pathname);
 console.log('[MOBILE] User Agent:', navigator.userAgent);
 
+// 🚨 GLOBAL ERROR HANDLERS para capturar crashes
+window.addEventListener('error', (event) => {
+  console.error('[GLOBAL] Uncaught error:', event.error);
+  console.error('[GLOBAL] Error details:', {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    stack: event.error?.stack
+  });
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('[GLOBAL] Unhandled promise rejection:', event.reason);
+  console.error('[GLOBAL] Promise:', event.promise);
+});
+
 // Inicializar debug system ANTES que nada
 try {
   initAdvancedMobileDebug();
