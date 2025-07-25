@@ -9,13 +9,14 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: [
-          'bg-primary-600 text-white',           /* 7.0:1 contrast ✅ */
-          'hover:bg-primary-700',
-          'active:bg-primary-800',
-          'focus-visible:ring-primary-500/30',
-          'shadow-md hover:shadow-lg',
+          'bg-gradient-to-r from-green-600 to-emerald-600 text-white',           /* 7.0:1 contrast ✅ */
+          'hover:from-green-700 hover:to-emerald-700',
+          'active:from-green-800 active:to-emerald-800',
+          'focus-visible:ring-green-500/30',
+          'shadow-lg shadow-green-200/30 hover:shadow-xl hover:shadow-green-300/40',
           'disabled:bg-neutral-300 disabled:text-neutral-500',
-          'dark:bg-primary-500 dark:hover:bg-primary-400'
+          'dark:from-green-500 dark:to-emerald-500 dark:hover:from-green-400 dark:hover:to-emerald-400',
+          'transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200'
         ],
         secondary: [
           'bg-neutral-100 text-neutral-800 border border-neutral-300',  /* 12.6:1 contrast ✅ */

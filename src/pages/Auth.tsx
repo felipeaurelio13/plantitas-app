@@ -45,36 +45,51 @@ const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
         className="w-full max-w-md"
       >
         {/* Logo/Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-10">
           <motion.div
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            className="inline-flex items-center justify-center w-16 h-16 bg-green-500 rounded-full mb-4"
+            initial={{ scale: 0.8, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl mb-6 shadow-lg shadow-green-200/50 animate-float"
           >
-            <Leaf className="w-8 h-8 text-white" />
+            <Leaf className="w-10 h-10 text-white" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-contrast-high mb-2">
+          <motion.h1 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-3"
+          >
             Plantitas
-          </h1>
-          <p className="text-contrast-medium">
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="text-gray-600 dark:text-gray-400 text-lg"
+          >
             {mode === 'login' 
               ? 'Bienvenido de vuelta' 
               : 'Únete a la comunidad de plantas'
             }
-          </p>
+          </motion.p>
         </div>
 
         {/* Auth Form */}
         <motion.div
           layout
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/90 rounded-3xl shadow-2xl shadow-green-100/20 p-8 border border-white/20"
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
