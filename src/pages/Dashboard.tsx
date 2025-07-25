@@ -151,8 +151,8 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="container-spacing element-spacing bg-white" style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom))' }}>
-        <header className="flex items-center justify-between border-b-2 border-[#E0F2E9] bg-white pb-2 mb-4">
+    <div className="container-spacing element-spacing bg-gradient-to-br from-green-50/30 via-white to-emerald-50/20 min-h-screen" style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom))' }}>
+        <header className="flex items-center justify-between border-b border-green-100/50 bg-white/70 backdrop-blur-sm pb-4 mb-6 rounded-xl px-4 py-3 shadow-sm shadow-green-100/20">
             <div className="flex items-center gap-3">
                 {/* Icono hoja minimal */}
                 <Tooltip content="Tu jardín personal de plantas">
