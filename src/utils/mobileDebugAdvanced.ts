@@ -63,12 +63,30 @@ export const initAdvancedMobileDebug = () => {
   const originalError = console.error;
   const originalWarn = console.warn;
   
+  const safeStringify = (obj: any) => {
+    const seen = new WeakSet();
+    return JSON.stringify(obj, function(key, value) {
+      if (typeof value === "object" && value !== null) {
+        if (seen.has(value)) return "[Circular]";
+        seen.add(value);
+      }
+      // Evita serializar React elements y nodos del DOM
+      if (
+        (typeof value === "object" && value !== null && value.$$typeof && value.type) || // React element
+        (typeof window !== "undefined" && value instanceof HTMLElement)
+      ) {
+        return `[Non-serializable: ${value.constructor?.name || "object"}]`;
+      }
+      return value;
+    });
+  };
+  
   const addLog = (type: string, color: string, ...args: any[]) => {
     if (!logContainer) return;
     
     const timestamp = new Date().toISOString().split('T')[1].slice(0, -5);
     const message = args.map(arg => 
-      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+      typeof arg === 'object' ? safeStringify(arg) : String(arg)
     ).join(' ');
     
     logContainer.innerHTML += `<span style="color: ${color}">[${timestamp}][${type}] ${message}</span>\n`;
