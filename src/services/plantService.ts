@@ -61,7 +61,7 @@ export class PlantService {
 
   async getUserPlantSummaries(userId: string): Promise<PlantSummary[]> {
     try {
-      // First, get all plants data (without JOIN to avoid complex query)
+      // Optimized single query with LEFT JOIN for profile images
       const { data: dbPlants, error: plantsError } = await this.supabase
         .from('plants')
         .select(`
@@ -74,30 +74,27 @@ export class PlantService {
           light_requirements,
           health_score,
           last_watered,
-          care_profile
+          care_profile,
+          plant_images!left(url, is_profile_image)
         `)
         .eq('user_id', userId)
+        .or('plant_images.is_profile_image.eq.true,plant_images.is.null')
         .order('created_at', { ascending: false });
 
       if (plantsError) throw plantsError;
+
+      // Process results - each plant may have 0 or 1 profile image
+      const profileImageMap = new Map<string, string>();
       
-      // Get profile images in a separate optimized query
-      const plantIds = dbPlants.map(plant => plant.id);
-      const { data: profileImages, error: imagesError } = await this.supabase
-        .from('plant_images')
-        .select('plant_id, url')
-        .in('plant_id', plantIds)
-        .eq('is_profile_image', true);
-
-      if (imagesError) {
-        console.warn('Error fetching profile images:', imagesError);
-        // Continue without profile images rather than failing
-      }
-
-      // Create a map for quick lookup of profile images
-      const profileImageMap = new Map(
-        (profileImages || []).map(img => [img.plant_id, img.url])
-      );
+      // Extract profile images from the joined data
+      dbPlants.forEach(plant => {
+        if (plant.plant_images && plant.plant_images.length > 0) {
+          const profileImage = plant.plant_images.find((img: any) => img.is_profile_image);
+          if (profileImage) {
+            profileImageMap.set(plant.id, profileImage.url);
+          }
+        }
+      });
 
       const summaries: PlantSummary[] = dbPlants.map(plant => ({
         id: plant.id,

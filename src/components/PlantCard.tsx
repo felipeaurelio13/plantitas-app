@@ -1,5 +1,6 @@
 import React, { memo, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Heart, Sparkles, AlertTriangle, Droplets } from 'lucide-react';
 import { PlantSummary } from '../schemas';
@@ -61,6 +62,7 @@ PlantHealthIndicator.displayName = 'PlantHealthIndicator';
 
 const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   // Memoize expensive calculations
   const { needsWatering, isFavorite } = useMemo(() => {
@@ -73,21 +75,81 @@ const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
     return { needsWatering, isFavorite };
   }, [plant.lastWatered, plant.wateringFrequency, plant.healthScore]);
 
+  // Prefetch plant detail on hover for instant navigation
+  const handleMouseEnter = () => {
+    queryClient.prefetchQuery({
+      queryKey: ['plant', plant.id],
+      queryFn: async () => {
+        // Importar supabase y transformar datos como en fetchPlantById
+        
+        // Importar supabase directamente
+        const { supabase } = await import('../lib/supabase');
+        const { data, error } = await supabase
+          .from('plants')
+          .select(`
+            *,
+            plant_images(*)
+          `)
+          .eq('id', plant.id)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            throw new Error('Planta no encontrada.');
+          }
+          throw new Error('Error al cargar la información de la planta.');
+        }
+
+        // Transformar datos como en fetchPlantById
+        const plantData = data as any;
+        return {
+          id: plantData.id,
+          name: plantData.name,
+          species: plantData.species,
+          description: plantData.description ?? undefined,
+          funFacts: (plantData.fun_facts as string[] | undefined) ?? undefined,
+          variety: plantData.variety ?? undefined,
+          nickname: plantData.nickname ?? undefined,
+          location: plantData.location,
+          plantEnvironment: plantData.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
+          lightRequirements: plantData.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
+          dateAdded: new Date(plantData.date_added!),
+          lastWatered: plantData.last_watered ? new Date(plantData.last_watered) : undefined,
+          lastFertilized: plantData.last_fertilized ? new Date(plantData.last_fertilized) : undefined,
+          healthScore: plantData.health_score ?? 0,
+          careProfile: plantData.care_profile,
+          personality: plantData.personality,
+          images: plantData.plant_images.map((img: any) => ({
+            id: img.id,
+            url: img.url ?? '', 
+            timestamp: new Date(img.created_at!),
+            isProfileImage: img.is_profile_image ?? false,
+            healthAnalysis: img.health_analysis,
+          })),
+          chatHistory: [],
+          notifications: [],
+        };
+      },
+      staleTime: 1000 * 60 * 5, // 5 minutos de cache para prefetch
+    });
+  };
+
   const handleCardClick = () => navigate(navigation.toPlantDetail(plant.id));
 
-  // Reduced animation complexity and capped index
-  const animationIndex = Math.min(index, 6); // Cap animation delay
+  // Optimized animation - reduced complexity and delays
+  const animationIndex = Math.min(index, 4); // Reducido cap a 4
+  const shouldAnimate = index < 8; // Solo animar los primeros 8 elementos
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        delay: animationIndex * 0.03,
-        duration: 0.3,
+      initial={shouldAnimate ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={shouldAnimate ? {
+        delay: animationIndex * 0.02, // Reducido de 0.03 a 0.02
+        duration: 0.2,                // Reducido de 0.3 a 0.2
         ease: 'easeOut'
-      }}
-      whileHover={{ y: -2 }}
+      } : { duration: 0 }}
+      whileHover={{ y: -1 }}          // Reducido de -2 a -1
       className="group"
     >
       <Card
@@ -97,6 +159,7 @@ const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
         interactive
         hover
         onClick={handleCardClick}
+        onMouseEnter={handleMouseEnter}
         className="overflow-hidden border-2 hover:border-primary-300 dark:hover:border-primary-600 transition-all duration-200 p-4 mb-4"
       >
         {/* Header con imagen y nombre */}
@@ -109,6 +172,8 @@ const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
                   src={plant.profileImageUrl}
                   alt={plant.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  priority={index < 4} // Priority para las primeras 4 plantas visibles
+                  sizes="(max-width: 768px) 20vw, 10vw" // Tamaño pequeño para thumbnails
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-primary-400 dark:text-primary-600">

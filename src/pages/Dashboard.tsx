@@ -148,7 +148,8 @@ const Dashboard: React.FC = () => {
                     variants={{
                         visible: {
                             transition: {
-                                staggerChildren: 0.02, // Reduced from 0.05 for faster loading
+                                staggerChildren: 0.01, // Reducido aún más para mejor rendimiento
+                                delayChildren: 0,       // Sin delay inicial
                             },
                         },
                     }}
