@@ -85,7 +85,9 @@ const App: React.FC = () => {
   console.log('[APP] App component mounting...');
   console.log('[APP] Session:', !!session);
   console.log('[APP] Initialized:', isInitialized);
-  console.log('[APP] Session status:', { hasSession: !!session, hasUser: !!session?.user });
+  
+  // 🚨 EMERGENCY FALLBACK STATE
+  const [hasError, setHasError] = useState(false);
   
   // Monitoreo de performance en desarrollo
   usePerformanceMonitoring();
@@ -138,17 +140,48 @@ const App: React.FC = () => {
   }
   
   console.log('[APP] Rendering app (initialized:', isInitialized, 'forced:', forceRender, ')');
+  console.log('[APP] Session status:', { hasSession: !!session, hasUser: !!session?.user });
 
-  const PrivateRoutes = () => (
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        {/* Main Routes */}
-        <Route index element={<Dashboard />} />
-        <Route path="camera" element={<CameraPage />} />
-        <Route path="settings" element={<Settings />} />
-        
-        {/* Chat Routes - Clearly separated */}
-        <Route path="garden-chat" element={<GardenChatPage />} />
+  // 🚨 DEFENSIVE RENDERING: Si fue forzado sin session, mostrar Auth directamente
+  if (forceRender && !isInitialized && !session) {
+    console.log('[APP] Force render without session - showing Auth');
+    return (
+      <QueryClientProvider client={queryClient}>
+        <NewToastProvider>
+          <ToastProvider>
+            <ErrorBoundary>
+              <Router 
+                basename={getBasename()}
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true,
+                }}
+              >
+                <Toaster position="top-center" richColors />
+                <MobileDebugPanel />
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
+                  <AuthPage />
+                </div>
+              </Router>
+            </ErrorBoundary>
+          </ToastProvider>
+        </NewToastProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  const PrivateRoutes = () => {
+    console.log('[APP] Rendering PrivateRoutes...');
+    return (
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          {/* Main Routes */}
+          <Route index element={<Dashboard />} />
+          <Route path="camera" element={<CameraPage />} />
+          <Route path="settings" element={<Settings />} />
+          
+          {/* Chat Routes - Clearly separated */}
+          <Route path="garden-chat" element={<GardenChatPage />} />
         
         {/* Plant Routes */}
         <Route path="plant/:plantId" element={<PlantDetail />} />
@@ -160,50 +193,85 @@ const App: React.FC = () => {
     </Routes>
   );
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <NewToastProvider>
-        <ToastProvider>
-          <ErrorBoundary>
-            <Router 
-              basename={getBasename()}
-              future={{
-                v7_startTransition: true,
-                v7_relativeSplatPath: true,
-              }}
-            >
-              <Toaster position="top-center" richColors />
-              <MobileDebugPanel />
-              <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
-              <Routes>
-                <Route
-                  path={routes.auth}
-                  element={(() => {
-                    console.log('[ROUTER] Auth route - session exists:', !!session);
-                    return !session ? <AuthPage /> : <Navigate to={routes.dashboard} replace />;
-                  })()}
-                />
-                <Route
-                  path="/*"
-                  element={(() => {
-                    console.log('[ROUTER] Main route - session exists:', !!session);
-                    if (session) {
-                      console.log('[ROUTER] Rendering PrivateRoutes');
-                      return <PrivateRoutes />;
-                    } else {
-                      console.log('[ROUTER] No session, redirecting to auth');
-                      return <Navigate to={routes.auth} replace />;
-                    }
-                  })()}
-                />
-              </Routes>
-            </Suspense>
-          </Router>
-        </ErrorBoundary>
-        </ToastProvider>
-      </NewToastProvider>
-    </QueryClientProvider>
-  );
+  // 🚨 EMERGENCY FALLBACK: Si hay error crítico, mostrar fallback simple
+  if (hasError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center p-8">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Crítico</h1>
+          <p className="text-gray-600 mb-4">La aplicación encontró un error inesperado</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Recargar Página
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  try {
+    console.log('[APP] Rendering main app structure...');
+    return (
+      <QueryClientProvider client={queryClient}>
+        <NewToastProvider>
+          <ToastProvider>
+            <ErrorBoundary>
+              <Router 
+                basename={getBasename()}
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true,
+                }}
+              >
+                <Toaster position="top-center" richColors />
+                <MobileDebugPanel />
+                <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
+                  <Routes>
+                    <Route
+                      path={routes.auth}
+                      element={(() => {
+                        try {
+                          console.log('[ROUTER] Auth route - session:', !!session);
+                          return !session ? <AuthPage /> : <Navigate to={routes.dashboard} replace />;
+                        } catch (error) {
+                          console.error('[ROUTER] Auth route error:', error);
+                          return <div className="p-4 text-red-500">Error en Auth: {String(error)}</div>;
+                        }
+                      })()}
+                    />
+                    <Route
+                      path="/*"
+                      element={(() => {
+                        try {
+                          console.log('[ROUTER] Main route - session:', !!session);
+                          if (session) {
+                            console.log('[ROUTER] Rendering PrivateRoutes');
+                            return <PrivateRoutes />;
+                          } else {
+                            console.log('[ROUTER] No session, redirecting to auth');
+                            return <Navigate to={routes.auth} replace />;
+                          }
+                        } catch (error) {
+                          console.error('[ROUTER] Main route error:', error);
+                          return <div className="p-4 text-red-500">Error en Router: {String(error)}</div>;
+                        }
+                      })()}
+                    />
+                  </Routes>
+                </Suspense>
+              </Router>
+            </ErrorBoundary>
+            </ToastProvider>
+          </NewToastProvider>
+        </QueryClientProvider>
+      );
+  } catch (error) {
+    console.error('[APP] Critical render error:', error);
+    setHasError(true);
+    return null;
+  }
 };
 
 export default App;
