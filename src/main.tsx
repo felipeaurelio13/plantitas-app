@@ -8,6 +8,14 @@ import { useAuthStore } from './stores/useAuthStore';
 import { plantService } from './services/plantService';
 import { initAdvancedMobileDebug, runCompatibilityTests, logCriticalError } from './utils/mobileDebugAdvanced';
 
+// 🚨 CRITICAL POLYFILLS para iOS Safari compatibility
+import { ResizeObserver as ResizeObserverPolyfill } from '@juggle/resize-observer';
+
+// Polyfill ResizeObserver para iOS Safari 12-13
+if (!window.ResizeObserver) {
+  window.ResizeObserver = ResizeObserverPolyfill;
+}
+
 // 🚨 CRITICAL MOBILE DEBUG - Inicializar INMEDIATAMENTE
 console.log('[MOBILE] 🚨 Main.tsx loading started');
 console.log('[MOBILE] Location:', window.location.href);
