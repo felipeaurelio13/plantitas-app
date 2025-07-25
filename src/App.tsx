@@ -11,6 +11,8 @@ import { Toaster } from 'sonner';
 import { ToastProvider as NewToastProvider } from './components/ui/Toast/ToastProvider';
 import { ToastProvider } from './components/ui/Toast';
 import { usePerformanceMonitoring } from './hooks/usePerformanceMonitoring';
+import { initViewportFix, getMobileDeviceInfo } from './utils/mobileViewport';
+import { MobileDebugPanel } from './components/MobileDebugPanel';
 
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -60,11 +62,21 @@ const App: React.FC = () => {
   usePerformanceMonitoring();
 
   useEffect(() => {
+    // Initialize viewport fix for mobile compatibility
+    const cleanupViewport = initViewportFix();
+    
+    // Log mobile device info for debugging
+    if (import.meta.env.DEV) {
+      console.log('[Mobile Debug]', getMobileDeviceInfo());
+    }
+    
     // The initialize function is now async and handles its own lifecycle.
     initialize();
-    // No cleanup function is needed here anymore because the subscription
-    // is managed entirely within the Zustand store.
-  }, [initialize]); // Depend on initialize to re-run if the function itself changes (unlikely for Zustand).
+    
+    return () => {
+      cleanupViewport();
+    };
+  }, [initialize]);
 
   if (!isInitialized) {
     return <FullScreenLoader message="Inicializando..." />;
@@ -104,6 +116,7 @@ const App: React.FC = () => {
               }}
             >
               <Toaster position="top-center" richColors />
+              <MobileDebugPanel />
               <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
               <Routes>
                 <Route

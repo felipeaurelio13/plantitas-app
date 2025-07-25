@@ -45,27 +45,64 @@ export const useAuthStore = create<AuthStore>((set, _get) => ({
       authListener.subscription.unsubscribe();
     }
     
-    // 2. Check for an existing session on startup
+    // 2. Check for an existing session on startup with timeout
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw new Error('Error al obtener la sesión inicial.');
+      // Create timeout wrapper for mobile compatibility
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Session timeout after 8 seconds')), 8000)
+      );
+      
+      const { data: { session }, error } = await Promise.race([
+        sessionPromise, 
+        timeoutPromise
+      ]);
+      
+      if (error) {
+        console.warn('Session error:', error.message);
+        // Don't throw, allow app to continue without session
+      }
       
       set({ session, user: session?.user ?? null });
 
       if (session?.user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        if (profileError) throw profileError;
-        set({ profile });
+        try {
+          const profilePromise = supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          const profileTimeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Profile timeout')), 5000)
+          );
+          
+          const { data: profile, error: profileError } = await Promise.race([
+            profilePromise,
+            profileTimeoutPromise
+          ]);
+          
+          if (profileError) {
+            console.warn('Profile fetch error:', profileError.message);
+          } else {
+            set({ profile });
+          }
+        } catch (profileError: any) {
+          console.warn('Profile fetch failed:', profileError.message);
+          // Continue without profile
+        }
       } else {
         set({ profile: null });
       }
     } catch (e: any) {
-      console.error('Error durante la inicialización:', e.message);
-      set({ error: 'Error durante la inicialización.' });
+      console.warn('Auth initialization failed, continuing without session:', e.message);
+      // Progressive enhancement: allow app to load without auth
+      set({ 
+        session: null, 
+        user: null, 
+        profile: null,
+        error: null // Don't show error to user, just log it
+      });
     } finally {
       // 3. Mark as initialized AFTER the initial check is complete
       set({ isInitialized: true });
