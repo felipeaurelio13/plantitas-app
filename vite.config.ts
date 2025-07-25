@@ -3,12 +3,26 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { VitePWA } from 'vite-plugin-pwa';
+import legacy from '@vitejs/plugin-legacy';
 import path from 'path';
 
 export default defineConfig({
   base: '/plantitas-app/',
   plugins: [
     react(),
+    // Legacy support temporalmente deshabilitado para debugging
+    // legacy({
+    //   targets: ['iOS >= 13', 'Safari >= 13'],
+    //   additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
+    //   renderLegacyChunks: true,
+    //   polyfills: [
+    //     'es.promise.finally',
+    //     'es.array.flat',
+    //     'es.array.flat-map',
+    //     'es.object.from-entries',
+    //     'es.string.match-all'
+    //   ]
+    // }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['plant-icon.svg', 'manifest.json'],
@@ -37,14 +51,14 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  build: {
-    target: ['es2018', 'safari13'], // iOS compatibility
-    minify: 'esbuild',
-    sourcemap: false,
-    modulePreload: { polyfill: true }, // Desactivar en producción para mejor performance
-    rollupOptions: {
-      output: {
-        // Optimización de chunks
+          build: {
+      target: ['es2018', 'safari13'], // iOS compatibility direct
+      minify: 'esbuild',
+      sourcemap: false,
+      modulePreload: { polyfill: true },
+      rollupOptions: {
+        output: {
+          // Optimización de chunks
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
