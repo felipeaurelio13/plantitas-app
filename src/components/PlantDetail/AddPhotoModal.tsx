@@ -122,8 +122,8 @@ export const AddPhotoModal: React.FC<AddPhotoModalProps> = ({
   }, [selectedImage, note, onPhotoAdded, plantName, addToast, handleClose]);
 
   const renderChooseStep = () => {
-    console.log('[AddPhotoModal] Renderizando botón Tomar Foto:', <Camera className="w-6 h-6" />, 'Tomar Foto');
-    console.log('[AddPhotoModal] Renderizando botón Elegir de Galería:', <Upload className="w-6 h-6" />, 'Elegir de Galería');
+    console.log('[AddPhotoModal] Renderizando botón Tomar Foto');
+    console.log('[AddPhotoModal] Renderizando botón Elegir de Galería');
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
