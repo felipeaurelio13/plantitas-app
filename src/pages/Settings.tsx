@@ -4,13 +4,14 @@ import {
 } from 'lucide-react';
 import { useSettings } from '../hooks/useSettings';
 import { SettingsGroup, SettingsItem } from '../components/Settings';
+import { ExportModal } from '../components/data/ExportModal';
 
 const iconMap: { [key: string]: React.ElementType } = {
   User, LogOut, Sun, Moon, Bell, Download, Trash2, HelpCircle, Shield, Info
 };
 
 const Settings: React.FC = () => {
-  const { settingsSections } = useSettings();
+  const { settingsSections, isExportModalOpen, setIsExportModalOpen } = useSettings();
 
   return (
     <div className="p-4 space-y-6">
@@ -58,6 +59,12 @@ const Settings: React.FC = () => {
           })}
         </SettingsGroup>
       ))}
+
+      {/* Export Modal */}
+      <ExportModal 
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+      />
     </div>
   );
 };

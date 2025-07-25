@@ -8,6 +8,7 @@ import {
 import { useAuthStore } from './stores/useAuthStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
+import { ToastProvider as NewToastProvider } from './components/ui/Toast/ToastProvider';
 import { ToastProvider } from './components/ui/Toast';
 import { usePerformanceMonitoring } from './hooks/usePerformanceMonitoring';
 
@@ -92,31 +93,33 @@ const App: React.FC = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <ErrorBoundary>
-          <Router 
-            basename="/plantitas-app/"
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
-            <Toaster position="top-center" richColors />
-            <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
-            <Routes>
-              <Route
-                path={routes.auth}
-                element={!session ? <AuthPage /> : <Navigate to={routes.dashboard} replace />}
-              />
-              <Route
-                path="/*"
-                element={session ? <PrivateRoutes /> : <Navigate to={routes.auth} replace />}
-              />
-            </Routes>
-          </Suspense>
-        </Router>
-      </ErrorBoundary>
-      </ToastProvider>
+      <NewToastProvider>
+        <ToastProvider>
+          <ErrorBoundary>
+            <Router 
+              basename="/plantitas-app/"
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+              }}
+            >
+              <Toaster position="top-center" richColors />
+              <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
+              <Routes>
+                <Route
+                  path={routes.auth}
+                  element={!session ? <AuthPage /> : <Navigate to={routes.dashboard} replace />}
+                />
+                <Route
+                  path="/*"
+                  element={session ? <PrivateRoutes /> : <Navigate to={routes.auth} replace />}
+                />
+              </Routes>
+            </Suspense>
+          </Router>
+        </ErrorBoundary>
+        </ToastProvider>
+      </NewToastProvider>
     </QueryClientProvider>
   );
 };

@@ -37,7 +37,10 @@ const BottomNavigation: React.FC = () => {
   return (
     <>
       {/* Bottom Navigation */}
-      <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-50 glass-enhanced border-t border-contrast">
+      <nav 
+        className="safe-bottom fixed bottom-0 left-0 right-0 z-50 glass-enhanced border-t border-contrast"
+        data-tour="bottom-navigation"
+      >
         <div className="flex justify-around items-center h-20 max-w-lg mx-auto px-2">
           {navItems.map((item) => {
             const isActive = isActiveRoute(location.pathname, item.path);
@@ -60,6 +63,7 @@ const BottomNavigation: React.FC = () => {
                   )}
                   aria-label={`${item.label} - ${item.description}`}
                   {...(isActive ? { 'aria-current': 'page' } : {})}
+                  {...(item.path === routes.gardenChat ? { 'data-tour': 'chat-tab' } : {})}
                 >
                   {/* Background indicator */}
                   <AnimatePresence>
@@ -133,7 +137,10 @@ const BottomNavigation: React.FC = () => {
 
       {/* Floating Action Button: solo mostrar si no es detalle de planta */}
       {!isPlantDetail && (
-        <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-40">
+        <div 
+          className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-40"
+          data-tour="add-plant-fab"
+        >
           <AddPlantMenu />
         </div>
       )}

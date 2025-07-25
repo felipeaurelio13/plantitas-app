@@ -7,6 +7,7 @@ import LazyImage from '../LazyImage';
 import { usePlantMutations } from '../../hooks/usePlantMutations';
 import { usePlantInfoCompletion } from '../../hooks/usePlantInfoCompletion';
 import { Button } from '../ui/Button';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import UpdateHealthDiagnosisButton from '../UpdateHealthDiagnosisButton';
 
 interface PlantDetailHeaderProps {
@@ -32,13 +33,16 @@ const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
   const needsCompletion = !plant.plantEnvironment || !plant.lightRequirements;
 
   const handleDelete = () => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta planta? Esta acción es irreversible.')) {
-      deletePlant(plant.id, {
-        onSuccess: () => {
-          navigate('/');
-        },
-      });
-    }
+    setShowConfirmDialog(true);
+    setIsActionMenuOpen(false);
+  };
+
+  const confirmDelete = () => {
+    deletePlant(plant.id, {
+      onSuccess: () => {
+        navigate('/');
+      },
+    });
   };
 
   // const handleEdit = () => {
@@ -436,6 +440,38 @@ const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={confirmDelete}
+        title="Eliminar Planta"
+        description={`¿Estás seguro de que quieres eliminar "${plant.nickname || plant.name}"? Esta acción es irreversible y se perderán todos los datos, fotos y mensajes de chat asociados.`}
+        confirmText="Eliminar Definitivamente"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={isDeletingPlant}
+        preview={
+          <div className="flex items-center gap-3">
+            {profileImage && (
+              <img 
+                src={profileImage.url} 
+                alt={plant.name}
+                className="w-12 h-12 rounded-lg object-cover"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                {plant.nickname || plant.name}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {plant.species} • {plant.images?.length || 0} fotos
+              </p>
+            </div>
+          </div>
+        }
+      />
     </motion.div>
   );
 };
