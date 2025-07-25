@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -116,12 +116,27 @@ const App: React.FC = () => {
     }
   }, [initialize]);
 
-  if (!isInitialized) {
+  // 🚨 EMERGENCY FIX: Timeout para auth initialization
+  const [forceRender, setForceRender] = useState(false);
+  
+  useEffect(() => {
+    // Si después de 3 segundos no se inicializa, forzar render
+    const emergencyTimeout = setTimeout(() => {
+      if (!isInitialized) {
+        console.warn('[APP] Emergency timeout - forcing app render');
+        setForceRender(true);
+      }
+    }, 3000);
+    
+    return () => clearTimeout(emergencyTimeout);
+  }, [isInitialized]);
+
+  if (!isInitialized && !forceRender) {
     console.log('[APP] Not initialized, showing loader...');
     return <FullScreenLoader message="Inicializando..." />;
   }
   
-  console.log('[APP] Initialized, rendering main app...');
+  console.log('[APP] Rendering app (initialized:', isInitialized, 'forced:', forceRender, ')');
 
   const PrivateRoutes = () => (
     <Routes>
