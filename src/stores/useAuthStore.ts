@@ -1,210 +1,178 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
-import { gardenCacheService } from '../services/gardenCacheService';
-import { User } from '@supabase/supabase-js';
-import { SignInSchema, SignUpSchema } from '../schemas';
-import { z } from 'zod';
-
-type Profile = any; // Placeholder
-type SignInCredentials = z.infer<typeof SignInSchema>;
-type SignUpCredentials = z.infer<typeof SignUpSchema>;
+import { produce } from 'immer';
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, doc, getDoc, setDoc } from '../lib/firebase'; // Import auth, db, and specific auth functions
 
 interface AuthState {
-  user: User | null;
-  profile: Profile | null;
-  session: any | null; // Use 'any' for now to avoid module issues
+  user: CurrentUser | null;
+  initialized: boolean;
   isLoading: boolean;
   error: string | null;
-  isInitialized: boolean;
-}
-
-interface AuthActions {
-  initialize: () => Promise<void>; // Now returns a Promise
-  signIn: (credentials: SignInCredentials) => Promise<void>;
-  signUp: (credentials: SignUpCredentials) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, confirmPassword?: string, fullName?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  initialize: () => void;
   clearError: () => void;
 }
 
-type AuthStore = AuthState & AuthActions;
+interface CurrentUser {
+  id: string;
+  email: string | null;
+  fullName: string | null;
+  avatarUrl: string | null;
+  preferences: Record<string, any>;
+}
 
-// The subscription is now managed internally in the store
-let authListener: { subscription: { unsubscribe: () => void } } | null = null;
-
-export const useAuthStore = create<AuthStore>((set, _get) => ({
+const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  profile: null,
-  session: null,
+  initialized: false,
   isLoading: false,
   error: null,
-  isInitialized: false,
 
-  initialize: async () => {
-    console.log('[AUTH] 🚀 Initialize started');
-    
-    // 1. Unsubscribe from any existing listener
-    if (authListener?.subscription) {
-      console.log('[AUTH] Unsubscribing existing listener');
-      authListener.subscription.unsubscribe();
-    }
-    
-    // 2. Check for an existing session on startup with timeout
-    try {
-      console.log('[AUTH] Getting session with timeout...');
-      // Create timeout wrapper for mobile compatibility
-      const sessionPromise = supabase.auth.getSession();
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Session timeout after 8 seconds')), 8000)
-      );
-      
-      const { data: { session }, error } = await Promise.race([
-        sessionPromise, 
-        timeoutPromise
-      ]);
-      
-      console.log('[AUTH] Session result:', { hasSession: !!session, error: error?.message });
-      
-      if (error) {
-        console.warn('[AUTH] Session error:', error.message);
-        // Don't throw, allow app to continue without session
-      }
-      
-      console.log('[AUTH] Setting session state...');
-      set({ session, user: session?.user ?? null });
+  initialize: () => {
+    onAuthStateChanged(auth, async (firebaseUser: any | null) => {
+      try {
+        if (firebaseUser) {
+          // User signed in or reloaded
+          console.log('[AUTH STORE] User authenticated:', firebaseUser.uid);
+          
+          // Use modern Firestore v9+ API
+          const profileDocRef = doc(db, 'profiles', firebaseUser.uid);
+          const profileDoc = await getDoc(profileDocRef);
 
-      if (session?.user) {
-        try {
-          const profilePromise = supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          const profileTimeoutPromise = new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Profile timeout')), 5000)
-          );
-          
-          const { data: profile, error: profileError } = await Promise.race([
-            profilePromise,
-            profileTimeoutPromise
-          ]);
-          
-          if (profileError) {
-            console.warn('Profile fetch error:', profileError.message);
+          if (profileDoc.exists()) {
+            const userData = profileDoc.data();
+            set(produce((state) => {
+              state.user = { id: firebaseUser.uid, ...userData } as CurrentUser;
+              state.initialized = true;
+              state.error = null;
+              state.isLoading = false;
+            }));
           } else {
-            set({ profile });
+            // Create a new profile if it doesn't exist (e.g., first login with email/password)
+            const newUserProfile: CurrentUser = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email,
+              fullName: null,
+              avatarUrl: null,
+              preferences: {},
+            };
+            await setDoc(profileDocRef, newUserProfile);
+            set(produce((state) => {
+              state.user = newUserProfile;
+              state.initialized = true;
+              state.error = null;
+              state.isLoading = false;
+            }));
           }
-        } catch (profileError: any) {
-          console.warn('Profile fetch failed:', profileError.message);
-          // Continue without profile
+        } else {
+          // User signed out
+          set(produce((state) => {
+            state.user = null;
+            state.initialized = true;
+            state.error = null;
+            state.isLoading = false;
+          }));
         }
+      } catch (error) {
+        console.error('[AUTH STORE] Error in auth state change:', error);
+        set(produce((state) => {
+          state.error = error instanceof Error ? error.message : 'Error de autenticación';
+          state.initialized = true;
+          state.isLoading = false;
+        }));
+      }
+    });
+  },
+
+  signIn: async (email, password) => {
+    try {
+      set(produce((state) => { 
+        state.isLoading = true; 
+        state.error = null; 
+      }));
+      
+      console.log('[AUTH STORE] Attempting sign in with email:', email);
+      await signInWithEmailAndPassword(auth, email, password);
+      
+      // No need to set isLoading false here, onAuthStateChanged will handle it
+      // The onAuthStateChanged listener will update the user state
+    } catch (err: any) {
+      console.error('[AUTH STORE] Sign in error:', err);
+      set(produce((state) => { 
+        state.error = err.message || 'Error al iniciar sesión'; 
+        state.isLoading = false;
+      }));
+      throw err; // Re-throw to allow component to handle
+    }
+  },
+
+  signUp: async (email, password, confirmPassword?, fullName?) => {
+    try {
+      set(produce((state) => { 
+        state.isLoading = true; 
+        state.error = null; 
+      }));
+
+      // Validate passwords match if confirmPassword is provided
+      if (confirmPassword && password !== confirmPassword) {
+        throw new Error('Las contraseñas no coinciden');
+      }
+
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      if (firebaseUser) {
+        const newUserProfile: CurrentUser = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          fullName: fullName || null,
+          avatarUrl: null,
+          preferences: {},
+        };
+        
+        // Use modern Firestore v9+ API
+        const profileDocRef = doc(db, 'profiles', firebaseUser.uid);
+        await setDoc(profileDocRef, newUserProfile);
+        
+        // No need to set isLoading false here, onAuthStateChanged will handle it
+        // The onAuthStateChanged listener will update the user state
       } else {
-        set({ profile: null });
+        throw new Error('Error al crear el usuario');
       }
-    } catch (e: any) {
-      console.warn('Auth initialization failed, continuing without session:', e.message);
-      // Progressive enhancement: allow app to load without auth
-      set({ 
-        session: null, 
-        user: null, 
-        profile: null,
-        error: null // Don't show error to user, just log it
-      });
-    } finally {
-      // 3. Mark as initialized AFTER the initial check is complete
-      console.log('[AUTH] ✅ Marking as initialized');
-      set({ isInitialized: true });
-    }
-
-    // 4. Set up the real-time listener for subsequent auth changes
-    const { data } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        set({ session, user: session?.user ?? null, isLoading: false });
-
-        if (event === 'SIGNED_OUT') {
-          set({ profile: null });
-          return;
-        }
-
-        if (session?.user) {
-          try {
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (error) throw error;
-            set({ profile });
-          } catch (error) {
-            console.error('Error fetching profile on auth change:', error);
-            // Don't set a global error here, as it might be a transient issue
-          }
-        }
-      }
-    );
-    
-    authListener = data;
-  },
-
-  signIn: async (credentials) => {
-    set({ isLoading: true, error: null });
-    try {
-      const { email, password } = SignInSchema.parse(credentials);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      // onAuthStateChange will handle the rest
-    } catch (e: any) {
-      const errorMessage = e.message.includes('Invalid login credentials') 
-        ? 'Credenciales inválidas.'
-        : 'Error al iniciar sesión.';
-      set({ error: errorMessage });
-      console.error(e);
-      throw e;
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  signUp: async (credentials) => {
-    set({ isLoading: true, error: null });
-    try {
-      const { email, password, fullName } = SignUpSchema.parse(credentials);
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName } },
-      });
-      if (error) throw error;
-      // onAuthStateChange will handle the rest
-      // You might want to show a "Check your email" message
-    } catch (e: any) {
-      const errorMessage = e.message.includes('already registered')
-        ? 'El usuario ya está registrado.'
-        : 'Error al registrarse.';
-      set({ error: errorMessage });
-      console.error(e);
-      throw e;
-    } finally {
-      set({ isLoading: false });
+    } catch (err: any) {
+      console.error('[AUTH STORE] Sign up error:', err);
+      set(produce((state) => { 
+        state.error = err.message || 'Error al crear la cuenta'; 
+        state.isLoading = false;
+      }));
+      throw err; // Re-throw to allow component to handle
     }
   },
 
   signOut: async () => {
-    set({ isLoading: true });
-    
-    // Clear garden cache before signing out
-    gardenCacheService.clearAll();
-    
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
-      set({ error: 'Error al cerrar sesión.', isLoading: false });
+    try {
+      set(produce((state) => { 
+        state.isLoading = true; 
+        state.error = null; 
+      }));
+      
+      await signOut(auth);
+      
+      // No need to set isLoading false here, onAuthStateChanged will handle it
+      // The onAuthStateChanged listener will update the user state
+    } catch (err: any) {
+      console.error('[AUTH STORE] Sign out error:', err);
+      set(produce((state) => { 
+        state.error = err.message || 'Error al cerrar sesión'; 
+        state.isLoading = false;
+      }));
+      throw err; // Re-throw to allow component to handle
     }
-    // onAuthStateChange will clear user, session, and profile
-    // We manually clear state here for a faster UI response
-    set({ session: null, user: null, profile: null, isLoading: false });
   },
 
-  clearError: () => set({ error: null }),
-})); 
+  clearError: () => {
+    set(produce((state) => { state.error = null; }));
+  },
+}));
+
+export default useAuthStore; 

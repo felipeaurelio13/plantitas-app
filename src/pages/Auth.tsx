@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff, Leaf } from 'lucide-react';
-import { useAuthStore } from '../stores/useAuthStore';
+import useAuthStore from '../stores/useAuthStore';
 
 const AuthPage: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -10,6 +10,7 @@ const AuthPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isOAuthLoading, setOAuthLoading] = useState(false);
 
   // Use the store for state and actions
   const { signIn, signUp, isLoading, error, clearError } = useAuthStore();
@@ -22,7 +23,7 @@ const AuthPage: React.FC = () => {
   // Clear errors when the component unmounts or mode changes
   useEffect(() => {
     return () => {
-      clearError();
+      clearError?.();
     };
   }, [mode, clearError]);
 
@@ -30,19 +31,39 @@ const AuthPage: React.FC = () => {
     e.preventDefault();
     clearError();
 
-    if (mode === 'login') {
-      await signIn({ email, password });
-    } else {
-      if (password !== confirmPassword) {
-        // This is a client-side check.
-        // The zod schema in the store also validates this.
-        console.error("Passwords do not match");
-        // We can also use the store to set a specific error here
-        return;
+    try {
+      if (mode === 'login') {
+        await signIn(email, password);
+      } else {
+        if (password !== confirmPassword) {
+          // This is a client-side check.
+          console.error("Passwords do not match");
+          return;
+        }
+        await signUp(email, password, confirmPassword, fullName);
       }
-      await signUp({ email, password, confirmPassword, fullName });
+    } catch (error) {
+      // Error is already handled in the store
+      console.error('Auth error:', error);
     }
   };
+
+  // Remove handleGoogleSignIn as Firebase OAuth will be handled differently or implemented later if needed.
+  // const handleGoogleSignIn = async () => {
+  //   try {
+  //     setOAuthLoading(true);
+  //     await supabase.auth.signInWithOAuth({
+  //       provider: 'google',
+  //       options: {
+  //         redirectTo: window.location.origin + (import.meta.env.DEV ? '' : '/plantitas-app/')
+  //       }
+  //     });
+  //   } catch (e) {
+  //     console.error('Google sign-in error', e);
+  //   } finally {
+  //     setOAuthLoading(false);
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
@@ -227,14 +248,14 @@ const AuthPage: React.FC = () => {
               </button>
             </p>
           </div>
-        </motion.div>
 
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Al continuar, aceptas nuestros Términos y Condiciones
-          </p>
-        </div>
+          {/* Footer */}
+          <div className="text-center mt-8">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Al continuar, aceptas nuestros Términos y Condiciones
+            </p>
+          </div>
+        </motion.div>
       </motion.div>
     </div>
   );
