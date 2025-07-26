@@ -19,7 +19,7 @@ import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { routes } from './lib/navigation';
 import { PERFORMANCE_CONFIG } from './lib/performance';
-import { Leaf, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
+import { Leaf, WifiOff } from 'lucide-react';
 
 // Importaciones directas para páginas core (mejor UX)
 import Dashboard from './pages/Dashboard';
