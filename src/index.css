@@ -39,12 +39,12 @@
   --color-success-700: #15803d;
   
   --color-warning-50: #fffbeb;
-  --color-warning-500: #f59e0b;
-  --color-warning-700: #b45309;
+  --color-warning-500: #d97706; /* Más oscuro para mejor contraste */
+  --color-warning-700: #92400e;
   
   --color-error-50: #fef2f2;
-  --color-error-500: #ef4444;
-  --color-error-700: #b91c1c;
+  --color-error-500: #dc2626; /* Más oscuro para mejor contraste */
+  --color-error-700: #991b1b;
 
   /* === TIPOGRAFÍA === */
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -188,6 +188,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+  }
+  
+  /* Área de toque extendida para elementos pequeños */
+  .touch-target-extended::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    bottom: -8px;
+    left: -8px;
+    z-index: -1;
   }
 
   /* Glass effect mejorado */
@@ -284,6 +296,36 @@
 /* Mobile viewport utilities */
 .h-screen-mobile { height: calc(var(--vh, 1vh) * 100); }
 .min-h-screen-mobile { min-height: calc(var(--vh, 1vh) * 100); }
+
+/* Container adaptativo para diferentes tamaños */
+.container-adaptive {
+  width: 100%;
+  max-width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-adaptive {
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .container-adaptive {
+    max-width: 768px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-adaptive {
+    max-width: 1024px;
+  }
+}
 
 /* === ACCESSIBILITY IMPROVEMENTS === */
 @media (prefers-reduced-motion: reduce) {

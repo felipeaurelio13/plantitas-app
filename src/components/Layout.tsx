@@ -71,7 +71,7 @@ const Layout: React.FC = () => {
         id="main-content"
         role="main"
         aria-label="Contenido principal"
-        className="pb-28 min-h-screen focus:outline-none"
+        className="pb-28 min-h-screen focus:outline-none container-adaptive"
         tabIndex={-1}
       >
         <AnimatePresence mode="wait">

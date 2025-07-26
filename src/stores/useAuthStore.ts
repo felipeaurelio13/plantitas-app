@@ -211,6 +211,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             session: mockSession,
             profile: { id: mockUser.id, full_name: 'Usuario Demo' }
           });
+          
+          // Forzar navegación en modo desarrollo
+          console.log('[AUTH] Mock login successful - user authenticated');
+          
+          // Simular un pequeño delay para mejorar la UX
+          await new Promise(resolve => setTimeout(resolve, 300));
           return;
         } else {
           throw new Error('Invalid login credentials');

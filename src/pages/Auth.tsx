@@ -129,7 +129,7 @@ const AuthPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-nature-50 via-stone-50 to-nature-100 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-nature-50 via-stone-50 to-nature-100 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 flex items-center justify-center p-4 container-adaptive">
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}

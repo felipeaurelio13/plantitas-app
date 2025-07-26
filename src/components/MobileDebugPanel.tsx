@@ -22,7 +22,7 @@ export const MobileDebugPanel: React.FC = () => {
       {/* Debug Toggle Button */}
       <button
         onClick={togglePanel}
-        className="fixed top-4 right-4 z-[9999] w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+        className="fixed top-4 right-4 z-[9999] w-10 h-10 bg-red-600 dark:bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg ring-2 ring-white/20"
         style={{ fontSize: '12px' }}
       >
         <Bug className="w-4 h-4" />
