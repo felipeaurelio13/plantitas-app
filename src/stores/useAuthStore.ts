@@ -30,6 +30,8 @@ const useAuthStore = create<AuthState>((set, get) => ({
     onAuthStateChanged(auth, async (firebaseUser: any | null) => {
       if (firebaseUser) {
         // User signed in or reloaded
+        console.log('[AUTH STORE] Value of db before collection call:', db);
+        console.log('[AUTH STORE] Type of db before collection call:', typeof db);
         const profileDocRef = db.collection('profiles').doc(firebaseUser.uid);
         const profileDoc = await profileDocRef.get();
 
@@ -68,9 +70,8 @@ const useAuthStore = create<AuthState>((set, get) => ({
 
   signIn: async (email, password) => {
     try {
-      console.log('Attempting sign in with auth object:', auth);
-      console.log('Type of signInWithEmailAndPassword:', typeof signInWithEmailAndPassword);
-      console.log('Value of signInWithEmailAndPassword:', signInWithEmailAndPassword);
+      console.log('[AUTH STORE] Attempting sign in with email:', email, 'and password (first char):', password ? password.charAt(0) + '...' : '');
+      console.log('[AUTH STORE] Type of email:', typeof email, ', Type of password:', typeof password);
       await signInWithEmailAndPassword(auth, email, password);
       set(produce((state) => { state.error = null; })); // Clear error on successful sign in
       // The onAuthStateChanged listener will update the user state

@@ -73,11 +73,11 @@ const getBasename = (): string => {
 };
 
 const App: React.FC = () => {
-  const { session, isInitialized, initialize } = useAuthStore();
+  const { user, isInitialized, initialize } = useAuthStore();
   
   // Solo log en desarrollo para debugging
   if (import.meta.env.DEV) {
-    console.log('[APP] App component mounting... Session:', !!session, 'Initialized:', isInitialized);
+    console.log('[APP] App component mounting... User:', !!user, 'Initialized:', isInitialized);
   }
   
   // Monitoreo de performance en desarrollo
@@ -105,7 +105,7 @@ const App: React.FC = () => {
         cleanupViewport();
       };
     } catch (error) {
-      logCriticalError('APP_INITIALIZATION', error);
+      logCriticalError(error, 'APP_INITIALIZATION');
       throw error;
     }
   }, [initialize]);
@@ -168,11 +168,11 @@ const App: React.FC = () => {
               <Routes>
                 <Route
                   path={routes.auth}
-                  element={!session ? <AuthPage /> : <Navigate to={routes.dashboard} replace />}
+                  element={!user ? <AuthPage /> : <Navigate to={routes.dashboard} replace />}
                 />
                 <Route
                   path="/*"
-                  element={session ? <PrivateRoutes /> : <Navigate to={routes.auth} replace />}
+                  element={!!user ? <PrivateRoutes /> : <Navigate to={routes.auth} replace />}
                 />
               </Routes>
             </Suspense>
