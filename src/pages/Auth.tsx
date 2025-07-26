@@ -151,7 +151,7 @@ const AuthPage: React.FC = () => {
         return;
       }
       try {
-        await signUp({ email, password, fullName });
+        await signUp({ email, password, confirmPassword, fullName });
         // El store maneja la navegación automáticamente
       } catch (error) {
         // Error ya manejado en el store
