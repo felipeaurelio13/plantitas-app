@@ -191,35 +191,49 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       
       // Mock auth for development
       if (isDevelopmentMode) {
-        console.log('[AUTH] Mock sign in for development');
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('[AUTH] 🧪 Mock sign in for development mode');
+        console.log('[AUTH] 📧 Email:', email);
+        console.log('[AUTH] 🔒 Password length:', password.length);
         
-        // Simple validation for demo
-        if (email && password.length >= 6) {
+        // Simulate API delay for realistic UX
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        // Simple validation for demo - cualquier email válido y password >= 6
+        if (email.includes('@') && email.includes('.') && password.length >= 6) {
           const mockUser = createMockUser(email);
           const mockSession = {
             user: mockUser,
-            access_token: 'mock-token',
-            refresh_token: 'mock-refresh',
+            access_token: 'mock-token-' + Date.now(),
+            refresh_token: 'mock-refresh-' + Date.now(),
             expires_in: 3600,
-            token_type: 'bearer'
+            token_type: 'bearer',
+            expires_at: Date.now() + 3600000
           };
+          
+          console.log('[AUTH] ✅ Mock user created:', mockUser.email);
           
           set({ 
             user: mockUser, 
             session: mockSession,
-            profile: { id: mockUser.id, full_name: 'Usuario Demo' }
+            profile: { 
+              id: mockUser.id, 
+              full_name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
+              email: mockUser.email,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            },
+            error: null
           });
           
-          // Forzar navegación en modo desarrollo
-          console.log('[AUTH] Mock login successful - user authenticated');
+          console.log('[AUTH] 🚀 Mock login successful - session established');
+          console.log('[AUTH] 🔄 User should now be redirected to dashboard');
           
-          // Simular un pequeño delay para mejorar la UX
-          await new Promise(resolve => setTimeout(resolve, 300));
+          // Pequeño delay para que la UI se actualice
+          await new Promise(resolve => setTimeout(resolve, 100));
           return;
         } else {
-          throw new Error('Invalid login credentials');
+          console.log('[AUTH] ❌ Mock login failed - invalid credentials');
+          throw new Error('Email debe incluir @ y ., contraseña mínimo 6 caracteres');
         }
       }
       

@@ -1,86 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff, Leaf, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '../stores/useAuthStore';
 
-const AuthPage: React.FC = () => {
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Use the store for state and actions
-  const { signIn, signUp, isLoading, error, clearError, isDevelopmentMode } = useAuthStore();
+// Componente InputField memoizado para evitar re-renders
+const InputField = React.memo<{
+  type: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  icon: React.ReactNode;
+  required?: boolean;
+  autoComplete?: string;
+  rightIcon?: React.ReactNode;
+  onRightIconClick?: () => void;
+  label: string;
+  id: string;
+  disabled?: boolean;
+}>(({ 
+  type, 
+  value, 
+  onChange, 
+  placeholder, 
+  icon, 
+  required = false, 
+  autoComplete, 
+  rightIcon, 
+  onRightIconClick, 
+  label, 
+  id,
+  disabled = false
+}) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+  }, [onChange]);
 
-  const handleModeChange = (newMode: 'login' | 'signup') => {
-    setMode(newMode);
-    clearError(); // Clear errors when switching modes
-    // Reset form fields when switching modes
-    setPassword('');
-    setConfirmPassword('');
-    setShowPassword(false);
-    setShowConfirmPassword(false);
-  };
-  
-  // Clear errors when the component unmounts or mode changes
-  useEffect(() => {
-    return () => {
-      clearError();
-    };
-  }, [mode, clearError]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    clearError();
-
-    if (mode === 'login') {
-      try {
-        await signIn({ email, password });
-      } catch (error) {
-        // Error is handled in the store
-      }
-    } else {
-      if (password !== confirmPassword) {
-        // This should be handled by zod schema validation, but adding client-side check for better UX
-        return;
-      }
-      try {
-        await signUp({ email, password, confirmPassword, fullName });
-      } catch (error) {
-        // Error is handled in the store
-      }
-    }
-  };
-
-  // Input component with better styling
-  const InputField: React.FC<{
-    type: string;
-    value: string;
-    onChange: (value: string) => void;
-    placeholder: string;
-    icon: React.ReactNode;
-    required?: boolean;
-    autoComplete?: string;
-    rightIcon?: React.ReactNode;
-    onRightIconClick?: () => void;
-    label: string;
-    id: string;
-  }> = ({ 
-    type, 
-    value, 
-    onChange, 
-    placeholder, 
-    icon, 
-    required = false, 
-    autoComplete,
-    rightIcon,
-    onRightIconClick,
-    label,
-    id
-  }) => (
+  return (
     <div className="space-y-2">
       <label 
         htmlFor={id}
@@ -89,14 +44,15 @@ const AuthPage: React.FC = () => {
         {label}
       </label>
       <div className="relative">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">
           {icon}
         </div>
         <input
           id={id}
           type={type}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleChange}
+          disabled={disabled}
           className="
             w-full pl-10 pr-4 py-3.5 
             bg-white dark:bg-stone-800 
@@ -105,6 +61,7 @@ const AuthPage: React.FC = () => {
             text-stone-900 dark:text-stone-100 
             placeholder-stone-500 dark:placeholder-stone-400
             focus:ring-2 focus:ring-nature-500 focus:border-transparent
+            disabled:opacity-50 disabled:cursor-not-allowed
             transition-all duration-200
             text-base
             touch-target
@@ -118,8 +75,9 @@ const AuthPage: React.FC = () => {
           <button
             type="button"
             onClick={onRightIconClick}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors touch-target"
-            aria-label={type === 'password' ? (showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña') : undefined}
+            disabled={disabled}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors touch-target disabled:opacity-50"
+            aria-label={type === 'password' ? (type === 'password' ? 'Mostrar contraseña' : 'Ocultar contraseña') : undefined}
           >
             {rightIcon}
           </button>
@@ -127,6 +85,162 @@ const AuthPage: React.FC = () => {
       </div>
     </div>
   );
+});
+
+InputField.displayName = 'InputField';
+
+const AuthPage: React.FC = () => {
+  // Estados locales del formulario
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    fullName: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Store state
+  const { signIn, signUp, isLoading, error, clearError, isDevelopmentMode } = useAuthStore();
+
+  // Handlers memoizados para evitar re-renders
+  const handleFieldChange = useCallback((field: keyof typeof formData) => (value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleModeChange = useCallback((newMode: 'login' | 'signup') => {
+    setMode(newMode);
+    clearError();
+    // Reset form fields when switching modes
+    setFormData({
+      email: formData.email, // Mantener email
+      password: '',
+      confirmPassword: '',
+      fullName: ''
+    });
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  }, [clearError, formData.email]);
+
+  const togglePasswordVisibility = useCallback(() => {
+    setShowPassword(prev => !prev);
+  }, []);
+
+  const toggleConfirmPasswordVisibility = useCallback(() => {
+    setShowConfirmPassword(prev => !prev);
+  }, []);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError();
+
+    const { email, password, confirmPassword, fullName } = formData;
+
+    if (mode === 'login') {
+      try {
+        await signIn({ email, password });
+        // El store maneja la navegación automáticamente
+      } catch (error) {
+        // Error ya manejado en el store
+        console.log('Login error handled by store');
+      }
+    } else {
+      if (password !== confirmPassword) {
+        // Aquí podrías mostrar un error específico
+        return;
+      }
+      try {
+        await signUp({ email, password, fullName });
+        // El store maneja la navegación automáticamente
+      } catch (error) {
+        // Error ya manejado en el store
+        console.log('Signup error handled by store');
+      }
+    }
+  }, [mode, formData, signIn, signUp, clearError]);
+
+  // Limpiar errores solo al montar/desmontar
+  useEffect(() => {
+    return () => {
+      clearError();
+    };
+  }, []); // Sin dependencias para evitar re-renders
+
+  // Validación del formulario memoizada
+  const isFormValid = useMemo(() => {
+    const { email, password, confirmPassword, fullName } = formData;
+    
+    if (mode === 'login') {
+      return email.length > 0 && password.length >= 6;
+    } else {
+      return email.length > 0 && 
+             password.length >= 6 && 
+             confirmPassword.length >= 6 && 
+             password === confirmPassword &&
+             fullName.length > 0;
+    }
+  }, [mode, formData]);
+
+  // Campos del formulario memoizados
+  const formFields = useMemo(() => {
+    const fields = [
+      {
+        id: 'email',
+        type: 'email',
+        value: formData.email,
+        onChange: handleFieldChange('email'),
+        placeholder: 'tu@email.com',
+        icon: <Mail size={20} />,
+        label: 'Correo electrónico',
+        autoComplete: 'email',
+        required: true
+      },
+      {
+        id: 'password',
+        type: showPassword ? 'text' : 'password',
+        value: formData.password,
+        onChange: handleFieldChange('password'),
+        placeholder: 'Tu contraseña',
+        icon: <Lock size={20} />,
+        label: 'Contraseña',
+        autoComplete: mode === 'login' ? 'current-password' : 'new-password',
+        required: true,
+        rightIcon: showPassword ? <EyeOff size={20} /> : <Eye size={20} />,
+        onRightIconClick: togglePasswordVisibility
+      }
+    ];
+
+    if (mode === 'signup') {
+      fields.unshift({
+        id: 'fullName',
+        type: 'text',
+        value: formData.fullName,
+        onChange: handleFieldChange('fullName'),
+        placeholder: 'Tu nombre completo',
+        icon: <User size={20} />,
+        label: 'Nombre completo',
+        autoComplete: 'name',
+        required: true
+      });
+
+      fields.push({
+        id: 'confirmPassword',
+        type: showConfirmPassword ? 'text' : 'password',
+        value: formData.confirmPassword,
+        onChange: handleFieldChange('confirmPassword'),
+        placeholder: 'Confirma tu contraseña',
+        icon: <Lock size={20} />,
+        label: 'Confirmar contraseña',
+        autoComplete: 'new-password',
+        required: true,
+        rightIcon: showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />,
+        onRightIconClick: toggleConfirmPasswordVisibility
+      });
+    }
+
+    return fields;
+  }, [mode, formData, showPassword, showConfirmPassword, handleFieldChange, togglePasswordVisibility, toggleConfirmPasswordVisibility]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-nature-50 via-stone-50 to-nature-100 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 flex items-center justify-center p-4 container-adaptive">
@@ -182,172 +296,112 @@ const AuthPage: React.FC = () => {
           )}
         </div>
 
-        {/* Auth Form */}
+        {/* Form Container */}
         <motion.div
-          layout
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.4 }}
-          className="bg-white/90 dark:bg-stone-900/90 backdrop-blur-xl rounded-3xl shadow-xl shadow-stone-200/20 dark:shadow-stone-950/40 p-8 border border-white/20 dark:border-stone-800/50"
+          transition={{ delay: 0.2, duration: 0.4 }}
+          className="bg-white/90 dark:bg-stone-900/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-stone-200/50 dark:border-stone-700/50"
         >
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <AnimatePresence mode="wait">
-              {mode === 'signup' && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginBottom: 20 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  <InputField
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={setFullName}
-                    placeholder="Tu nombre completo"
-                    icon={<User className="w-5 h-5" />}
-                    required={mode === 'signup'}
-                    autoComplete="name"
-                    label="Nombre completo"
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Mode Switch */}
+          <div className="flex bg-stone-100 dark:bg-stone-800 rounded-2xl p-1 mb-8">
+            {(['login', 'signup'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleModeChange(tab)}
+                disabled={isLoading}
+                className={`
+                  flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-200 touch-target
+                  ${mode === tab
+                    ? 'bg-white dark:bg-stone-700 text-nature-600 dark:text-nature-400 shadow-sm'
+                    : 'text-stone-600 dark:text-stone-400 hover:text-nature-600 dark:hover:text-nature-400'
+                  }
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                `}
+              >
+                {tab === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
+              </button>
+            ))}
+          </div>
 
-            <InputField
-              id="email"
-              type="email"
-              value={email}
-              onChange={setEmail}
-              placeholder="tu@email.com"
-              icon={<Mail className="w-5 h-5" />}
-              required
-              autoComplete="email"
-              label="Email"
-            />
+          {/* Error Message */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="mb-6 p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-700 rounded-xl flex items-start gap-3"
+              >
+                <AlertCircle className="w-5 h-5 text-error-600 dark:text-error-400 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-error-700 dark:text-error-300">{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            <InputField
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={setPassword}
-              placeholder="••••••••"
-              icon={<Lock className="w-5 h-5" />}
-              required
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              rightIcon={showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              onRightIconClick={() => setShowPassword(!showPassword)}
-              label="Contraseña"
-            />
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Form Fields */}
+            {formFields.map((field, index) => (
+              <motion.div
+                key={field.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 * index, duration: 0.3 }}
+              >
+                <InputField
+                  {...field}
+                  disabled={isLoading}
+                />
+              </motion.div>
+            ))}
 
-            <AnimatePresence mode="wait">
-              {mode === 'signup' && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginBottom: 20 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  <InputField
-                    id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={setConfirmPassword}
-                    placeholder="••••••••"
-                    icon={<Lock className="w-5 h-5" />}
-                    required={mode === 'signup'}
-                    autoComplete="new-password"
-                    rightIcon={showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    onRightIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    label="Confirmar contraseña"
-                  />
-                  
-                  {mode === 'signup' && password && (
-                    <motion.p 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-xs text-stone-500 dark:text-stone-400 mt-1"
-                    >
-                      Mínimo 6 caracteres
-                    </motion.p>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Demo Instructions */}
+            {isDevelopmentMode && mode === 'login' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl"
+              >
+                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
+                  🧪 Modo Demo - Cómo probar:
+                </h4>
+                <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+                  <li>• Email: cualquier email válido</li>
+                  <li>• Contraseña: mínimo 6 caracteres</li>
+                  <li>• Ejemplo: demo@plantitas.app / 123456</li>
+                </ul>
+              </motion.div>
+            )}
 
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl"
-                >
-                  <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700 dark:text-red-300 leading-relaxed">{error}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
+            {/* Submit Button */}
             <motion.button
               type="submit"
-              disabled={isLoading}
-              whileTap={{ scale: 0.98 }}
-              whileHover={{ scale: 1.01 }}
-              className="
-                w-full bg-gradient-to-r from-nature-500 to-nature-600 
-                hover:from-nature-600 hover:to-nature-700 
-                disabled:from-stone-300 disabled:to-stone-300
-                dark:disabled:from-stone-700 dark:disabled:to-stone-700
-                text-white font-medium py-4 px-6 rounded-xl 
-                transition-all duration-200 
-                focus:ring-2 focus:ring-nature-500 focus:ring-offset-2 focus:ring-offset-white
-                dark:focus:ring-offset-stone-900
-                shadow-lg hover:shadow-xl
-                touch-target
-                disabled:cursor-not-allowed disabled:transform-none
-              "
+              disabled={!isFormValid || isLoading}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.3 }}
+              className={`
+                w-full py-4 px-6 rounded-xl font-semibold text-base transition-all duration-200 touch-target
+                ${isFormValid && !isLoading
+                  ? 'bg-gradient-to-r from-nature-500 to-nature-600 hover:from-nature-600 hover:to-nature-700 text-white shadow-lg shadow-nature-200/50 dark:shadow-nature-900/30 hover:shadow-xl hover:shadow-nature-300/50 dark:hover:shadow-nature-800/40'
+                  : 'bg-stone-200 dark:bg-stone-700 text-stone-500 dark:text-stone-400 cursor-not-allowed'
+                }
+                disabled:opacity-50 disabled:cursor-not-allowed
+                focus:ring-2 focus:ring-nature-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-stone-900
+              `}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-3">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Procesando...</span>
+                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  {mode === 'login' ? 'Iniciando sesión...' : 'Creando cuenta...'}
                 </div>
               ) : (
                 mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'
               )}
             </motion.button>
           </form>
-
-          {/* Mode Switch */}
-          <div className="mt-8 text-center">
-            <p className="text-stone-600 dark:text-stone-400 text-sm">
-              {mode === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
-              {' '}
-              <button
-                onClick={() => handleModeChange(mode === 'login' ? 'signup' : 'login')}
-                className="text-nature-600 dark:text-nature-400 hover:text-nature-700 dark:hover:text-nature-300 font-medium transition-colors underline-offset-4 hover:underline focus:underline focus:outline-none"
-              >
-                {mode === 'login' ? 'Regístrate aquí' : 'Inicia sesión aquí'}
-              </button>
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Footer */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.4 }}
-          className="text-center mt-8"
-        >
-          <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed max-w-sm mx-auto">
-            Al continuar, aceptas nuestros{' '}
-            <span className="text-nature-600 dark:text-nature-400">Términos de Servicio</span>
-            {' '}y{' '}
-            <span className="text-nature-600 dark:text-nature-400">Política de Privacidad</span>
-          </p>
         </motion.div>
       </motion.div>
     </div>
