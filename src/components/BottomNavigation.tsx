@@ -38,7 +38,7 @@ const BottomNavigation: React.FC = () => {
     <>
       {/* Bottom Navigation */}
       <nav 
-        className="safe-bottom fixed bottom-0 left-0 right-0 z-50 glass-enhanced border-t border-contrast"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-stone-900/95 backdrop-blur-xl border-t border-stone-200 dark:border-stone-700 pb-safe"
         data-tour="bottom-navigation"
       >
         <div className="flex justify-around items-center h-20 max-w-lg mx-auto px-2">
@@ -49,17 +49,16 @@ const BottomNavigation: React.FC = () => {
               <motion.div
                 key={item.path}
                 className="relative flex-1 h-full"
-                whileTap={{ scale: 0.92 }}
-                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.1 }}
               >
                 <Link
                   to={item.path}
                   className={cn(
-                    'touch-target relative flex flex-col items-center justify-center w-full h-full rounded-2xl transition-all duration-200',
-                    'focus-contrast',
+                    'touch-target relative flex flex-col items-center justify-center w-full h-full rounded-2xl transition-all duration-200 focus-ring group',
                     isActive 
-                      ? 'text-primary-700 dark:text-primary-400' 
-                      : 'text-neutral-700 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
+                      ? 'text-nature-600 dark:text-nature-400' 
+                      : 'text-stone-500 dark:text-stone-400 hover:text-nature-600 dark:hover:text-nature-400'
                   )}
                   aria-label={`${item.label} - ${item.description}`}
                   {...(isActive ? { 'aria-current': 'page' } : {})}
@@ -75,10 +74,11 @@ const BottomNavigation: React.FC = () => {
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ 
                           type: 'spring', 
-                          stiffness: 400, 
-                          damping: 30 
+                          stiffness: 500, 
+                          damping: 30,
+                          duration: 0.2
                         }}
-                        className="absolute inset-1 bg-primary-500/10 dark:bg-primary-400/10 rounded-xl"
+                        className="absolute inset-2 bg-nature-50 dark:bg-nature-900/30 rounded-xl"
                       />
                     )}
                   </AnimatePresence>
@@ -87,47 +87,56 @@ const BottomNavigation: React.FC = () => {
                   <motion.div
                     animate={{ 
                       scale: isActive ? 1.1 : 1,
-                      y: isActive ? -2 : 0
+                      y: isActive ? -1 : 0
                     }}
-                    transition={{ duration: 0.2 }}
-                    className={cn(
-                      "relative z-10",
-                      isActive
-                        ? "text-[#2A7F3E]"
-                        : "text-[#888]"
-                    )}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="relative z-10 mb-1"
                   >
                     <item.icon 
-                      size={24} 
+                      size={22} 
                       strokeWidth={isActive ? 2.5 : 2}
-                      className="drop-shadow-sm"
+                      className={cn(
+                        "transition-all duration-200",
+                        isActive
+                          ? "drop-shadow-sm"
+                          : "group-hover:scale-105"
+                      )}
                     />
                   </motion.div>
 
                   {/* Label */}
                   <motion.span 
                     animate={{ 
-                      scale: isActive ? 1.05 : 1,
+                      scale: isActive ? 1.02 : 1,
                       fontWeight: isActive ? 600 : 500
                     }}
                     transition={{ duration: 0.2 }}
-                    className="text-xs mt-1 relative z-10"
+                    className={cn(
+                      "text-xs relative z-10 transition-all duration-200",
+                      isActive ? "text-nature-700 dark:text-nature-300" : ""
+                    )}
                   >
                     {item.label}
                   </motion.span>
 
-                  {/* Active dot indicator */}
+                  {/* Active indicator dot */}
                   <AnimatePresence>
                     {isActive && (
                       <motion.div
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="absolute left-1/2 -translate-x-1/2 w-1 h-1 bg-primary-500 dark:bg-primary-400 rounded-full mt-1.5" // 4px debajo del icono
+                        transition={{ delay: 0.1, duration: 0.2 }}
+                        className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-nature-500 dark:bg-nature-400 rounded-full"
                       />
                     )}
                   </AnimatePresence>
+
+                  {/* Hover effect */}
+                  <motion.div
+                    className="absolute inset-2 bg-stone-100 dark:bg-stone-800 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    style={{ zIndex: isActive ? -1 : 1 }}
+                  />
                 </Link>
               </motion.div>
             );
@@ -137,12 +146,15 @@ const BottomNavigation: React.FC = () => {
 
       {/* Floating Action Button: solo mostrar si no es detalle de planta */}
       {!isPlantDetail && (
-        <div 
-          className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-40"
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.3 }}
+          className="fixed bottom-24 right-4 sm:right-6 z-40"
           data-tour="add-plant-fab"
         >
           <AddPlantMenu />
-        </div>
+        </motion.div>
       )}
     </>
   );
