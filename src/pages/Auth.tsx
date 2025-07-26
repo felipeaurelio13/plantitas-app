@@ -31,17 +31,20 @@ const AuthPage: React.FC = () => {
     e.preventDefault();
     clearError();
 
-    if (mode === 'login') {
-      await signIn(email, password);
-    } else {
-      if (password !== confirmPassword) {
-        // This is a client-side check.
-        // The zod schema in the store also validates this.
-        console.error("Passwords do not match");
-        // We can also use the store to set a specific error here
-        return;
+    try {
+      if (mode === 'login') {
+        await signIn(email, password);
+      } else {
+        if (password !== confirmPassword) {
+          // This is a client-side check.
+          console.error("Passwords do not match");
+          return;
+        }
+        await signUp(email, password, confirmPassword, fullName);
       }
-      await signUp(email, password, confirmPassword, fullName);
+    } catch (error) {
+      // Error is already handled in the store
+      console.error('Auth error:', error);
     }
   };
 

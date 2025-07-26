@@ -73,11 +73,11 @@ const getBasename = (): string => {
 };
 
 const App: React.FC = () => {
-  const { user, isInitialized, initialize } = useAuthStore();
+  const { user, initialized, initialize } = useAuthStore();
   
   // Solo log en desarrollo para debugging
   if (import.meta.env.DEV) {
-    console.log('[APP] App component mounting... User:', !!user, 'Initialized:', isInitialized);
+    console.log('[APP] App component mounting... User:', !!user, 'Initialized:', initialized);
   }
   
   // Monitoreo de performance en desarrollo
@@ -105,7 +105,7 @@ const App: React.FC = () => {
         cleanupViewport();
       };
     } catch (error) {
-      logCriticalError(error, 'APP_INITIALIZATION');
+      logCriticalError(error as Error, 'APP_INITIALIZATION');
       throw error;
     }
   }, [initialize]);
@@ -116,18 +116,18 @@ const App: React.FC = () => {
   useEffect(() => {
     // Si después de 3 segundos no se inicializa, forzar render
     const emergencyTimeout = setTimeout(() => {
-      if (!isInitialized) {
+      if (!initialized) {
         console.warn('[APP] Emergency timeout - forcing app render');
         setForceRender(true);
       }
     }, 3000);
     
     return () => clearTimeout(emergencyTimeout);
-  }, [isInitialized]);
+  }, [initialized]);
 
-      if (!isInitialized && !forceRender) {
-      return <FullScreenLoader message="Inicializando..." />;
-    }
+  if (!initialized && !forceRender) {
+    return <FullScreenLoader message="Inicializando..." />;
+  }
 
   const PrivateRoutes = () => (
     <Routes>

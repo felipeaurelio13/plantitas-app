@@ -8,7 +8,7 @@ import useAuthStore from '../stores/useAuthStore';
 export const MobileDebugPanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const networkInfo = useConnectionQuality();
-  const { session, isInitialized } = useAuthStore();
+  const { user, initialized } = useAuthStore();
 
   // Only show in development
   if (!import.meta.env.DEV) return null;
@@ -105,9 +105,9 @@ export const MobileDebugPanel: React.FC = () => {
               <div>
                 <div className="font-semibold mb-1">🔐 Auth</div>
                 <div className="pl-4 space-y-1">
-                  <div>Initialized: {isInitialized ? '✅' : '❌'}</div>
-                  <div>Session: {session ? '✅' : '❌'}</div>
-                  {session && <div>User: {session.user?.email}</div>}
+                  <div>Initialized: {initialized ? '✅' : '❌'}</div>
+                  <div>Session: {user ? '✅' : '❌'}</div>
+                  {user && <div>User: {user.email}</div>}
                 </div>
               </div>
 
