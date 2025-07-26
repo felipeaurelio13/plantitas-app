@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 export const useSettings = () => {
   const { isDark, toggleTheme } = useThemeStore();
-  const { signOut, profile } = useAuthStore();
+  const { signOut, user } = useAuthStore();
   const navigate = useNavigate();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
@@ -80,7 +80,7 @@ export const useSettings = () => {
                 label: 'Exportar mis datos',
                 type: 'button',
                 onClick: handleExportData,
-                disabled: !profile || !hasDataToExport,
+                disabled: !user || !hasDataToExport,
             },
             {
                 id: 'delete',
@@ -88,7 +88,7 @@ export const useSettings = () => {
                 label: 'Eliminar mis datos',
                 type: 'button',
                 onClick: handleClearData,
-                disabled: !profile || !hasDataToDelete,
+                disabled: !user || !hasDataToDelete,
             },
         ],
     },
@@ -122,7 +122,7 @@ export const useSettings = () => {
         */
       ],
     },
-  ], [isDark, profile, handleSignOut, toggleTheme]);
+  ], [isDark, user, handleSignOut, toggleTheme]);
 
   return {
     settingsSections,

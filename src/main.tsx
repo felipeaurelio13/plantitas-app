@@ -21,7 +21,7 @@ console.log('[MOBILE] User Agent:', navigator.userAgent);
 
 // Function to handle global errors (for advanced debugging)
 (window as any).logGlobalError = (error: Error, type: string = 'GLOBAL', details: any = {}) => {
-  logCriticalError(error, type, details);
+  logCriticalError(error as Error, type);
 };
 
 // Test de compatibilidad desactivado temporalmente
