@@ -1,210 +1,124 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
-import { gardenCacheService } from '../services/gardenCacheService';
-import { User } from '@supabase/supabase-js';
-import { SignInSchema, SignUpSchema } from '../schemas';
-import { z } from 'zod';
-
-type Profile = any; // Placeholder
-type SignInCredentials = z.infer<typeof SignInSchema>;
-type SignUpCredentials = z.infer<typeof SignUpSchema>;
+import { produce } from 'immer';
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from '../lib/firebase'; // Import auth, db, and specific auth functions
 
 interface AuthState {
-  user: User | null;
-  profile: Profile | null;
-  session: any | null; // Use 'any' for now to avoid module issues
-  isLoading: boolean;
+  user: CurrentUser | null;
+  initialized: boolean;
   error: string | null;
-  isInitialized: boolean;
-}
-
-interface AuthActions {
-  initialize: () => Promise<void>; // Now returns a Promise
-  signIn: (credentials: SignInCredentials) => Promise<void>;
-  signUp: (credentials: SignUpCredentials) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  initialize: () => void;
   clearError: () => void;
 }
 
-type AuthStore = AuthState & AuthActions;
+interface CurrentUser {
+  id: string;
+  email: string | null;
+  fullName: string | null;
+  avatarUrl: string | null;
+  preferences: Record<string, any>;
+}
 
-// The subscription is now managed internally in the store
-let authListener: { subscription: { unsubscribe: () => void } } | null = null;
-
-export const useAuthStore = create<AuthStore>((set, _get) => ({
+const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  profile: null,
-  session: null,
-  isLoading: false,
+  initialized: false,
   error: null,
-  isInitialized: false,
 
-  initialize: async () => {
-    console.log('[AUTH] 🚀 Initialize started');
-    
-    // 1. Unsubscribe from any existing listener
-    if (authListener?.subscription) {
-      console.log('[AUTH] Unsubscribing existing listener');
-      authListener.subscription.unsubscribe();
-    }
-    
-    // 2. Check for an existing session on startup with timeout
-    try {
-      console.log('[AUTH] Getting session with timeout...');
-      // Create timeout wrapper for mobile compatibility
-      const sessionPromise = supabase.auth.getSession();
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Session timeout after 8 seconds')), 8000)
-      );
-      
-      const { data: { session }, error } = await Promise.race([
-        sessionPromise, 
-        timeoutPromise
-      ]);
-      
-      console.log('[AUTH] Session result:', { hasSession: !!session, error: error?.message });
-      
-      if (error) {
-        console.warn('[AUTH] Session error:', error.message);
-        // Don't throw, allow app to continue without session
-      }
-      
-      console.log('[AUTH] Setting session state...');
-      set({ session, user: session?.user ?? null });
+  initialize: () => {
+    onAuthStateChanged(auth, async (firebaseUser: any | null) => {
+      if (firebaseUser) {
+        // User signed in or reloaded
+        const profileDocRef = db.collection('profiles').doc(firebaseUser.uid);
+        const profileDoc = await profileDocRef.get();
 
-      if (session?.user) {
-        try {
-          const profilePromise = supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          const profileTimeoutPromise = new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Profile timeout')), 5000)
-          );
-          
-          const { data: profile, error: profileError } = await Promise.race([
-            profilePromise,
-            profileTimeoutPromise
-          ]);
-          
-          if (profileError) {
-            console.warn('Profile fetch error:', profileError.message);
-          } else {
-            set({ profile });
-          }
-        } catch (profileError: any) {
-          console.warn('Profile fetch failed:', profileError.message);
-          // Continue without profile
+        if (profileDoc.exists) {
+          set(produce((state) => {
+            state.user = { id: firebaseUser.uid, ...profileDoc.data() } as CurrentUser;
+            state.initialized = true;
+            state.error = null;
+          }));
+        } else {
+          // Create a new profile if it doesn't exist (e.g., first login with email/password)
+          const newUserProfile: CurrentUser = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email,
+            fullName: null,
+            avatarUrl: null,
+            preferences: {},
+          };
+          await profileDocRef.set(newUserProfile);
+          set(produce((state) => {
+            state.user = newUserProfile;
+            state.initialized = true;
+            state.error = null;
+          }));
         }
       } else {
-        set({ profile: null });
+        // User signed out
+        set(produce((state) => {
+          state.user = null;
+          state.initialized = true;
+          state.error = null;
+        }));
       }
-    } catch (e: any) {
-      console.warn('Auth initialization failed, continuing without session:', e.message);
-      // Progressive enhancement: allow app to load without auth
-      set({ 
-        session: null, 
-        user: null, 
-        profile: null,
-        error: null // Don't show error to user, just log it
-      });
-    } finally {
-      // 3. Mark as initialized AFTER the initial check is complete
-      console.log('[AUTH] ✅ Marking as initialized');
-      set({ isInitialized: true });
-    }
-
-    // 4. Set up the real-time listener for subsequent auth changes
-    const { data } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        set({ session, user: session?.user ?? null, isLoading: false });
-
-        if (event === 'SIGNED_OUT') {
-          set({ profile: null });
-          return;
-        }
-
-        if (session?.user) {
-          try {
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (error) throw error;
-            set({ profile });
-          } catch (error) {
-            console.error('Error fetching profile on auth change:', error);
-            // Don't set a global error here, as it might be a transient issue
-          }
-        }
-      }
-    );
-    
-    authListener = data;
+    });
   },
 
-  signIn: async (credentials) => {
-    set({ isLoading: true, error: null });
+  signIn: async (email, password) => {
     try {
-      const { email, password } = SignInSchema.parse(credentials);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      // onAuthStateChange will handle the rest
-    } catch (e: any) {
-      const errorMessage = e.message.includes('Invalid login credentials') 
-        ? 'Credenciales inválidas.'
-        : 'Error al iniciar sesión.';
-      set({ error: errorMessage });
-      console.error(e);
-      throw e;
-    } finally {
-      set({ isLoading: false });
+      console.log('Attempting sign in with auth object:', auth);
+      console.log('Type of signInWithEmailAndPassword:', typeof signInWithEmailAndPassword);
+      console.log('Value of signInWithEmailAndPassword:', signInWithEmailAndPassword);
+      await signInWithEmailAndPassword(auth, email, password);
+      set(produce((state) => { state.error = null; })); // Clear error on successful sign in
+      // The onAuthStateChanged listener will update the user state
+    } catch (err: any) {
+      set(produce((state) => { state.error = err.message || 'Failed to sign in.'; }));
+      throw err; // Re-throw to allow component to handle
     }
   },
 
-  signUp: async (credentials) => {
-    set({ isLoading: true, error: null });
+  signUp: async (email, password) => {
     try {
-      const { email, password, fullName } = SignUpSchema.parse(credentials);
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName } },
-      });
-      if (error) throw error;
-      // onAuthStateChange will handle the rest
-      // You might want to show a "Check your email" message
-    } catch (e: any) {
-      const errorMessage = e.message.includes('already registered')
-        ? 'El usuario ya está registrado.'
-        : 'Error al registrarse.';
-      set({ error: errorMessage });
-      console.error(e);
-      throw e;
-    } finally {
-      set({ isLoading: false });
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      if (firebaseUser) {
+        const newUserProfile: CurrentUser = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          fullName: null,
+          avatarUrl: null,
+          preferences: {},
+        };
+        await db.collection('profiles').doc(firebaseUser.uid).set(newUserProfile);
+        set(produce((state) => { state.error = null; })); // Clear error on successful sign up
+        // The onAuthStateChanged listener will update the user state
+      } else {
+        throw new Error('User not created during sign up.');
+      }
+    } catch (err: any) {
+      set(produce((state) => { state.error = err.message || 'Failed to sign up.'; }));
+      throw err; // Re-throw to allow component to handle
     }
   },
 
   signOut: async () => {
-    set({ isLoading: true });
-    
-    // Clear garden cache before signing out
-    gardenCacheService.clearAll();
-    
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
-      set({ error: 'Error al cerrar sesión.', isLoading: false });
+    try {
+      await signOut(auth);
+      set(produce((state) => { state.error = null; })); // Clear error on successful sign out
+      // The onAuthStateChanged listener will update the user state
+    } catch (err: any) {
+      set(produce((state) => { state.error = err.message || 'Failed to sign out.'; }));
+      throw err; // Re-throw to allow component to handle
     }
-    // onAuthStateChange will clear user, session, and profile
-    // We manually clear state here for a faster UI response
-    set({ session: null, user: null, profile: null, isLoading: false });
   },
 
-  clearError: () => set({ error: null }),
-})); 
+  clearError: () => {
+    set(produce((state) => { state.error = null; }));
+  },
+}));
+
+export default useAuthStore; 

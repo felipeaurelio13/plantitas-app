@@ -7,6 +7,7 @@ import { PlantSummary } from '../schemas';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import LazyImage from './LazyImage';
 import { navigation } from '../lib/navigation';
+import { plantService } from '@/services/plantService'; // Import plantService
 
 interface PlantCardProps {
   plant: PlantSummary;
@@ -80,55 +81,12 @@ const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
     queryClient.prefetchQuery({
       queryKey: ['plant', plant.id],
       queryFn: async () => {
-        // Importar supabase y transformar datos como en fetchPlantById
-        
-        // Importar supabase directamente
-        const { supabase } = await import('../lib/supabase');
-        const { data, error } = await supabase
-          .from('plants')
-          .select(`
-            *,
-            plant_images(*)
-          `)
-          .eq('id', plant.id)
-          .single();
-
-        if (error) {
-          if (error.code === 'PGRST116') {
-            throw new Error('Planta no encontrada.');
-          }
-          throw new Error('Error al cargar la información de la planta.');
+        // Use plantService to fetch plant data from Firebase
+        const fetchedPlant = await plantService.getPlantById(plant.id);
+        if (!fetchedPlant) {
+          throw new Error('Error al pre-cargar la información de la planta.');
         }
-
-        // Transformar datos como en fetchPlantById
-        const plantData = data as any;
-        return {
-          id: plantData.id,
-          name: plantData.name,
-          species: plantData.species,
-          description: plantData.description ?? undefined,
-          funFacts: (plantData.fun_facts as string[] | undefined) ?? undefined,
-          variety: plantData.variety ?? undefined,
-          nickname: plantData.nickname ?? undefined,
-          location: plantData.location,
-          plantEnvironment: plantData.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
-          lightRequirements: plantData.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
-          dateAdded: new Date(plantData.date_added!),
-          lastWatered: plantData.last_watered ? new Date(plantData.last_watered) : undefined,
-          lastFertilized: plantData.last_fertilized ? new Date(plantData.last_fertilized) : undefined,
-          healthScore: plantData.health_score ?? 0,
-          careProfile: plantData.care_profile,
-          personality: plantData.personality,
-          images: plantData.plant_images.map((img: any) => ({
-            id: img.id,
-            url: img.url ?? '', 
-            timestamp: new Date(img.created_at!),
-            isProfileImage: img.is_profile_image ?? false,
-            healthAnalysis: img.health_analysis,
-          })),
-          chatHistory: [],
-          notifications: [],
-        };
+        return fetchedPlant;
       },
       staleTime: 1000 * 60 * 5, // 5 minutos de cache para prefetch
     });

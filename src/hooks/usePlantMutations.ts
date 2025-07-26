@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '../stores/useAuthStore';
+import useAuthStore from '../stores/useAuthStore';
 import { usePlantStore } from '../stores/usePlantStore';
 import { Plant } from '../schemas';
 import { healthDiagnosisService } from '../services/healthDiagnosisService';

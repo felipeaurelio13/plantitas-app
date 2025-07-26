@@ -1,189 +1,120 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '../stores/useAuthStore';
-import { usePlantStore } from '../stores/usePlantStore';
+import useAuthStore from '../stores/useAuthStore';
 import { plantService } from '../services/plantService';
-import { uploadImage } from '../services/imageService';
-import { analyzeImage } from '../services/aiService';
-import { useToast } from '../components/ui/Toast';
+import { toast } from 'sonner';
+import aiService from '../services/aiService'; // Use default import for aiService
+import { Plant } from '../schemas';
 
 export const usePlantImageMutations = () => {
   const queryClient = useQueryClient();
-  const user = useAuthStore((state) => state.user);
-  const userId = user?.id;
-  const { addToast } = useToast();
+  const { user } = useAuthStore();
 
   const addPlantImageMutation = useMutation({
-    mutationFn: async ({ 
-      plantId, 
-      imageDataUrl, 
-      note 
-    }: { 
-      plantId: string; 
-      imageDataUrl: string; 
-      note?: string;
+    mutationFn: async ({ plantId, imageBase64, isProfileImage }: {
+      plantId: string;
+      imageBase64: string;
+      isProfileImage?: boolean;
     }) => {
-      if (!userId) throw new Error('User not authenticated');
-
-      console.log('🖼️ [Image] Iniciando proceso de subida de imagen...');
-      
-      // Paso 1: Analizar la imagen con IA para obtener diagnóstico de salud
-      console.log('🔬 [Image] Analizando imagen con IA...');
-      const analysis = await analyzeImage(imageDataUrl);
-      
-      // Paso 2: Subir imagen a Supabase Storage
-      console.log('☁️ [Image] Subiendo imagen a Storage...');
-      const imageUrl = await uploadImage(
-        imageDataUrl,
-        'plant-images',
-        `${userId}/${plantId}`
-      );
-      
-      // Paso 3: Guardar registro de imagen en base de datos
-      console.log('💾 [Image] Guardando registro en base de datos...');
-      const savedImage = await plantService.addPlantImage(
-        plantId,
-        {
-          url: imageUrl,
-          timestamp: new Date(),
-          isProfileImage: false, // Las nuevas imágenes no son de perfil por defecto
-          healthAnalysis: analysis.health,
-        },
-        userId
-      );
-      
-      // Paso 4: Actualizar el health score de la planta si es necesario
-      if (analysis.health?.confidence) {
-        console.log('🏥 [Image] Actualizando health score de la planta...');
-        await plantService.updatePlantHealthScore(
-          plantId,
-          userId,
-          analysis.health.confidence,
-          analysis.health,
-          savedImage.id
-        );
+      if (!user?.id) {
+        throw new Error('User not authenticated.');
       }
-      
-      console.log('✅ [Image] Proceso completado exitosamente');
-      
-      return {
-        image: savedImage,
-        analysis,
-        note
-      };
+      // Image size validation should be handled within plantService.addPlantImage if needed
+      return await plantService.addPlantImage(plantId, user.id, imageBase64, isProfileImage);
     },
-    onSuccess: (result, variables) => {
-      // Invalidar queries para refrescar datos
+    onSuccess: (newImage) => {
+      toast.success('Imagen de planta agregada con éxito!');
+      queryClient.invalidateQueries({ queryKey: ['plant', newImage.plantId] });
       queryClient.invalidateQueries({ queryKey: ['plants'] });
-      queryClient.invalidateQueries({ queryKey: ['plant', variables.plantId] });
-      
-      // Actualizar el store local
-      const { setPlant } = usePlantStore.getState();
-      const currentPlant = usePlantStore.getState().getPlantById(variables.plantId);
-      
-      if (currentPlant) {
-        const updatedPlant = {
-          ...currentPlant,
-          images: [...currentPlant.images, result.image],
-          healthScore: result.analysis.health?.confidence || currentPlant.healthScore
-        };
-        setPlant(updatedPlant);
+    },
+    onError: (error) => {
+      toast.error('Error al agregar imagen', {
+        description: error.message,
+      });
+      console.error('Error adding plant image:', error);
+    },
+  });
+
+  const analyzePlantImageMutation = useMutation({
+    mutationFn: async ({ plant, imageId, imageBase64 }: {
+      plant: Plant;
+      imageId: string;
+      imageBase64: string;
+    }) => {
+      if (!user?.id) {
+        throw new Error('User not authenticated.');
+      }
+      if (!plant?.id) {
+        throw new Error('Plant ID is required for analysis.');
       }
 
-      addToast({
-        type: 'success',
-        title: 'Nueva imagen añadida',
-        message: `Análisis completado. Salud actual: ${result.analysis.health?.confidence?.toFixed(0) || 'N/A'}%`
-      });
+      // Pass imageBase64 to aiService.analyzeImage
+      const analysisResult = await aiService.analyzeImage(imageBase64); // Use aiService.analyzeImage
+
+      // Update plant health score and image health analysis in Firestore
+      await plantService.updatePlantHealthScore(plant.id, imageId, analysisResult.overallHealthScore, analysisResult.healthAnalysis);
+      return analysisResult;
     },
-    onError: (error: Error) => {
-      console.error('💥 [Image] Error en proceso de subida:', error);
-      
-      addToast({
-        type: 'error',
-        title: 'Error al agregar imagen',
-        message: error.message
+    onSuccess: (analysisResult, variables) => {
+      toast.success('Análisis de salud completado!');
+      queryClient.invalidateQueries({ queryKey: ['plant', variables.plant.id] });
+      queryClient.invalidateQueries({ queryKey: ['plants'] }); // Invalidate list for potential health score changes
+    },
+    onError: (error) => {
+      toast.error('Error al analizar imagen', {
+        description: error.message,
       });
+      console.error('Error analyzing plant image:', error);
     },
   });
 
   const setProfileImageMutation = useMutation({
-    mutationFn: async ({ 
-      plantId, 
-      imageId 
-    }: { 
-      plantId: string; 
-      imageId: string; 
-    }) => {
-      if (!userId) throw new Error('User not authenticated');
-      
-      console.log('🖼️ [Profile] Cambiando imagen de perfil...');
-      
-      await plantService.setProfileImage(plantId, imageId, userId);
-      
-      return { plantId, imageId };
+    mutationFn: async ({ plantId, imageId }: { plantId: string; imageId: string }) => {
+      if (!user?.id) {
+        throw new Error('User not authenticated.');
+      }
+      await plantService.setProfileImage(plantId, imageId);
     },
-    onSuccess: (result) => {
+    onSuccess: (data, variables) => {
+      toast.success('Imagen de perfil actualizada!');
+      queryClient.invalidateQueries({ queryKey: ['plant', variables.plantId] });
       queryClient.invalidateQueries({ queryKey: ['plants'] });
-      queryClient.invalidateQueries({ queryKey: ['plant', result.plantId] });
-      
-      addToast({
-        type: 'success',
-        title: 'Imagen de perfil actualizada',
-        message: 'La imagen principal de la planta ha sido cambiada'
-      });
     },
-    onError: (error: Error) => {
-      addToast({
-        type: 'error',
-        title: 'Error al cambiar imagen de perfil',
-        message: error.message
+    onError: (error) => {
+      toast.error('Error al establecer imagen de perfil', {
+        description: error.message,
       });
+      console.error('Error setting profile image:', error);
     },
   });
 
   const deleteImageMutation = useMutation({
-    mutationFn: async ({ 
-      plantId, 
-      imageId 
-    }: { 
-      plantId: string; 
-      imageId: string; 
-    }) => {
-      if (!userId) throw new Error('User not authenticated');
-      
-      console.log('🗑️ [Image] Eliminando imagen...');
-      
-      await plantService.deleteImage(imageId, userId);
-      
-      return { plantId, imageId };
+    mutationFn: async ({ plantId, imageId }: { plantId: string; imageId: string }) => {
+      if (!user?.id) {
+        throw new Error('User not authenticated.');
+      }
+      await plantService.deleteImage(plantId, imageId);
     },
-    onSuccess: (result) => {
+    onSuccess: (data, variables) => {
+      toast.success('Imagen eliminada con éxito!');
+      queryClient.invalidateQueries({ queryKey: ['plant', variables.plantId] });
       queryClient.invalidateQueries({ queryKey: ['plants'] });
-      queryClient.invalidateQueries({ queryKey: ['plant', result.plantId] });
-      
-      addToast({
-        type: 'success',
-        title: 'Imagen eliminada',
-        message: 'La imagen ha sido eliminada de tu planta'
-      });
     },
-    onError: (error: Error) => {
-      addToast({
-        type: 'error',
-        title: 'Error al eliminar imagen',
-        message: error.message
+    onError: (error) => {
+      toast.error('Error al eliminar imagen', {
+        description: error.message,
       });
+      console.error('Error deleting image:', error);
     },
   });
 
   return {
-    addPlantImage: addPlantImageMutation.mutate,
-    isAddingImage: addPlantImageMutation.isPending,
-    
-    setProfileImage: setProfileImageMutation.mutate,
+    addPlantImageMutation,
+    isAddingPlantImage: addPlantImageMutation.isPending,
+    analyzePlantImageMutation,
+    isAnalyzingPlantImage: analyzePlantImageMutation.isPending,
+    setProfileImageMutation,
     isSettingProfileImage: setProfileImageMutation.isPending,
-    
-    deleteImage: deleteImageMutation.mutate,
+    deleteImageMutation,
     isDeletingImage: deleteImageMutation.isPending,
   };
 }; 

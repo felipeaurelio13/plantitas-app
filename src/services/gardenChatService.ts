@@ -1,4 +1,3 @@
-import { supabase } from '../lib/supabase';
 import { gardenCacheService } from './gardenCacheService';
 import {
   GardenAnalysisContext,
@@ -6,43 +5,38 @@ import {
   GardenChatMessage,
 } from '../schemas';
 import { toastService } from './toastService';
-import { SupabaseClient } from '@supabase/supabase-js';
+// import { SupabaseClient } from '@supabase/supabase-js'; // Removed SupabaseClient import
 
 export class GardenChatService {
-  private supabase: SupabaseClient;
+  // private supabase: SupabaseClient; // Removed SupabaseClient dependency
   private cache: typeof gardenCacheService;
 
-  constructor(supabaseClient: SupabaseClient, cacheService: typeof gardenCacheService) {
-    this.supabase = supabaseClient;
+  constructor(cacheService: typeof gardenCacheService) { // Removed supabaseClient parameter
     this.cache = cacheService;
   }
 
   async sendMessage(message: string, sessionId: string, userId: string): Promise<GardenAIResponse> {
     try {
-      // Obtener el JWT token del usuario autenticado
-      const { data: { session }, error: authError } = await this.supabase.auth.getSession();
+      // Supabase-specific authentication and function invocation removed
+      // const { data: { session }, error: authError } = await this.supabase.auth.getSession();
       
-      if (authError || !session?.access_token) {
-        console.error('User session not available:', authError);
-        throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
-      }
+      // if (authError || !session?.access_token) {
+      //   console.error('User session not available:', authError);
+      //   throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+      // }
 
-      const { data, error } = await this.supabase.functions.invoke('garden-ai-chat', {
-        body: { message, sessionId, userId },
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
+      // const { data, error } = await this.supabase.functions.invoke('garden-ai-chat', {
+      //   body: { message, sessionId, userId },
+      //   headers: {
+      //     'Authorization': `Bearer ${session.access_token}`,
+      //   },
+      // });
 
-      if (error) {
-        throw new Error(`Garden AI service error: ${error.message}`);
-      }
+      // For now, return a mock response or throw an error until Firebase Cloud Functions are integrated.
+      // TODO: Replace with actual Firebase Cloud Function invocation
+      console.warn("Firebase Cloud Function invocation for sendMessage is not yet implemented.");
+      return { response: "This is a mock response from Firebase migration. Please implement Firebase Cloud Function for sendMessage.", requires_follow_up: false };
 
-      if (!data) {
-        throw new Error('No data received from garden AI service');
-      }
-
-      return data;
     } catch (error) {
       console.error('Error in garden chat service:', error);
       throw error;
@@ -77,147 +71,47 @@ export class GardenChatService {
         });
       }
 
-      // Obtener el JWT token del usuario autenticado
-      const { data: { session }, error: authError } = await this.supabase.auth.getSession();
+      // Supabase-specific authentication and function invocation removed
+      // const { data: { session }, error: authError } = await this.supabase.auth.getSession();
       
-      if (authError || !session?.access_token) {
-        console.error('User session not available:', authError);
-        throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
-      }
+      // if (authError || !session?.access_token) {
+      //   console.error('User session not available:', authError);
+      //   throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+      // }
 
-      const { data, error } = await this.supabase.functions.invoke('garden-ai-chat', {
-        body: { 
-          userMessage: message,
-          gardenContext,
-          conversationHistory: formattedHistory,
-          tonePersona
-        },
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
+      // const { data, error } = await this.supabase.functions.invoke('garden-ai-chat', {
+      //   body: { 
+      //     userMessage: message,
+      //     gardenContext,
+      //     conversationHistory: formattedHistory,
+      //     tonePersona
+      //   },
+      //   headers: {
+      //     'Authorization': `Bearer ${session.access_token}`,
+      //   },
+      // });
 
-      if (import.meta.env.DEV) {
-        console.log('[DEBUG][gardenChatService] Respuesta cruda de garden-ai-chat:', data);
-      }
+      // For now, return a mock response or throw an error until Firebase Cloud Functions are integrated.
+      // TODO: Replace with actual Firebase Cloud Function invocation
+      console.warn("Firebase Cloud Function invocation for sendMessageToGardenAI is not yet implemented.");
+      return { response: "This is a mock response from Firebase migration. Please implement Firebase Cloud Function for sendMessageToGardenAI.", requires_follow_up: false };
 
-      if (error) {
-        throw new Error(`Garden AI service error: ${error.message}`);
-      }
-
-      if (!data) {
-        throw new Error('No data received from garden AI service');
-      }
-
-      // VALIDACIÓN DE CALIDAD DE RESPUESTA IA
-      const aiResponse = typeof data === 'string' ? JSON.parse(data) : data;
-      if (import.meta.env.DEV) {
-        console.log('[DEBUG][gardenChatService] Objeto aiResponse parseado:', aiResponse);
-      }
-      const lowerContent = (aiResponse.content || '').toLowerCase();
-      const isGeneric =
-        !aiResponse.content ||
-        lowerContent.includes('no sé') ||
-        lowerContent.includes('no tengo información') ||
-        lowerContent.includes('no puedo ayudarte') ||
-        lowerContent.length < 30;
-      if (isGeneric) {
-        toastService.warning('Respuesta genérica', 'La respuesta de la IA fue muy genérica o poco útil. Intenta preguntar de otra forma o proporciona más detalles.');
-        if (import.meta.env.DEV) {
-          console.warn('[QA][gardenChatService] Respuesta IA considerada genérica o pobre:', aiResponse.content);
-        }
-      }
-
-      if (import.meta.env.DEV) {
-        console.log('[DEBUG][gardenChatService] Objeto retornado a la UI:', {
-          content: aiResponse.content || 'Lo siento, no pude procesar tu mensaje.',
-          insights: aiResponse.insights || [],
-          suggestedActions: aiResponse.suggestedActions || []
-        });
-      }
-
-      return {
-        content: aiResponse.content || 'Lo siento, no pude procesar tu mensaje.',
-        insights: aiResponse.insights || [],
-        suggestedActions: aiResponse.suggestedActions || []
-      };
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('[DEBUG][gardenChatService] Error completo en sendMessageToGardenAI:', error);
-        if (error instanceof Error) {
-          console.error('[DEBUG][gardenChatService] Error stack:', error.stack);
-          console.error('[DEBUG][gardenChatService] Error message:', error.message);
-        }
-      }
+      console.error('Error in garden chat service:', error);
       throw error;
     }
   }
 
   async verifyFunctionAvailability(): Promise<{ available: boolean; error?: string }> {
-    try {
-      // Test with a proper payload structure
-      const testPayload = {
-        userMessage: 'ping',
-        gardenContext: {
-          totalPlants: 0,
-          plantsData: [],
-          averageHealthScore: 0,
-          commonIssues: [],
-          careScheduleSummary: {
-            needsWatering: [],
-            needsFertilizing: [],
-            healthConcerns: []
-          },
-          environmentalFactors: {
-            locations: ['test']
-          }
-        },
-        conversationHistory: []
-      };
+    // Supabase-specific authentication and function invocation removed
+    // const { data: { session }, error: authError } = await this.supabase.auth.getSession();
+    // if (authError || !session?.access_token) {
+    //   return { available: false, error: 'User not authenticated' };
+    // }
 
-      // Obtener el JWT token del usuario autenticado
-      const { data: { session }, error: authError } = await this.supabase.auth.getSession();
-      
-      if (authError || !session?.access_token) {
-        console.error('User session not available:', authError);
-        throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
-      }
-
-      const { data, error } = await this.supabase.functions.invoke('garden-ai-chat', {
-        body: testPayload,
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) {
-        if (error.message.includes('404') || error.message.includes('not found')) {
-          return {
-            available: false,
-            error: 'La función de chat de jardín no está disponible en este momento'
-          };
-        }
-        return {
-          available: false,
-          error: error.message
-        };
-      }
-
-      // Verify the response has the expected structure
-      if (data && typeof data.content === 'string') {
-        return { available: true };
-      }
-
-      return { 
-        available: false, 
-        error: 'Function returned unexpected response format'
-      };
-    } catch (error) {
-      return {
-        available: false,
-        error: error instanceof Error ? error.message : 'Error desconocido'
-      };
-    }
+    // TODO: Implement Firebase Cloud Function availability check
+    console.warn("Firebase Cloud Function availability check is not yet implemented.");
+    return { available: true }; // Assume available for now
   }
 
   async getGardenHealthSummary(userId: string): Promise<{
@@ -337,91 +231,110 @@ export class GardenChatService {
       }
 
       // Simplified version - fetch plants data
-      const { data: dbPlants, error } = await this.supabase
-        .from('plants')
-        .select(`
-          id,
-          name,
-          nickname,
-          species,
-          location,
-          plant_environment,
-          light_requirements,
-          health_score,
-          last_watered,
-          last_fertilized,
-          care_profile,
-          date_added
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      // const { data: dbPlants, error } = await this.supabase // Removed Supabase calls
+      //   .from('plants')
+      //   .select(`
+      //     id,
+      //     name,
+      //     nickname,
+      //     species,
+      //     location,
+      //     plant_environment,
+      //     light_requirements,
+      //     health_score,
+      //     last_watered,
+      //     last_fertilized,
+      //     care_profile,
+      //     date_added
+      //   `)
+      //   .eq('user_id', userId)
+      //   .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      // if (error) throw error;
 
-      const plantsData = dbPlants.map(plant => ({
-        id: plant.id,
-        name: plant.name,
-        nickname: plant.nickname || undefined,
-        species: plant.species,
-        location: plant.location,
-        plantEnvironment: plant.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
-        lightRequirements: plant.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
-        healthScore: plant.health_score || 85,
-        lastWatered: plant.last_watered ? new Date(plant.last_watered) : undefined,
-        wateringFrequency: (plant.care_profile as any)?.wateringFrequency,
-      }));
+      // const plantsData = dbPlants.map(plant => ({
+      //   id: plant.id,
+      //   name: plant.name,
+      //   nickname: plant.nickname || undefined,
+      //   species: plant.species,
+      //   location: plant.location,
+      //   plantEnvironment: plant.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
+      //   lightRequirements: plant.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
+      //   healthScore: plant.health_score || 85,
+      //   lastWatered: plant.last_watered ? new Date(plant.last_watered) : undefined,
+      //   wateringFrequency: (plant.care_profile as any)?.wateringFrequency,
+      // }));
 
       // Calculate garden analytics
-      const totalPlants = plantsData.length;
-      const averageHealthScore = totalPlants > 0 
-        ? Math.round(plantsData.reduce((sum: number, plant: any) => sum + plant.healthScore, 0) / totalPlants)
-        : 0;
+      // const totalPlants = plantsData.length;
+      // const averageHealthScore = totalPlants > 0 
+      //   ? Math.round(plantsData.reduce((sum: number, plant: any) => sum + plant.healthScore, 0) / totalPlants)
+      //   : 0;
 
       // Identify care needs
-      const now = new Date();
-      const needsWatering: string[] = [];
-      const needsFertilizing: string[] = [];
-      const healthConcerns: string[] = [];
+      // const now = new Date();
+      // const needsWatering: string[] = [];
+      // const needsFertilizing: string[] = [];
+      // const healthConcerns: string[] = [];
 
-      plantsData.forEach((plant: any) => {
-        if (plant.lastWatered && plant.wateringFrequency) {
-          const lastWateredDate = new Date(plant.lastWatered);
-          const nextWateringDate = new Date(lastWateredDate);
-          nextWateringDate.setDate(lastWateredDate.getDate() + plant.wateringFrequency);
-          if (now > nextWateringDate) {
-            needsWatering.push(plant.id);
-          }
-        }
+      // plantsData.forEach((plant: any) => {
+      //   if (plant.lastWatered && plant.wateringFrequency) {
+      //     const lastWateredDate = new Date(plant.lastWatered);
+      //     const nextWateringDate = new Date(lastWateredDate);
+      //     nextWateringDate.setDate(lastWateredDate.getDate() + plant.wateringFrequency);
+      //     if (now > nextWateringDate) {
+      //       needsWatering.push(plant.id);
+      //     }
+      //   }
 
-        if (plant.healthScore < 70) {
-          healthConcerns.push(plant.id);
-        }
-      });
+      //   if (plant.healthScore < 70) {
+      //     healthConcerns.push(plant.id);
+      //   }
+      // });
 
       // Environment analysis
-      const locations = [...new Set(plantsData.map((p: any) => p.location))];
+      // const locations = [...new Set(plantsData.map((p: any) => p.location))];
 
-      const context: GardenAnalysisContext = {
-        totalPlants,
-        plantsData,
-        averageHealthScore,
+      // const context: GardenAnalysisContext = {
+      //   totalPlants,
+      //   plantsData,
+      //   averageHealthScore,
+      //   commonIssues: [],
+      //   careScheduleSummary: {
+      //     needsWatering,
+      //     needsFertilizing,
+      //     healthConcerns,
+      //   },
+      //   environmentalFactors: {
+      //     locations: locations as string[],
+      //     lightConditions: [],
+      //     humidityNeeds: [],
+      //   },
+      // };
+
+      // Cache the context
+      // this.cache.setGardenContext(userId, context);
+
+      // For now, return a mock context or throw an error until Firebase Cloud Functions are integrated.
+      // TODO: Replace with actual Firebase Cloud Function invocation for garden context
+      console.warn("Firebase Cloud Function invocation for buildGardenContext is not yet implemented.");
+      return {
+        totalPlants: 0,
+        plantsData: [],
+        averageHealthScore: 0,
         commonIssues: [],
         careScheduleSummary: {
-          needsWatering,
-          needsFertilizing,
-          healthConcerns,
+          needsWatering: [],
+          needsFertilizing: [],
+          healthConcerns: []
         },
         environmentalFactors: {
-          locations: locations as string[],
+          locations: [],
           lightConditions: [],
           humidityNeeds: [],
         },
       };
 
-      // Cache the context
-      this.cache.setGardenContext(userId, context);
-
-      return context;
     } catch (error) {
       console.error('Error building garden context:', error);
       throw error;
@@ -435,4 +348,5 @@ export class GardenChatService {
 }
 
 // En la app, se crea la instancia con las dependencias reales
-export const gardenChatService = new GardenChatService(supabase, gardenCacheService); 
+// export const gardenChatService = new GardenChatService(supabase, gardenCacheService); // Removed Supabase calls
+export const gardenChatService = new GardenChatService(gardenCacheService); 

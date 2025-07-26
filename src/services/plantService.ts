@@ -1,706 +1,394 @@
-import { supabase as supabaseDefault } from '../lib/supabase';
-import { Database } from '../lib/database.types';
-import {
-  Plant,
-  PlantImage,
-  ChatMessage,
-  PlantNotification,
-  CareProfile,
-  PlantPersonality,
-  PlantSummary,
-} from '../schemas';
-import { uploadImage } from './imageService';
-import {
-  analyzeImage,
-  generatePlantResponse
-  } from './aiService';
+import { getUnixTime } from 'date-fns';
+import { db, storage, serverTimestamp, FieldValue } from '../lib/firebase'; // Import db, storage, and serverTimestamp from modular SDK
 
+interface Plant {
+  id: string;
+  userId: string;
+  name: string;
+  species: string;
+  variety?: string;
+  nickname?: string;
+  location: string;
+  healthScore: number;
+  careProfile: Record<string, any>;
+  personality: Record<string, any>;
+  dateAdded: Date;
+  lastWatered?: Date;
+  lastFertilized?: Date;
+  createdAt: Date;
+  updatedAt?: Date;
+  description?: string;
+  funFacts?: string[];
+  plantEnvironment?: string;
+  lightRequirements?: string;
+  profileImageId?: string;
+}
 
-type DBPlant = Database['public']['Tables']['plants']['Row'];
-// Type aliases for future use
-// type DBChatMessage = Tables<'chat_messages'>;
-// type DBPlantImage = Tables<'plant_images'>;
-// type DBPlantNotification = Tables<'plant_notifications'>;
+interface PlantImage {
+  id: string;
+  plantId: string;
+  userId: string;
+  storagePath: string;
+  healthAnalysis: Record<string, any>;
+  isProfileImage: boolean;
+  createdAt: Date;
+  url: string;
+}
 
-// Convert database plant to app plant format
-const transformDBPlantToPlant = (
-  p: DBPlant,
-  images: PlantImage[],
-  chatHistory: ChatMessage[],
-  notifications: PlantNotification[]
-): Plant => {
-  return {
-    id: p.id,
-    name: p.name,
-    species: p.species,
-    variety: p.variety || undefined,
-    nickname: p.nickname || undefined,
-    description: p.description || undefined,
-    funFacts: (p.fun_facts as string[]) || [],
-    location: p.location,
-    // Nuevos campos para ambiente y luz
-    plantEnvironment: p.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
-    lightRequirements: p.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
-    dateAdded: new Date(p.date_added!),
-    lastWatered: p.last_watered ? new Date(p.last_watered) : undefined,
-    lastFertilized: p.last_fertilized ? new Date(p.last_fertilized) : undefined,
-    images,
-    healthScore: p.health_score || 85,
-    careProfile: p.care_profile as unknown as CareProfile,
-    personality: p.personality as unknown as PlantPersonality,
-    chatHistory,
-    notifications,
-  };
-};
+interface ChatMessage {
+  id: string;
+  plantId: string;
+  userId: string;
+  sender: 'user' | 'plant';
+  content: string;
+  emotion?: string;
+  createdAt: Date;
+  context?: Record<string, any>;
+}
+
+interface DBPlant {
+  // Using any for flexibility with Firestore documents
+  [key: string]: any;
+}
 
 export class PlantService {
-  private supabase: typeof supabaseDefault;
-  constructor(supabaseInstance: typeof supabaseDefault = supabaseDefault) {
-    this.supabase = supabaseInstance;
+  constructor() {
+    // Firebase instances are now imported directly
   }
 
-  async getUserPlantSummaries(userId: string): Promise<PlantSummary[]> {
-    try {
-      // Revert to the original two-query approach since the JOIN syntax was causing issues
-      // This is more reliable and still reasonably fast for normal plant counts
-      const { data: dbPlants, error: plantsError } = await this.supabase
-        .from('plants')
-        .select(`
-          id,
-          name,
-          nickname,
-          species,
-          location,
-          plant_environment,
-          light_requirements,
-          health_score,
-          last_watered,
-          care_profile
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+  private transformDBPlantToPlant(dbPlant: DBPlant): Plant {
+    return {
+      id: dbPlant.id,
+      userId: dbPlant.userId,
+      name: dbPlant.name,
+      species: dbPlant.species,
+      variety: dbPlant.variety || undefined,
+      nickname: dbPlant.nickname || undefined,
+      location: dbPlant.location,
+      healthScore: dbPlant.healthScore,
+      careProfile: dbPlant.careProfile || {},
+      personality: dbPlant.personality || {},
+      dateAdded: dbPlant.dateAdded?.toDate ? dbPlant.dateAdded.toDate() : new Date(dbPlant.dateAdded),
+      lastWatered: dbPlant.lastWatered?.toDate ? dbPlant.lastWatered.toDate() : undefined,
+      lastFertilized: dbPlant.lastFertilized?.toDate ? dbPlant.lastFertilized.toDate() : undefined,
+      createdAt: dbPlant.createdAt?.toDate ? dbPlant.createdAt.toDate() : new Date(dbPlant.createdAt),
+      updatedAt: dbPlant.updatedAt?.toDate ? dbPlant.updatedAt.toDate() : undefined,
+      description: dbPlant.description || undefined,
+      funFacts: dbPlant.funFacts || [],
+      plantEnvironment: dbPlant.plantEnvironment || undefined,
+      lightRequirements: dbPlant.lightRequirements || undefined,
+      profileImageId: dbPlant.profileImageId || undefined, // Add this property
+    };
+  }
 
-      if (plantsError) throw plantsError;
-      
-      // Get profile images in a separate optimized query if we have plants
-      let profileImageMap = new Map<string, string>();
-      
-      if (dbPlants.length > 0) {
-        const plantIds = dbPlants.map(plant => plant.id);
-        const { data: profileImages, error: imagesError } = await this.supabase
-          .from('plant_images')
-          .select('plant_id, url')
-          .in('plant_id', plantIds)
-          .eq('is_profile_image', true);
+  async getUserPlantSummaries(userId: string): Promise<Plant[]> {
+    const plantsRef = db.collection('plants');
+    const q = plantsRef.where('userId', '==', userId).orderBy('dateAdded', 'desc');
+    const snapshot = await q.get();
+    const plants: Plant[] = [];
 
-        if (imagesError) {
-          console.warn('[plantService] Error fetching profile images:', imagesError);
-          // Continue without profile images rather than failing
-        } else {
-          profileImageMap = new Map(
-            (profileImages || []).map(img => [img.plant_id, img.url])
-          );
-        }
+    for (const doc of snapshot.docs) {
+      const plantData = this.transformDBPlantToPlant({
+        id: doc.id,
+        ...doc.data()
+      });
+
+      // Fetch the profile image for each plant
+      const profileImageQuery = db.collection('plants').doc(doc.id).collection('plant_images').where('isProfileImage', '==', true).limit(1);
+      const profileImageSnapshot = await profileImageQuery.get();
+      if (!profileImageSnapshot.empty) {
+        plantData.profileImageId = profileImageSnapshot.docs[0].id; // Store image ID
+        // You can also add the URL directly if needed
+        // plantData.profileImageUrl = profileImageSnapshot.docs[0].data().url;
       }
-
-      const summaries: PlantSummary[] = dbPlants.map(plant => ({
-        id: plant.id,
-        name: plant.name,
-        nickname: plant.nickname || undefined,
-        species: plant.species,
-        location: plant.location,
-        // Nuevos campos para ambiente y luz
-        plantEnvironment: plant.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
-        lightRequirements: plant.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
-        healthScore: plant.health_score || 85,
-        profileImageUrl: profileImageMap.get(plant.id),
-        lastWatered: plant.last_watered ? new Date(plant.last_watered) : undefined,
-        wateringFrequency: (plant.care_profile as any)?.wateringFrequency,
-      }));
-
-      return summaries;
-
-    } catch (error) {
-      console.error('Error fetching plant summaries:', error);
-      throw error;
+      plants.push(plantData);
     }
+    return plants;
   }
 
   async getUserPlants(userId: string): Promise<Plant[]> {
-    try {
-      const { data: dbPlants, error } = await this.supabase
-        .from('plants')
-        .select(`
-          *,
-          plant_images ( * ),
-          chat_messages ( * ),
-          plant_notifications ( * )
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+    const plantsRef = db.collection('plants');
+    const q = plantsRef.where('userId', '==', userId).orderBy('dateAdded', 'desc');
+    const snapshot = await q.get();
+    const plants: Plant[] = [];
 
-      if (error) throw error;
-
-      const plantsWithData = dbPlants.map((p) => {
-        const plantImages: PlantImage[] = (p.plant_images || []).map(
-          (img: any) => ({
-            id: img.id,
-            url: img.url,
-            timestamp: new Date(img.created_at!),
-            healthAnalysis: img.health_analysis as any,
-            isProfileImage: img.is_profile_image || false,
-          })
-        );
-
-        const chatHistory: ChatMessage[] = (p.chat_messages || []).map(
-          (msg: any) => ({
-            id: msg.id,
-            sender: msg.sender,
-            content: msg.content,
-            timestamp: new Date(msg.created_at!),
-            emotion: msg.emotion,
-          })
-        );
-
-        const plantNotifications: PlantNotification[] = (p.plant_notifications || []).map((notif: any) => ({
-            id: notif.id,
-            type: notif.type,
-            title: notif.title,
-            message: notif.message,
-            priority: notif.priority || 'medium',
-            scheduledFor: new Date(notif.scheduled_for),
-            completed: notif.completed || false,
-          }));
-
-        return transformDBPlantToPlant(p, plantImages, chatHistory, plantNotifications);
-      });
-      
-      return plantsWithData;
-    } catch (error) {
-      console.error('Error fetching plants:', error);
-      throw error;
-    }
-  }
-
-  async getPlantById(plantId: string, userId: string): Promise<Plant | null> {
-    try {
-      const { data: plant, error } = await this.supabase
-        .from('plants')
-        .select(`
-          *,
-          plant_images ( * ),
-          chat_messages ( * ),
-          plant_notifications ( * )
-        `)
-        .eq('id', plantId)
-        .eq('user_id', userId)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') return null; // Not found
-        throw error;
-      }
-      
-      if (!plant) return null;
-
-      const plantImages: PlantImage[] = (plant.plant_images || []).map(
-        (img: any) => ({
-          id: img.id,
-          url: img.url,
-          timestamp: new Date(img.created_at!),
-          healthAnalysis: img.health_analysis as any,
-          isProfileImage: img.is_profile_image || false,
-        })
-      );
-      
-      const chatHistory: ChatMessage[] = (plant.chat_messages || []).map((msg: any) => ({
-        id: msg.id,
-        sender: msg.sender,
-        content: msg.content,
-        timestamp: new Date(msg.created_at!),
-        emotion: msg.emotion,
-      }));
-
-      const plantNotifications: PlantNotification[] = (plant.plant_notifications || []).map((notif: any) => ({
-        id: notif.id,
-        type: notif.type,
-        title: notif.title,
-        message: notif.message,
-        priority: notif.priority || 'medium',
-        scheduledFor: new Date(notif.scheduled_for),
-        completed: notif.completed || false,
-      }));
-
-      return transformDBPlantToPlant(plant, plantImages, chatHistory, plantNotifications);
-    } catch (error) {
-      console.error('Error fetching plant by ID:', error);
-      throw error;
-    }
-  }
-
-  async addPlantFromAnalysis(
-    userId: string,
-    imageDataUrl: string,
-    location: string
-  ): Promise<Plant> {
-    try {
-      console.log('[PlantService] Iniciando análisis IA...');
-      const analysis = await analyzeImage(imageDataUrl);
-      console.log('[PlantService] Resultado IA:', analysis);
-
-      const plantToCreate: Omit<Plant, 'id' | 'images' | 'chatHistory' | 'notifications'> = {
-        name: analysis.commonName,
-        species: analysis.species,
-        description: analysis.generalDescription,
-        funFacts: analysis.funFacts,
-        variety: analysis.variety ?? undefined,
-        nickname: analysis.commonName,
-        location,
-        plantEnvironment: analysis.plantEnvironment,
-        lightRequirements: analysis.lightRequirements,
-        dateAdded: new Date(),
-        healthScore: analysis.health.confidence,
-        careProfile: analysis.careProfile,
-        personality: analysis.personality,
-      };
-      console.log('[PlantService] Payload a createPlant:', plantToCreate);
-
-      const newPlant = await this.createPlant(plantToCreate, userId);
-      console.log('[PlantService] Planta creada:', newPlant);
-
-      (async () => {
-        let imageUploadSuccess = false;
-        let chatInitSuccess = false;
-        try {
-          console.log(`[PlantService] Starting image upload for plant ${newPlant.id}`);
-          const imageUrl = await uploadImage(
-            imageDataUrl, 
-            'plant-images',
-            `${userId}/${newPlant.id}`
-          );
-          console.log(`[PlantService] Imagen subida:`, imageUrl);
-          await this.addPlantImage(newPlant.id, {
-            url: imageUrl,
-            timestamp: new Date(),
-            isProfileImage: true,
-            healthAnalysis: analysis.health,
-          }, userId);
-          imageUploadSuccess = true;
-          console.log(`[PlantService] Image upload completed for plant ${newPlant.id}`);
-        } catch (imageError) {
-          console.error(`[PlantService] Image upload failed for plant ${newPlant.id}:`, imageError);
-          alert('Error subiendo imagen: ' + (imageError instanceof Error ? imageError.message : JSON.stringify(imageError)));
-        }
-        try {
-          console.log(`[PlantService] Starting chat initialization for plant ${newPlant.id}`);
-          const greetingResponse = await generatePlantResponse(newPlant, "¡Hola! Acabo de llegar. ¿Cómo te llamas?");
-          console.log(`[PlantService] Respuesta IA chat:`, greetingResponse);
-          await this.addChatMessage(newPlant.id, {
-            sender: 'plant',
-            content: greetingResponse.content,
-            timestamp: new Date(),
-            emotion: greetingResponse.emotion,
-          }, userId);
-          chatInitSuccess = true;
-          console.log(`[PlantService] Chat initialization completed for plant ${newPlant.id}`);
-        } catch (chatError) {
-          console.error(`[PlantService] Chat initialization failed for plant ${newPlant.id}:`, chatError);
-          alert('Error inicializando chat: ' + (chatError instanceof Error ? chatError.message : JSON.stringify(chatError)));
-        }
-        if (imageUploadSuccess && chatInitSuccess) {
-          console.log(`[PlantService] All background tasks for plant ${newPlant.id} completed successfully.`);
-        } else if (imageUploadSuccess || chatInitSuccess) {
-          console.log(`[PlantService] Background tasks for plant ${newPlant.id} partially completed.`);
-        }
-      })().catch((backgroundError) => {
-        console.error(`[PlantService] Error during background tasks for plant ${newPlant.id}:`, backgroundError);
-        alert('Error en tareas de fondo: ' + (backgroundError instanceof Error ? backgroundError.message : JSON.stringify(backgroundError)));
-      });
-      return newPlant;
-    } catch (error) {
-      console.error('Error adding plant from analysis:', error);
-      alert('Error creando planta: ' + (error instanceof Error ? error.message : JSON.stringify(error)));
-      throw error;
-    }
-  }
-
-  async createPlant(
-    plantData: Omit<Plant, 'id' | 'images' | 'chatHistory' | 'notifications'>,
-    userId: string
-  ): Promise<Plant> {
-    try {
-      const dbPlant: Omit<DBPlant, 'id' | 'created_at'> = {
-        user_id: userId,
-        name: plantData.name,
-        species: plantData.species,
-        variety: plantData.variety || null,
-        nickname: plantData.nickname || null,
-        description: plantData.description || null,
-        fun_facts: plantData.funFacts || null,
-        location: plantData.location,
-        plant_environment: plantData.plantEnvironment || null,
-        light_requirements: plantData.lightRequirements || null,
-        date_added: plantData.dateAdded.toISOString(),
-        last_watered: null,
-        last_fertilized: null,
-        health_score: plantData.healthScore,
-        care_profile: plantData.careProfile as any,
-        personality: plantData.personality as any,
-        updated_at: null,
-      };
-      console.log('[PlantService] Payload a Supabase:', dbPlant);
-      const { data: newDbPlant, error } = await this.supabase
-        .from('plants')
-        .insert(dbPlant)
-        .select('*')
-        .single();
-      console.log('[PlantService] Respuesta Supabase:', newDbPlant, error);
-      if (error) {
-        console.error('Supabase error:', {
-          message: error.message,
-          details: error.details,
-          code: error.code,
-        });
-        alert('Error Supabase: ' + error.message);
-        throw new Error(`Supabase error creating plant: ${error.message}`);
-      }
-      if (!newDbPlant) {
-        alert('No se pudo crear la planta en la base de datos, no se devolvieron datos.');
-        throw new Error('Failed to create plant in the database, no data returned.');
-      }
-      return transformDBPlantToPlant(newDbPlant, [], [], []);
-    } catch (error) {
-      console.error('Error creating plant:', error);
-      alert('Error creando planta: ' + (error instanceof Error ? error.message : JSON.stringify(error)));
-      throw error;
-    }
-  }
-
-  /**
-   * Actualiza información específica de una planta (como ambiente y luz)
-   */
-  async updatePlantInfo(
-    plantId: string,
-    userId: string,
-    updates: {
-      plantEnvironment?: 'interior' | 'exterior' | 'ambos';
-      lightRequirements?: 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol';
-      description?: string;
-      funFacts?: string[];
-    }
-  ): Promise<Plant> {
-    try {
-      const updateData: any = {};
-      
-      if (updates.plantEnvironment !== undefined) {
-        updateData.plant_environment = updates.plantEnvironment;
-      }
-      if (updates.lightRequirements !== undefined) {
-        updateData.light_requirements = updates.lightRequirements;
-      }
-      if (updates.description !== undefined) {
-        updateData.description = updates.description;
-      }
-      if (updates.funFacts !== undefined) {
-        updateData.fun_facts = updates.funFacts;
-      }
-
-      const { data: updatedPlant, error } = await this.supabase
-        .from('plants')
-        .update(updateData)
-        .eq('id', plantId)
-        .eq('user_id', userId)
-        .select('*')
-        .single();
-
-      if (error) {
-        console.error('Supabase error updating plant:', error);
-        throw new Error(`Error updating plant: ${error.message}`);
-      }
-
-      if (!updatedPlant) {
-        throw new Error('Plant not found or not updated.');
-      }
-
-      // Retornar la planta actualizada (sin imágenes, chat, etc. para simplificar)
-      return transformDBPlantToPlant(updatedPlant, [], [], []);
-    } catch (error) {
-      console.error('Error updating plant info:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Actualiza el score de salud de una planta en la base de datos
-   */
-  async updatePlantHealthScore(
-    plantId: string,
-    userId: string,
-    healthScore: number,
-    healthAnalysis?: any,
-    imageId?: string
-  ): Promise<void> {
-    try {
-      console.log('🏥 [DB] Actualizando health score en BD:', {
-        plantId,
-        healthScore,
-        hasAnalysis: !!healthAnalysis
+    for (const doc of snapshot.docs) {
+      const plantData = this.transformDBPlantToPlant({
+        id: doc.id,
+        ...doc.data()
       });
 
-      // Actualizar el health score de la planta
-      const { error: plantError } = await this.supabase
-        .from('plants')
-        .update({ health_score: healthScore })
-        .eq('id', plantId)
-        .eq('user_id', userId);
+      // Fetch subcollections
+      plantData.images = (await db.collection('plants').doc(doc.id).collection('plant_images').orderBy('createdAt', 'asc').get()).docs.map((imgDoc: any) => ({ id: imgDoc.id, ...imgDoc.data() }));
+      plantData.chatMessages = (await db.collection('plants').doc(doc.id).collection('chat_messages').orderBy('createdAt', 'asc').get()).docs.map((msgDoc: any) => ({ id: msgDoc.id, ...msgDoc.data() }));
+      plantData.notifications = (await db.collection('plants').doc(doc.id).collection('plant_notifications').orderBy('createdAt', 'asc').get()).docs.map((notifDoc: any) => ({ id: notifDoc.id, ...notifDoc.data() }));
 
-      if (plantError) {
-        console.error('💥 [DB] Error actualizando health score:', plantError);
-        throw new Error(`Error updating plant health score: ${plantError.message}`);
-      }
-
-      // Si tenemos análisis de salud e ID de imagen, actualizar también la imagen
-      if (healthAnalysis && imageId) {
-        console.log('📸 [DB] Actualizando análisis de salud en imagen:', imageId);
-        
-        const { error: imageError } = await this.supabase
-          .from('plant_images')
-          .update({ health_analysis: healthAnalysis })
-          .eq('id', imageId)
-          .eq('user_id', userId);
-
-        if (imageError) {
-          console.warn('⚠️ [DB] Error actualizando análisis en imagen:', imageError);
-          // No lanzamos error aquí porque el health score ya se actualizó exitosamente
-        }
-      }
-
-      console.log('✅ [DB] Health score actualizado exitosamente');
-    } catch (error) {
-      console.error('💥 [DB] Error en updatePlantHealthScore:', error);
-      throw error;
+      plants.push(plantData);
     }
+    return plants;
   }
 
-  async updatePlant(plant: Plant, userId: string): Promise<Plant> {
-    try {
-      const updateData: any = {
-        name: plant.name,
-        species: plant.species,
-        variety: plant.variety,
-        nickname: plant.nickname,
-        description: plant.description,
-        fun_facts: plant.funFacts,
-        location: plant.location,
-        health_score: plant.healthScore,
-        care_profile: plant.careProfile as any,
-        personality: plant.personality as any,
-        last_watered: plant.lastWatered?.toISOString(),
-        last_fertilized: plant.lastFertilized?.toISOString(),
-      };
+  async getPlantById(plantId: string): Promise<Plant | null> {
+    const plantDocRef = db.collection('plants').doc(plantId);
+    const plantDoc = await plantDocRef.get();
 
-      const { data, error } = await this.supabase
-        .from('plants')
-        .update(updateData)
-        .eq('id', plant.id)
-        .eq('user_id', userId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return transformDBPlantToPlant(data, plant.images, plant.chatHistory, plant.notifications);
-    } catch (error) {
-      console.error('Error updating plant:', error);
-      throw error;
+    if (!plantDoc.exists) {
+      return null;
     }
+
+    const plantData = this.transformDBPlantToPlant({
+      id: plantDoc.id,
+      ...plantDoc.data()
+    });
+
+    // Fetch subcollections
+    plantData.images = (await plantDocRef.collection('plant_images').orderBy('createdAt', 'asc').get()).docs.map((imgDoc: any) => ({ id: imgDoc.id, ...imgDoc.data() }));
+    plantData.chatMessages = (await plantDocRef.collection('chat_messages').orderBy('createdAt', 'asc').get()).docs.map((msgDoc: any) => ({ id: msgDoc.id, ...msgDoc.data() }));
+    plantData.notifications = (await plantDocRef.collection('plant_notifications').orderBy('createdAt', 'asc').get()).docs.map((notifDoc: any) => ({ id: notifDoc.id, ...notifDoc.data() }));
+
+    return plantData;
   }
 
-  async deletePlant(plantId: string, userId: string): Promise<void> {
-    try {
-      const { error } = await this.supabase
-        .from('plants')
-        .delete()
-        .eq('id', plantId)
-        .eq('user_id', userId);
+  async createPlant(plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>): Promise<Plant> {
+    const newPlantRef = db.collection('plants').doc(); // Firestore auto-generates ID
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error deleting plant:', error);
-      throw error;
-    }
-  }
-
-  async sendChatMessageAndGetResponse(plant: Plant, userMessage: Omit<ChatMessage, 'id'>, userId: string): Promise<[ChatMessage, ChatMessage]> {
-    // 1. Save the user's message
-    const savedUserMessage = await this.addChatMessage(plant.id, userMessage, userId);
-
-    // 2. Generate the plant's response
-    const plantResponse = await generatePlantResponse(plant, userMessage.content);
-    // 2.1. Si plantResponse tiene insights o acciones, incluirlas en context
-    const context: any = {};
-    if (plantResponse.insights) context.insights = plantResponse.insights;
-    if (plantResponse.suggestedActions) context.suggestedActions = plantResponse.suggestedActions;
-
-    // 3. Save the plant's response
-    const plantChatMessage: Omit<ChatMessage, 'id'> = {
-      sender: 'plant',
-      content: plantResponse.content,
-      emotion: plantResponse.emotion,
-      timestamp: new Date(),
-      ...(Object.keys(context).length > 0 ? { context } : {}),
+    const plantToSave = {
+      ...plant,
+      userId: plant.userId,
+      dateAdded: plant.dateAdded || serverTimestamp(), // Use provided dateAdded or server timestamp
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      healthScore: plant.healthScore || 85, // Default health score
+      careProfile: plant.careProfile || {},
+      personality: plant.personality || {},
+      funFacts: plant.funFacts || [],
     };
-    const savedPlantMessage = await this.addChatMessage(plant.id, plantChatMessage, userId);
-    // 4. Return both persisted messages
-    return [savedUserMessage, savedPlantMessage];
+
+    await newPlantRef.set(plantToSave);
+    const createdPlantDoc = await newPlantRef.get();
+    return this.transformDBPlantToPlant({
+      id: createdPlantDoc.id,
+      ...createdPlantDoc.data()
+    });
   }
 
-  async addChatMessage(plantId: string, message: Omit<ChatMessage, 'id'>, userId: string): Promise<ChatMessage> {
-    try {
-      if (import.meta.env.DEV) console.log('💬 Adding chat message:', { plantId, message, userId });
-      const insertData: any = {
-        plant_id: plantId,
-        user_id: userId,
-        sender: message.sender,
-        content: message.content,
-        emotion: message.emotion || null,
-      };
-      if (message.context) {
-        insertData.context = message.context;
-      }
-      if (import.meta.env.DEV) console.log('📤 Insert data:', insertData);
-      const { data, error } = await this.supabase
-        .from('chat_messages')
-        .insert(insertData)
-        .select()
-        .single();
-      if (error) {
-        console.error('❌ Supabase error:', error);
-        throw error;
-      }
-      return {
-        id: data.id,
-        sender: data.sender as 'user' | 'plant',
-        content: data.content,
-        timestamp: new Date(data.created_at!),
-        emotion: data.emotion as any,
-        context: data.context || undefined,
-      };
-    } catch (error) {
-      console.error('Error adding chat message:', error);
-      throw error;
-    }
+  async updatePlantInfo(plantId: string, updatedFields: Partial<Plant>): Promise<void> {
+    const plantDocRef = db.collection('plants').doc(plantId);
+
+    const fieldsToUpdate = {
+      ...updatedFields,
+      updatedAt: serverTimestamp(),
+    };
+
+    await plantDocRef.update(fieldsToUpdate);
   }
 
-  async addPlantImage(plantId: string, image: Omit<PlantImage, 'id'>, userId: string): Promise<PlantImage> {
-    try {
-      // The `image.url` is already the uploaded URL from Supabase Storage
-      const imageUrl = image.url;
-      
-      // Extract the storage path from the URL if available
-      let storagePath = '';
-      try {
-        const url = new URL(imageUrl);
-        const pathParts = url.pathname.split('/');
-        const objectIndex = pathParts.findIndex(part => part === 'object');
-        if (objectIndex !== -1 && objectIndex + 2 < pathParts.length) {
-          storagePath = pathParts.slice(objectIndex + 2).join('/');
+  async updatePlantHealthScore(plantId: string, imageId: string, healthScore: number, healthAnalysis: Record<string, any>): Promise<void> {
+    const plantDocRef = db.collection('plants').doc(plantId);
+    const imageDocRef = plantDocRef.collection('plant_images').doc(imageId);
+
+    const batch = db.batch();
+
+    // Update plant's overall health score
+    batch.update(plantDocRef, {
+      healthScore: healthScore,
+      updatedAt: serverTimestamp(),
+    });
+
+    // Update the specific image's health analysis
+    batch.update(imageDocRef, {
+      healthAnalysis: healthAnalysis,
+      updatedAt: serverTimestamp(), // Assuming images also have an updatedAt field
+    });
+
+    await batch.commit();
+  }
+
+  async updatePlant(plantId: string, plantData: Partial<Plant>): Promise<void> {
+    const plantDocRef = db.collection('plants').doc(plantId);
+
+    await plantDocRef.update({
+      ...plantData,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  async deletePlant(plantId: string): Promise<void> {
+    const plantDocRef = db.collection('plants').doc(plantId);
+
+    // 1. Delete all subcollection documents (images, chat messages, notifications)
+    const deleteSubcollection = async (collectionRef: any) => {
+      const snapshot = await collectionRef.get();
+      const batch = db.batch();
+      snapshot.docs.forEach((doc: any) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+    };
+
+    // Delete plant_images and associated storage objects
+    const plantImagesRef = plantDocRef.collection('plant_images');
+    const imageSnapshot = await plantImagesRef.get();
+    for (const imgDoc of imageSnapshot.docs) {
+      const storagePath = imgDoc.data().storagePath;
+      if (storagePath) {
+        const imageRef = storage.ref(storagePath);
+        try {
+          await imageRef.delete();
+        } catch (error: any) {
+          if (error.code === 'storage/object-not-found') {
+            console.warn(`Storage object not found for deletion: ${storagePath}`);
+          } else {
+            console.error(`Error deleting storage object ${storagePath}:`, error);
+          }
         }
-      } catch (error) {
-        console.warn('Could not extract storage path from URL:', imageUrl);
-        storagePath = `${userId}/${plantId}/${Date.now()}.jpg`;
       }
-      
-              const { data, error } = await this.supabase
-        .from('plant_images')
-        .insert({
-          plant_id: plantId,
-          user_id: userId,
-          url: imageUrl, // This is the public URL from storage
-          storage_path: storagePath,
-          is_profile_image: image.isProfileImage,
-          health_analysis: image.healthAnalysis as any,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      if (!data.url) throw new Error('Image URL not returned from database.');
-
-      return {
-        id: data.id,
-        url: data.url, // Return the public URL
-        timestamp: new Date(data.created_at!),
-        isProfileImage: data.is_profile_image || false,
-        healthAnalysis: data.health_analysis as any,
-      };
-    } catch (error) {
-      console.error('Error adding plant image:', error);
-      throw new Error(`Image upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Delete the Firestore document for the image
+      await imgDoc.ref.delete();
     }
+
+    await deleteSubcollection(plantDocRef.collection('chat_messages'));
+    await deleteSubcollection(plantDocRef.collection('plant_notifications'));
+
+    // 2. Delete the main plant document
+    await plantDocRef.delete();
   }
 
-  /**
-   * Actualiza una imagen como imagen de perfil principal
-   */
-  async setProfileImage(plantId: string, imageId: string, userId: string): Promise<void> {
-    try {
-      // Primero, quitar la marca de perfil de todas las imágenes existentes
-      await this.supabase
-        .from('plant_images')
-        .update({ is_profile_image: false })
-        .eq('plant_id', plantId)
-        .eq('user_id', userId);
+  async sendChatMessageAndGetResponse(plantId: string, userId: string, message: string): Promise<ChatMessage> {
+    // Save user message to Firestore
+    const userMessage: ChatMessage = {
+      id: db.collection('plants').doc(plantId).collection('chat_messages').doc().id, // Generate a new ID
+      plantId: plantId,
+      userId: userId,
+      sender: 'user',
+      content: message,
+      createdAt: serverTimestamp(),
+    };
+    await this.addChatMessage(plantId, userMessage);
 
-      // Luego, marcar la imagen seleccionada como de perfil
-      const { error } = await this.supabase
-        .from('plant_images')
-        .update({ is_profile_image: true })
-        .eq('id', imageId)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error setting profile image:', error);
-      throw error;
-    }
+    // TODO: Replace with actual AI service call (Firebase Cloud Function)
+    // For now, return a mock response
+    console.warn('MOCK DATA: Returning mock AI response. Replace with Firebase Cloud Function call.');
+    const mockResponse: ChatMessage = {
+      id: db.collection('plants').doc(plantId).collection('chat_messages').doc().id, // Generate a new ID
+      plantId: plantId,
+      userId: userId,
+      sender: 'plant',
+      content: `Hello, I am a mock plant AI response for your message: "${message}". I hope you are having a great day!`,
+      emotion: 'happy',
+      createdAt: serverTimestamp(),
+      context: {},
+    };
+    await this.addChatMessage(plantId, mockResponse);
+    return mockResponse;
   }
 
-  /**
-   * Elimina una imagen de una planta
-   */
-  async deleteImage(imageId: string, userId: string): Promise<void> {
-    try {
-      // Obtener información de la imagen antes de eliminar
-      const { data: imageData, error: fetchError } = await this.supabase
-        .from('plant_images')
-        .select('storage_path')
-        .eq('id', imageId)
-        .eq('user_id', userId)
-        .single();
+  async addChatMessage(plantId: string, message: Omit<ChatMessage, 'id' | 'createdAt'> & { id?: string, createdAt?: any }): Promise<ChatMessage> {
+    const chatMessagesRef = db.collection('plants').doc(plantId).collection('chat_messages');
+    const messageToSave = {
+      ...message,
+      id: message.id || chatMessagesRef.doc().id, // Ensure ID if not provided
+      createdAt: message.createdAt || serverTimestamp(),
+    };
+    await chatMessagesRef.doc(messageToSave.id).set(messageToSave);
+    return messageToSave as ChatMessage; // Cast back for type safety
+  }
 
-      if (fetchError) throw fetchError;
+  async addPlantImage(plantId: string, userId: string, imageBase64: string, isProfileImage: boolean = false): Promise<PlantImage> {
+    const imageId = db.collection('plants').doc(plantId).collection('plant_images').doc().id;
+    const storagePath = `plant_images/${plantId}/${imageId}.jpg`; // Example path
 
-      // Eliminar imagen de Storage si existe path
-      if (imageData?.storage_path) {
-        await this.supabase.storage
-          .from('plant-images')
-          .remove([imageData.storage_path]);
+    // Upload to Firebase Storage
+    const imageRef = storage.ref(storagePath);
+    await imageRef.putString(imageBase64, 'data_url');
+    const imageUrl = await imageRef.getDownloadURL();
+
+    // Save image metadata to Firestore subcollection
+    const newImage: PlantImage = {
+      id: imageId,
+      plantId: plantId,
+      userId: userId,
+      storagePath: storagePath,
+      healthAnalysis: {}, // Initial empty analysis
+      isProfileImage: isProfileImage,
+      createdAt: serverTimestamp(),
+      url: imageUrl, // Store download URL
+    };
+
+    await db.collection('plants').doc(plantId).collection('plant_images').doc(imageId).set(newImage);
+
+    // If this is the new profile image, update other images for this plant
+    if (isProfileImage) {
+      await this.setProfileImage(plantId, imageId);
+    }
+
+    return newImage;
+  }
+
+  async setProfileImage(plantId: string, newProfileImageId: string): Promise<void> {
+    const plantImagesRef = db.collection('plants').doc(plantId).collection('plant_images');
+
+    // Use a batch write to update multiple documents atomically
+    const batch = db.batch();
+
+    // Set all other images to isProfileImage: false
+    const currentProfileImages = await plantImagesRef.where('isProfileImage', '==', true).get();
+    currentProfileImages.docs.forEach((doc: any) => {
+      if (doc.id !== newProfileImageId) {
+        batch.update(doc.ref, { isProfileImage: false });
       }
+    });
 
-      // Eliminar registro de la base de datos
-      const { error } = await this.supabase
-        .from('plant_images')
-        .delete()
-        .eq('id', imageId)
-        .eq('user_id', userId);
+    // Set the new profile image to isProfileImage: true
+    const newProfileImageRef = plantImagesRef.doc(newProfileImageId);
+    batch.update(newProfileImageRef, { isProfileImage: true });
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error deleting image:', error);
-      throw error;
+    await batch.commit();
+
+    // Also update the main plant document with the new profileImageId
+    const plantDocRef = db.collection('plants').doc(plantId);
+    await plantDocRef.update({ profileImageId: newProfileImageId });
+  }
+
+  async deleteImage(plantId: string, imageId: string): Promise<void> {
+    const imageDocRef = db.collection('plants').doc(plantId).collection('plant_images').doc(imageId);
+    const imageDoc = await imageDocRef.get();
+
+    if (!imageDoc.exists) {
+      console.warn(`Image document ${imageId} not found for plant ${plantId}.`);
+      return;
+    }
+
+    const imageData = imageDoc.data();
+    const storagePath = imageData?.storagePath;
+    const isProfileImage = imageData?.isProfileImage;
+
+    // Delete from Firebase Storage
+    if (storagePath) {
+      const imageRef = storage.ref(storagePath);
+      try {
+        await imageRef.delete();
+        console.log(`Deleted image from Storage: ${storagePath}`);
+      } catch (error: any) {
+        if (error.code === 'storage/object-not-found') {
+          console.warn(`Storage object not found for deletion: ${storagePath}. Skipping storage deletion.`);
+        } else {
+          console.error(`Error deleting storage object ${storagePath}:`, error);
+          throw error; // Re-throw to indicate a problem with storage deletion
+        }
+      }
+    }
+
+    // Delete Firestore document
+    await imageDocRef.delete();
+    console.log(`Deleted image document from Firestore: ${imageId}`);
+
+    // If the deleted image was the profile image, clear profileImageId on plant
+    if (isProfileImage) {
+      const plantDocRef = db.collection('plants').doc(plantId);
+      await plantDocRef.update({ profileImageId: FieldValue.delete() });
     }
   }
 }
 
-export const plantService = new PlantService(supabaseDefault); 
+export const plantService = new PlantService(); 

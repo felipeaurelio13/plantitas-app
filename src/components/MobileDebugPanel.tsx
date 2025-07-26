@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bug, X, Wifi, Smartphone, Monitor } from 'lucide-react';
 import { getMobileDeviceInfo } from '../utils/mobileViewport';
 import { useConnectionQuality } from '../hooks/useNetworkStatus';
-import { useAuthStore } from '../stores/useAuthStore';
+import useAuthStore from '../stores/useAuthStore';
 
 export const MobileDebugPanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);

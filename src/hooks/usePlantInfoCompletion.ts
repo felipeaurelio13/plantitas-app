@@ -1,130 +1,66 @@
-import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { completePlantInfo } from '../services/aiService';
-import { PlantService } from '../services/plantService';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useToast } from '../components/ui/Toast';
-
-const plantService = new PlantService();
+import { toast } from 'sonner';
+import useAuthStore from '../stores/useAuthStore';
+import { Plant } from '../schemas';
+import aiService from '../services/aiService'; // Use default import for aiService
+import { plantService } from '../services/plantService';
+import { usePlantDetail } from './usePlantDetail';
 
 export const usePlantInfoCompletion = () => {
-  const [isCompleting, setIsCompleting] = useState(false);
   const queryClient = useQueryClient();
-  const user = useAuthStore((state) => state.user);
-  const { addToast } = useToast();
+  const { user } = useAuthStore();
+  const { plant: selectedPlant } = usePlantDetail(undefined);
 
   const completePlantInfoMutation = useMutation({
-    mutationFn: async ({ 
-      plantId, 
-      species, 
-      commonName 
-    }: { 
-      plantId: string; 
-      species: string; 
-      commonName?: string; 
-    }) => {
-      if (!user) throw new Error('User not authenticated');
-
-      setIsCompleting(true);
-      
-      // Console log del inicio del proceso
-      if (import.meta.env.DEV) {
-        console.log('🤖 [COMPLETAR IA] Iniciando completado automático de información...');
-        console.log('📋 [COMPLETAR IA] Datos de entrada:', {
-          plantId,
-          species,
-          commonName: commonName || 'No especificado'
-        });
+    mutationFn: async ({ plant, userId }: { plant: Plant; userId: string }) => {
+      if (!userId) {
+        throw new Error('User not authenticated.');
+      }
+      if (!plant?.id) {
+        throw new Error('Plant ID is required to complete info.');
+      }
+      if (!plant.description && !plant.funFacts && !plant.plantEnvironment && !plant.lightRequirements) {
+        throw new Error('No missing plant information to complete.');
       }
 
-      // Toast de inicio
-      addToast({
-        type: 'info',
-        title: '🤖 Completando información',
-        message: `Consultando IA para ${commonName || species}...`,
-        duration: 3000
+      const completedInfo = await aiService.completePlantInfo(plant.id, userId, {
+        description: !plant.description,
+        funFacts: !plant.funFacts || plant.funFacts.length === 0,
+        plantEnvironment: !plant.plantEnvironment,
+        lightRequirements: !plant.lightRequirements,
       });
-      
-      try {
-        if (import.meta.env.DEV) console.log('🔄 [COMPLETAR IA] Consultando IA para generar información faltante...');
-        
-        // Llamar a la IA para obtener la información faltante
-        const aiResult = await completePlantInfo(species, commonName);
-        
-        if (import.meta.env.DEV) console.log('✅ [COMPLETAR IA] IA respondió exitosamente:', {
-          ambiente: aiResult.plantEnvironment,
-          luz: aiResult.lightRequirements,
-          tieneDescripcion: !!aiResult.description,
-          cantidadDatosCuriosos: aiResult.funFacts?.length || 0
-        });
-        
-        if (import.meta.env.DEV) console.log('💾 [COMPLETAR IA] Guardando información en base de datos...');
-        
-        // Actualizar la planta en la base de datos
-        const updatedPlant = await plantService.updatePlantInfo(plantId, user.id, {
-          plantEnvironment: aiResult.plantEnvironment,
-          lightRequirements: aiResult.lightRequirements,
-          description: aiResult.description,
-          funFacts: aiResult.funFacts,
-        });
 
-        if (import.meta.env.DEV) {
-          console.log('🎉 [COMPLETAR IA] ¡Proceso completado exitosamente!');
-          console.log('📊 [COMPLETAR IA] Datos actualizados:', {
-            plantId: updatedPlant.id,
-            ambiente: updatedPlant.plantEnvironment,
-            necesidadesLuz: updatedPlant.lightRequirements
-          });
-        }
-
+      if (completedInfo) {
+        // Merge the completed info with the existing plant data
+        const updatedPlant = {
+          ...plant,
+          description: completedInfo.description || plant.description,
+          funFacts: completedInfo.funFacts || plant.funFacts,
+          plantEnvironment: completedInfo.plantEnvironment || plant.plantEnvironment,
+          lightRequirements: completedInfo.lightRequirements || plant.lightRequirements,
+        };
+        await plantService.updatePlant(plant.id, updatedPlant);
         return updatedPlant;
-      } catch (error) {
-        console.error('❌ [COMPLETAR IA] Error durante el proceso:', error);
-        throw error;
-      } finally {
-        setIsCompleting(false);
+      } else {
+        throw new Error('Failed to complete plant information.');
       }
     },
     onSuccess: (updatedPlant) => {
-      console.log('🔄 [COMPLETAR IA] Refrescando datos en cache...');
-      
-      // Toast de éxito
-      addToast({
-        type: 'success',
-        title: '✅ ¡Información completada!',
-        message: `Se agregaron datos de ambiente y luz para ${updatedPlant.name}`,
-        duration: 5000
-      });
-      
-      // Invalidar queries para refrescar los datos
+      toast.success('Información de la planta completada con éxito!');
+      // Invalidate plant detail query to refetch updated data
       queryClient.invalidateQueries({ queryKey: ['plant', updatedPlant.id] });
-      queryClient.invalidateQueries({ queryKey: ['plants'] });
-      
-      console.log('✅ [COMPLETAR IA] Cache actualizado correctamente');
+      queryClient.invalidateQueries({ queryKey: ['plants'] }); // Invalidate list for potential summary changes
     },
     onError: (error) => {
-      console.error('💥 [COMPLETAR IA] Error final en la operación:', error);
-      
-      // Toast de error
-      addToast({
-        type: 'error',
-        title: '❌ Error al completar información',
-        message: 'No se pudo obtener los datos de IA. Intenta de nuevo.',
-        duration: 7000
+      toast.error('Error al completar información de la planta', {
+        description: error.message,
       });
-      
-      setIsCompleting(false);
+      console.error('Error completing plant info:', error);
     },
   });
 
-  const completeInfo = (plantId: string, species: string, commonName?: string) => {
-    return completePlantInfoMutation.mutate({ plantId, species, commonName });
-  };
-
   return {
-    completeInfo,
-    isCompleting: isCompleting || completePlantInfoMutation.isPending,
-    error: completePlantInfoMutation.error,
-    isSuccess: completePlantInfoMutation.isSuccess,
+    completePlantInfoMutation,
+    isCompletingPlantInfo: completePlantInfoMutation.isPending,
   };
 }; 

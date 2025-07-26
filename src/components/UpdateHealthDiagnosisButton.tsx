@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Camera, RefreshCcw, Loader2 } from 'lucide-react';
+import { Button } from './ui/Button';
+import ConfirmDialog from './ui/ConfirmDialog';
+import Toast from './ui/Toast';
+import { healthDiagnosisService } from '@/services/healthDiagnosisService';
+import useAuthStore from '../stores/useAuthStore';
+import { usePlantDetail } from '@/hooks/usePlantDetail';
+import { PlantSummary } from '../schemas';
 import { motion } from 'framer-motion';
 import { Activity, RefreshCw } from 'lucide-react';
-import { PlantSummary } from '../schemas';
-import { Button } from './ui/Button';
 import { usePlantMutations } from '../hooks/usePlantMutations';
-import { usePlantDetail } from '../hooks/usePlantDetail';
-import { useAuthStore } from '../stores/useAuthStore';
 import { useToast } from './ui/Toast';
 
 interface UpdateHealthDiagnosisButtonProps {

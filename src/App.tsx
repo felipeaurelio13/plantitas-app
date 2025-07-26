@@ -5,7 +5,7 @@ import {
   Route,
   Navigate,
 } from 'react-router-dom';
-import { useAuthStore } from './stores/useAuthStore';
+import useAuthStore from './stores/useAuthStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ToastProvider as NewToastProvider } from './components/ui/Toast/ToastProvider';

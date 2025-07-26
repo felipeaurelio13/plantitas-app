@@ -1,6 +1,5 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { supabase } from './supabase';
 
 /**
  * Combina clases de CSS usando clsx y tailwind-merge
@@ -89,28 +88,3 @@ export function dataURLtoFile(dataurl: string, filename: string): File | null {
 export function generateId(): string {
   return Math.random().toString(36).substr(2, 9);
 }
-
-/**
- * Helper function to invoke Supabase Edge Functions with proper JWT authentication
- */
-export const invokeAuthenticatedFunction = async (
-  functionName: string,
-  body: any,
-  options?: { headers?: Record<string, string> }
-) => {
-  // Obtener el JWT token del usuario autenticado
-  const { data: { session }, error: authError } = await supabase.auth.getSession();
-  
-  if (authError || !session?.access_token) {
-    console.error('User session not available:', authError);
-    throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
-  }
-
-  return supabase.functions.invoke(functionName, {
-    body,
-    headers: {
-      'Authorization': `Bearer ${session.access_token}`,
-      ...options?.headers,
-    },
-  });
-};

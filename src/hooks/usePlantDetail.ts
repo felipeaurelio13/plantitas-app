@@ -1,77 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useEffect } from 'react';
 import { differenceInDays } from 'date-fns';
-import { supabase } from '@/lib/supabase';
 import { Plant, PlantImage, CareProfile, HealthAnalysis, PlantPersonality, ChatMessage, PlantNotification } from '@/schemas';
-import { Database } from '@/lib/database.types';
 import { usePlantStore } from '@/stores';
-
-type PlantData = Database['public']['Tables']['plants']['Row'] & {
-  plant_images: any[];
-};
+import { plantService } from '@/services/plantService'; // Import the new plantService
 
 const fetchPlantById = async (plantId: string): Promise<Plant> => {
-  const { data, error } = await supabase
-    .from('plants')
-    .select(
-      `
-      *,
-      plant_images(*)
-    `
-    )
-    .eq('id', plantId)
-    .single();
-
-  if (error) {
-    console.error(`Error fetching plant ${plantId}:`, error);
-    if (error.code === 'PGRST116') {
-      throw new Error('Planta no encontrada.');
-    }
-    throw new Error('Error al cargar la información de la planta.');
+  const plant = await plantService.getPlantById(plantId);
+  if (!plant) {
+    throw new Error('Planta no encontrada o error al cargar la información.');
   }
-
-  const plantData = data as PlantData;
-
-  // Convert snake_case from DB to camelCase for the app's Plant type
-  return {
-    id: plantData.id,
-    name: plantData.name,
-    species: plantData.species,
-    description: plantData.description ?? undefined,
-    funFacts: (plantData.fun_facts as string[] | undefined) ?? undefined,
-    variety: plantData.variety ?? undefined,
-    nickname: plantData.nickname ?? undefined,
-    location: plantData.location,
-    // Nuevos campos para ambiente y luz
-    plantEnvironment: plantData.plant_environment as 'interior' | 'exterior' | 'ambos' | undefined,
-    lightRequirements: plantData.light_requirements as 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' | undefined,
-    dateAdded: new Date(plantData.date_added!),
-    lastWatered: plantData.last_watered ? new Date(plantData.last_watered) : undefined,
-    lastFertilized: plantData.last_fertilized ? new Date(plantData.last_fertilized) : undefined,
-    healthScore: plantData.health_score ?? 0,
-    
-    careProfile: plantData.care_profile as CareProfile,
-    personality: plantData.personality as PlantPersonality,
-    
-    images: plantData.plant_images.map((img: any) => ({
-      id: img.id,
-      url: img.url ?? '', 
-      timestamp: new Date(img.created_at!),
-      isProfileImage: img.is_profile_image ?? false,
-      healthAnalysis: img.health_analysis as HealthAnalysis | undefined,
-    })),
-    
-    // These are not fetched in this query for performance reasons
-    chatHistory: [] as ChatMessage[],
-    notifications: [] as PlantNotification[],
-  };
+  return plant;
 };
 
 export const usePlantDetail = (plantId: string | undefined) => {
-  const { 
-    data: plant, 
-    isLoading, 
-    error 
+  const {
+    data: plant,
+    isLoading,
+    error
   } = useQuery<Plant, Error>({
     queryKey: ['plant', plantId],
     queryFn: async () => {

@@ -1,56 +1,43 @@
-import { supabase } from '../lib/supabase';
 import type { AIAnalysisResponse } from '../schemas/ai-shared';
 import type { PlantResponse, Plant } from '../schemas';
-import { validateImageSize } from './imageService';
 import { toastService } from './toastService';
 import { generateInsights } from './insightService';
 
-export const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
+const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
   if (import.meta.env.DEV) console.log('User authenticated with valid session, calling analyze-image function...');
   
-  // ✅ Validate image size before processing
-  validateImageSize(imageDataUrl);
+  // ✅ Image size validation is now handled by PlantService.addPlantImage if needed
+  // No direct validation here as this service primarily interfaces with AI functions
   
-  // Get current session for JWT token
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  // Supabase-specific authentication and function invocation removed
+  // const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   
-  if (sessionError || !session) {
-    throw new Error('User must be authenticated to analyze images');
-  }
+  // if (sessionError || !session) {
+  //   throw new Error('User must be authenticated to analyze images');
+  // }
 
-  const { data, error } = await supabase.functions.invoke('analyze-image', {
-    body: { imageDataUrl },
-    headers: {
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-  });
+  // const { data, error } = await supabase.functions.invoke('analyze-image', {
+  //   body: { imageDataUrl },
+  //   headers: {
+  //     'Authorization': `Bearer ${session.access_token}`,
+  //   },
+  // });
 
-  if (error) {
-    console.error('Error invoking analyze-image function:', error);
-    
-    // Handle specific error cases
-    if (error.message?.includes('unsupported image')) {
-      throw new Error('La imagen no es válida. Por favor, asegúrate de que sea una foto clara de una planta.');
-    }
-    
-    if (error.message?.includes('OpenAI API key')) {
-      throw new Error('Servicio de análisis temporalmente no disponible. Intenta de nuevo más tarde.');
-    }
-    
-    const message = error.context?.msg ? JSON.parse(error.context.msg).error : error.message;
-    throw new Error(`Failed to analyze image: ${message}`);
-  }
-
-  if (data && data.error) {
-    console.error('Image analysis failed with a specific error:', data.error);
-    throw new Error(data.error);
-  }
-
-  if (import.meta.env.DEV) console.log('Image analysis completed successfully');
-  return data as AIAnalysisResponse;
+  // For now, return a mock response or throw an error until Firebase Cloud Functions are integrated.
+  // TODO: Replace with actual Firebase Cloud Function invocation for analyze-image
+  console.warn("Firebase Cloud Function invocation for analyzeImage is not yet implemented.");
+  const mockData: AIAnalysisResponse = {
+    plantName: "Mock Plant",
+    species: "Mock Species",
+    overallHealth: "good",
+    issues: [],
+    recommendations: [],
+    careTips: [],
+  };
+  return mockData;
 };
 
-export const generatePlantResponse = async (
+const generatePlantResponse = async (
   plant: Plant,
   userMessage: string
 ): Promise<PlantResponse & { insights?: any[]; suggestedActions?: any[] }> => {
@@ -92,56 +79,36 @@ export const generatePlantResponse = async (
     console.log('[DEBUG][generatePlantResponse] Objeto plantForPrompt:', plantForPrompt);
   }
 
-  // Obtener el JWT token del usuario autenticado
-  const { data: { session }, error: authError } = await supabase.auth.getSession();
+  // Supabase-specific authentication and function invocation removed
+  // const { data: { session }, error: authError } = await supabase.auth.getSession();
   
-  if (authError || !session?.access_token) {
-    console.error('User session not available:', authError);
-    throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
-  }
-  
-  const { data, error } = await supabase.functions.invoke('generate-plant-response', {
-    body: { plant: plantForPrompt, userMessage, tonePersona, insights },
-    headers: {
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-  });
+  // if (authError || !session?.access_token) {
+  //   console.error('User session not available:', authError);
+  //   throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+  // }
 
-  if (import.meta.env.DEV) {
-    console.log('[DEBUG][aiService] Respuesta cruda de generate-plant-response:', data);
-  }
+  // const { data, error } = await supabase.functions.invoke('generate-plant-response', {
+  //   body: {
+  //     plant: plantForPrompt,
+  //     userMessage,
+  //     insights,
+  //     tonePersona,
+  //   },
+  //   headers: {
+  //     'Authorization': `Bearer ${session.access_token}`,
+  //   },
+  // });
 
-  if (error) {
-    console.error('Error calling generate-plant-response function:', error);
-    throw new Error('Failed to generate plant response: ' + error.message);
-  }
-
-  // VALIDACIÓN DE CALIDAD DE RESPUESTA IA
-  const lowerContent = (data?.content || '').toLowerCase();
-  const isGeneric =
-    !data?.content ||
-    lowerContent.includes('no sé') ||
-    lowerContent.includes('no tengo información') ||
-    lowerContent.includes('no puedo ayudarte') ||
-    lowerContent.length < 20;
-  if (isGeneric) {
-    toastService.warning('Respuesta genérica', 'La respuesta de la planta fue muy genérica o poco útil. Intenta preguntar de otra forma o proporciona más detalles.');
-    if (import.meta.env.DEV) {
-      console.warn('[QA][aiService] Respuesta IA considerada genérica o pobre:', data?.content);
-    }
-  }
-
-  return {
-    ...(data as PlantResponse),
-    insights: data?.insights || insights || [],
-    suggestedActions: data?.suggestedActions || [],
+  // For now, return a mock response or throw an error until Firebase Cloud Functions are integrated.
+  // TODO: Replace with actual Firebase Cloud Function invocation for generate-plant-response
+  console.warn("Firebase Cloud Function invocation for generatePlantResponse is not yet implemented.");
+  const mockResponse: PlantResponse = {
+    response: "Mock: Hola! Soy tu asistente de Plantitas. ¿En qué puedo ayudarte hoy con tu planta?",
   };
+  return mockResponse;
 };
 
-/**
- * Completa información faltante de una planta usando IA basándose en especies y nombre
- */
-export const completePlantInfo = async (
+const completePlantInfo = async (
   species: string,
   commonName?: string
 ): Promise<{
@@ -150,187 +117,79 @@ export const completePlantInfo = async (
   description?: string;
   funFacts?: string[];
 }> => {
-  if (import.meta.env.DEV) {
-    console.log('🚀 [API] Iniciando llamada a complete-plant-info...');
-    console.log('📡 [API] Parámetros enviados:', { species, commonName });
-  }
+  // Supabase-specific authentication and function invocation removed
+  // const { data: { session }, error: authError } = await supabase.auth.getSession();
   
-  // Obtener el JWT token del usuario autenticado
-  const { data: { session }, error: authError } = await supabase.auth.getSession();
-  
-  if (authError || !session?.access_token) {
-    console.error('User session not available:', authError);
-    throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
-  }
-  
-  const { data, error } = await supabase.functions.invoke('complete-plant-info', {
-    body: { species, commonName },
-    headers: {
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-  });
+  // if (authError || !session?.access_token) {
+  //   console.error('User session not available:', authError);
+  //   throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+  // }
 
-  if (error) {
-    console.error('💥 [API] Error en complete-plant-info function:', error);
-    throw new Error('Failed to complete plant info: ' + error.message);
-  }
+  // const { data, error } = await supabase.functions.invoke('complete-plant-info', {
+  //   body: { species, commonName },
+  //   headers: {
+  //     'Authorization': `Bearer ${session.access_token}`,
+  //   },
+  // });
 
-  if (import.meta.env.DEV) console.log('🎯 [API] Respuesta recibida exitosamente:', data);
-
-  // Validar que los datos recibidos sean correctos
-  const validEnvironments = ['interior', 'exterior', 'ambos'] as const;
-  const validLightRequirements = ['poca_luz', 'luz_indirecta', 'luz_directa_parcial', 'pleno_sol'] as const;
-
-  const result = {
-    plantEnvironment: validEnvironments.includes(data.plantEnvironment) ? data.plantEnvironment : 'interior',
-    lightRequirements: validLightRequirements.includes(data.lightRequirements) ? data.lightRequirements : 'luz_indirecta',
-    description: data.description || undefined,
-    funFacts: Array.isArray(data.funFacts) ? data.funFacts : undefined,
+  // For now, return a mock response or throw an error until Firebase Cloud Functions are integrated.
+  // TODO: Replace with actual Firebase Cloud Function invocation for complete-plant-info
+  console.warn("Firebase Cloud Function invocation for completePlantInfo is not yet implemented.");
+  const mockPlantInfo = {
+    plantEnvironment: "interior",
+    lightRequirements: "luz_indirecta",
+    description: "Mock: Esta es una descripción de prueba para la planta.",
+    funFacts: ["Mock: Dato curioso 1", "Mock: Dato curioso 2"],
   };
-
-  return result;
+  return mockPlantInfo;
 };
 
-/**
- * Actualiza el diagnóstico de salud de una planta basándose en su imagen más reciente
- */
-export const updatePlantHealthDiagnosis = async (
+const updatePlantHealthDiagnosis = async (
   plant: Plant
 ): Promise<{
   healthScore: number;
   healthAnalysis: any;
   updatedImage: any;
 }> => {
-  console.log('🩺 [Health] Iniciando actualización de diagnóstico para:', plant.name);
+  // Supabase-specific authentication and function invocation removed
+  // const { data: { session }, error: authError } = await supabase.auth.getSession();
   
-  // Verificar que la planta tenga imágenes
-  if (!plant.images || plant.images.length === 0) {
-    throw new Error('Esta planta no tiene imágenes para analizar. Toma una foto primero.');
-  }
+  // if (authError || !session?.access_token) {
+  //   console.error('User session not available:', authError);
+  //   throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+  // }
 
-  // Obtener la imagen más reciente
-  const mostRecentImage = plant.images
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+  // const { data, error } = await supabase.functions.invoke('update-health-diagnosis', {
+  //   body: { plant },
+  //   headers: {
+  //     'Authorization': `Bearer ${session.access_token}`,
+  //   },
+  // });
 
-  console.log('📸 [Health] Analizando imagen más reciente:', {
-    imageId: mostRecentImage.id,
-    timestamp: mostRecentImage.timestamp,
-    imageUrl: mostRecentImage.url.substring(0, 100) + '...'
-  });
-
-  // Obtener el JWT token del usuario autenticado
-  const { data: { session }, error: authError } = await supabase.auth.getSession();
-  
-  if (authError || !session?.access_token) {
-    console.error('💥 [Health] User session not available:', authError);
-    throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
-  }
-
-  // Verificar que la imagen sea accesible
-  try {
-    const testResponse = await fetch(mostRecentImage.url, { method: 'HEAD' });
-    if (!testResponse.ok) {
-      throw new Error(`Imagen no accesible: ${testResponse.status}`);
-    }
-  } catch (imageError) {
-    console.error('💥 [Health] Error verificando acceso a imagen:', imageError);
-    throw new Error('La imagen de la planta no está disponible. Intenta tomar una nueva foto.');
-  }
-
-  // Llamar a la nueva función específica de diagnóstico de salud
-  console.log('🔬 [Health] Llamando a update-health-diagnosis...');
-  
-  try {
-    const { data, error } = await supabase.functions.invoke('update-health-diagnosis', {
-      body: { 
-        imageUrl: mostRecentImage.url,
-        plantName: plant.name,
-        species: plant.species
-      },
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-    });
-
-    if (error) {
-      console.error('💥 [Health] Error en función update-health-diagnosis:', error);
-      throw new Error(`Error en análisis: ${error.message}`);
-    }
-
-    if (!data || !data.overallHealth) {
-      console.error('💥 [Health] Datos incompletos del análisis:', data);
-      throw new Error('El análisis no devolvió información de salud válida.');
-    }
-
-    console.log('🎯 [Health] Análisis de salud completado exitosamente:', {
-      overallHealth: data.overallHealth,
-      confidence: data.confidence,
-      issuesCount: data.issues?.length || 0,
-      recommendationsCount: data.recommendations?.length || 0
-    });
-
-    // Convertir el análisis cualitativo a un score numérico
-    const healthScoreMap = {
-      'excellent': 95,
-      'good': 80,
-      'fair': 60,
-      'poor': 30
-    };
-    
-    const newHealthScore = healthScoreMap[data.overallHealth as keyof typeof healthScoreMap] || data.confidence || 60;
-
-    console.log('📊 [Health] Nuevo score de salud calculado:', {
-      overallHealth: data.overallHealth,
-      numericScore: newHealthScore,
-      confidence: data.confidence
-    });
-
-    return {
-      healthScore: newHealthScore,
-      healthAnalysis: data,
-      updatedImage: {
-        ...mostRecentImage,
-        healthAnalysis: data
-      }
-    };
-
-  } catch (primaryError) {
-    console.error('💥 [Health] Error en diagnóstico primario:', primaryError);
-    
-    // Fallback: Crear un análisis básico basado en la imagen existente
-    console.log('🔄 [Health] Intentando análisis de fallback...');
-    
-    try {
-      // Si la imagen ya tiene análisis de salud, usarlo
-      if (mostRecentImage.healthAnalysis && mostRecentImage.healthAnalysis.overallHealth) {
-        console.log('🎯 [Health] Usando análisis existente de la imagen');
-        
-        const existingAnalysis = mostRecentImage.healthAnalysis;
-        const healthScoreMap = {
-          'excellent': 95,
-          'good': 80,
-          'fair': 60,
-          'poor': 30
-        };
-        
-        const fallbackScore = healthScoreMap[existingAnalysis.overallHealth as keyof typeof healthScoreMap] || 60;
-        
-        return {
-          healthScore: fallbackScore,
-          healthAnalysis: existingAnalysis,
-          updatedImage: mostRecentImage
-        };
-      }
-    } catch (fallbackError) {
-      console.error('💥 [Health] Error en fallback:', fallbackError);
-    }
-    
-    // Error final - no hay forma de obtener diagnóstico
-    throw new Error('No se pudo actualizar el diagnóstico de salud. Verifica tu conexión a internet e intenta nuevamente.');
-  }
+  // For now, return a mock response or throw an error until Firebase Cloud Functions are integrated.
+  // TODO: Replace with actual Firebase Cloud Function invocation for update-health-diagnosis
+  console.warn("Firebase Cloud Function invocation for updatePlantHealthDiagnosis is not yet implemented.");
+  const mockHealthAnalysis = {
+    healthScore: 85,
+    healthAnalysis: { overallHealth: "good" },
+    updatedImage: { id: "mock-image-id", url: "mock-image-url", healthAnalysis: { overallHealth: "good" } },
+  };
+  return mockHealthAnalysis;
 };
 
-// Exportaciones vacías para que los tests no fallen por 'is not a function'
-export const generatePlantInsights = () => { throw new Error('Not implemented'); };
-export const analyzeProgressImages = () => { throw new Error('Not implemented'); };
-export const updateHealthDiagnosis = () => { throw new Error('Not implemented'); };
+// These are stubs, actual implementations will be done as part of the Firebase migration
+const generatePlantInsights = () => { throw new Error('Not implemented'); };
+const analyzeProgressImages = () => { throw new Error('Not implemented'); };
+const updateHealthDiagnosis = () => { throw new Error('Not implemented'); };
+
+const aiService = {
+  analyzeImage,
+  generatePlantResponse,
+  completePlantInfo,
+  updatePlantHealthDiagnosis,
+  generatePlantInsights,
+  analyzeProgressImages,
+  updateHealthDiagnosis,
+};
+
+export default aiService;

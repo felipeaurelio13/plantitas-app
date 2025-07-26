@@ -1,12 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App.tsx';
 import './index.css';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuthStore } from './stores/useAuthStore';
+import useAuthStore from './stores/useAuthStore';
 import { plantService } from './services/plantService';
 import { initAdvancedMobileDebug, logCriticalError } from './utils/mobileDebugAdvanced';
+import { Toaster } from 'sonner';
 
 // 🚨 CRITICAL: iOS Safari compatibility check
 // ResizeObserver es ampliamente soportado en navegadores modernos
@@ -17,30 +19,10 @@ console.log('[MOBILE] Location:', window.location.href);
 console.log('[MOBILE] Pathname:', window.location.pathname);
 console.log('[MOBILE] User Agent:', navigator.userAgent);
 
-// 🚨 GLOBAL ERROR HANDLERS para capturar crashes
-window.addEventListener('error', (event) => {
-  console.error('[GLOBAL] Uncaught error:', event.error);
-  console.error('[GLOBAL] Error details:', {
-    message: event.message,
-    filename: event.filename,
-    lineno: event.lineno,
-    colno: event.colno,
-    stack: event.error?.stack
-  });
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('[GLOBAL] Unhandled promise rejection:', event.reason);
-  console.error('[GLOBAL] Promise:', event.promise);
-});
-
-// Inicializar debug system ANTES que nada
-try {
-  initAdvancedMobileDebug();
-  console.log('[MOBILE] Debug system initialized');
-} catch (error) {
-  console.error('[MOBILE] Debug system failed:', error);
-}
+// Function to handle global errors (for advanced debugging)
+(window as any).logGlobalError = (error: Error, type: string = 'GLOBAL', details: any = {}) => {
+  logCriticalError(error, type, details);
+};
 
 // Test de compatibilidad desactivado temporalmente
 // El problema podría estar en los compatibility tests
@@ -82,6 +64,7 @@ try {
         <QueryClientProvider client={queryClient}>
           <PrefetchOnLogin />
           <App />
+          <Toaster />
         </QueryClientProvider>
       </ThemeProvider>
     </React.StrictMode>
