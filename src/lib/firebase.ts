@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
-import { getFirestore, serverTimestamp, FieldValue } from "firebase/firestore";
+import { getFirestore, serverTimestamp, FieldValue, collection, doc, getDoc, setDoc } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
@@ -24,4 +24,15 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 // Re-export specific auth functions and Firestore utilities for convenience
-export { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, serverTimestamp, FieldValue }; 
+export { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  onAuthStateChanged, 
+  signOut, 
+  serverTimestamp, 
+  FieldValue,
+  collection,
+  doc,
+  getDoc,
+  setDoc
+}; 

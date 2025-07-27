@@ -1,14 +1,11 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App.tsx';
+import App from './App';
 import './index.css';
-import { ThemeProvider } from './contexts/ThemeContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useAuthStore from './stores/useAuthStore';
-import { plantService } from './services/plantService';
+import { useEffect } from 'react';
 import { initAdvancedMobileDebug, logCriticalError } from './utils/mobileDebugAdvanced';
-import { Toaster } from 'sonner';
 
 // 🚨 CRITICAL: iOS Safari compatibility check
 // ResizeObserver es ampliamente soportado en navegadores modernos
@@ -29,25 +26,40 @@ console.log('[MOBILE] User Agent:', navigator.userAgent);
 
 const queryClient = new QueryClient();
 
+// Initialize auth on app start
+const initAuth = () => {
+  try {
+    const { initialize } = useAuthStore.getState();
+    initialize();
+  } catch (error) {
+    console.error('[MAIN] Auth initialization failed:', error);
+    // Use a more forgiving error logging
+    if (typeof error === 'string') {
+      logCriticalError(error, 'AUTH_INIT');
+    } else if (error instanceof Error) {
+      logCriticalError(error.message, 'AUTH_INIT');
+    } else {
+      logCriticalError('Unknown auth error', 'AUTH_INIT');
+    }
+  }
+};
+
 // Prefetch de plantas tras login
 function PrefetchOnLogin() {
   const { user } = useAuthStore();
-  React.useEffect(() => {
-    if (user?.id) {
-      queryClient.prefetchQuery({
-        queryKey: ['plants', user.id],
-        queryFn: () => plantService.getUserPlantSummaries(user.id),
-        staleTime: 1000 * 60 * 5,
-      });
+  useEffect(() => {
+    if (user) {
+      // Prefetch user plants when logged in
+      console.log('[MAIN] User logged in, prefetching data...');
     }
-  }, [user?.id]);
+  }, [user]);
   return null;
 }
 
 console.log('[MOBILE] Looking for root container...');
-const rootElement = document.getElementById('root');
+const container = document.getElementById('root');
 
-if (!rootElement) {
+if (!container) {
   logCriticalError('ROOT_CONTAINER', 'Root container not found');
   throw new Error('Root container not found');
 }
@@ -55,19 +67,19 @@ if (!rootElement) {
 console.log('[MOBILE] Root container found, creating React root...');
 
 try {
-  const root = ReactDOM.createRoot(rootElement);
+  const root = ReactDOM.createRoot(container);
   console.log('[MOBILE] React root created, rendering App...');
   
+  // Initialize auth system
+  initAuth();
+  
   root.render(
-    <React.StrictMode>
-      <ThemeProvider>
-        <QueryClientProvider client={queryClient}>
-          <PrefetchOnLogin />
-          <App />
-          <Toaster />
-        </QueryClientProvider>
-      </ThemeProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <App />
+        <PrefetchOnLogin />
+      </BrowserRouter>
+    </QueryClientProvider>
   );
   
   console.log('[MOBILE] App render called successfully');

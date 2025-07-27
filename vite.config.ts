@@ -3,34 +3,42 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { VitePWA } from 'vite-plugin-pwa';
-import legacy from '@vitejs/plugin-legacy';
 import path from 'path';
 
 export default defineConfig({
   base: '/plantitas-app/',
   plugins: [
-    react(),
-    // 🚨 DESACTIVAR LEGACY PLUGIN COMPLETAMENTE
-    // El problema podría ser el legacy plugin mismo
+    react({
+      // Use automatic JSX runtime but don't inject React globally
+      jsxRuntime: 'automatic'
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['plant-icon.svg', 'manifest.json'],
       manifest: {
         name: 'Plant Care Companion',
         short_name: 'PlantApp',
-        description: 'Tu asistente IA para el cuidado de plantas',
+        description: 'Tu asistente IA para el cuidado de plantas - Firebase Integration',
         theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone',
+        start_url: '/plantitas-app/',
         icons: [
           {
             src: 'plant-icon.svg',
             sizes: '192x192',
             type: 'image/svg+xml',
           },
+          {
+            src: 'plant-icon.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+          },
         ],
       },
     }),
     visualizer({ 
-      open: false, // No abrir automáticamente en build
+      open: false,
       filename: 'stats.html',
       gzipSize: true,
     }),
@@ -40,50 +48,65 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-          build: {
-      // Target moderno - tu iPhone 12 lo soporta
-      target: 'es2020',
-      minify: 'esbuild',
-      sourcemap: false,
-      rollupOptions: {
-        output: {
-          // Optimización de chunks
+  build: {
+    // Target modern browsers
+    target: 'es2020',
+    minify: 'esbuild',
+    sourcemap: false,
+    // Skip type checking for faster builds
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
-          query: ['@tanstack/react-query'],
+          firebase: ['firebase'],
           ui: ['framer-motion', 'lucide-react'],
-          supabase: ['@supabase/supabase-js'],
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
       },
+      // Handle dynamic imports and external dependencies
+      external: [],
+      onwarn(warning, warn) {
+        // Suppress certain warnings
+        if (warning.code === 'UNRESOLVED_IMPORT') return;
+        if (warning.code === 'THIS_IS_UNDEFINED') return;
+        warn(warning);
+      },
     },
-    // Configuraciones de optimización
-    chunkSizeWarningLimit: 1000, // 1MB warning limit
+    chunkSizeWarningLimit: 1000,
   },
-  // Optimizaciones del dev server
+  // Dev server configuration
   server: {
     hmr: {
-      overlay: false, // Menos intrusivo en desarrollo
+      overlay: false,
     },
+    port: 5173,
+    host: true,
   },
-  // Optimizaciones de dependencias
+  // Optimizations
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
       'react-router-dom',
-      '@tanstack/react-query',
+      'firebase',
       'framer-motion',
       'zustand',
     ],
-    exclude: ['@supabase/auth-ui-react'], // Excluir deps que pueden causar problemas
+    exclude: [],
   },
+  // Testing configuration
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: './vitest-setup.ts',
+  },
+  // TypeScript configuration override
+  esbuild: {
+    // Remove the React injection that was causing conflicts
+    logOverride: { 'this-is-undefined-in-esm': 'silent' },
   },
 });

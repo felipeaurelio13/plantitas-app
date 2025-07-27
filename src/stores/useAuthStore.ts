@@ -1,16 +1,21 @@
 import { create } from 'zustand';
 import { produce } from 'immer';
-import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from '../lib/firebase'; // Import auth, db, and specific auth functions
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, collection, doc, getDoc, setDoc } from '../lib/firebase';
 
 interface AuthState {
   user: CurrentUser | null;
   initialized: boolean;
+  isInitialized: boolean; // Alias for backward compatibility
+  isLoading: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, confirmPassword?: string, fullName?: string) => Promise<void>;
   signOut: () => Promise<void>;
   initialize: () => void;
   clearError: () => void;
+  // Legacy properties for backward compatibility
+  session?: any;
+  profile?: CurrentUser;
 }
 
 interface CurrentUser {
@@ -21,48 +26,72 @@ interface CurrentUser {
   preferences: Record<string, any>;
 }
 
-const useAuthStore = create<AuthState>((set, get) => ({
+const useAuthStore = create<AuthState>((set) => ({
   user: null,
   initialized: false,
+  get isInitialized() {
+    return this.initialized;
+  },
+  isLoading: false,
   error: null,
+  session: null,
+  get profile() {
+    return this.user;
+  },
 
   initialize: () => {
     onAuthStateChanged(auth, async (firebaseUser: any | null) => {
-      if (firebaseUser) {
-        // User signed in or reloaded
-        console.log('[AUTH STORE] Value of db before collection call:', db);
-        console.log('[AUTH STORE] Type of db before collection call:', typeof db);
-        const profileDocRef = db.collection('profiles').doc(firebaseUser.uid);
-        const profileDoc = await profileDocRef.get();
+      try {
+        if (firebaseUser) {
+          // User signed in or reloaded
+          console.log('[AUTH STORE] Firebase user detected:', firebaseUser.uid);
+          const profilesCollection = collection(db, 'profiles');
+          const profileDocRef = doc(profilesCollection, firebaseUser.uid);
+          const profileDoc = await getDoc(profileDocRef);
 
-        if (profileDoc.exists) {
-          set(produce((state) => {
-            state.user = { id: firebaseUser.uid, ...profileDoc.data() } as CurrentUser;
-            state.initialized = true;
-            state.error = null;
-          }));
+          if (profileDoc.exists()) {
+            const profileData = profileDoc.data();
+            set(produce((state) => {
+              state.user = { id: firebaseUser.uid, ...profileData } as CurrentUser;
+              state.initialized = true;
+              state.error = null;
+              state.isLoading = false;
+              state.session = firebaseUser;
+            }));
+          } else {
+            // Create a new profile if it doesn't exist (e.g., first login with email/password)
+            const newUserProfile: CurrentUser = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email,
+              fullName: null,
+              avatarUrl: null,
+              preferences: {},
+            };
+            await setDoc(profileDocRef, newUserProfile);
+            set(produce((state) => {
+              state.user = newUserProfile;
+              state.initialized = true;
+              state.error = null;
+              state.isLoading = false;
+              state.session = firebaseUser;
+            }));
+          }
         } else {
-          // Create a new profile if it doesn't exist (e.g., first login with email/password)
-          const newUserProfile: CurrentUser = {
-            id: firebaseUser.uid,
-            email: firebaseUser.email,
-            fullName: null,
-            avatarUrl: null,
-            preferences: {},
-          };
-          await profileDocRef.set(newUserProfile);
+          // User signed out
           set(produce((state) => {
-            state.user = newUserProfile;
+            state.user = null;
             state.initialized = true;
             state.error = null;
+            state.isLoading = false;
+            state.session = null;
           }));
         }
-      } else {
-        // User signed out
+      } catch (error) {
+        console.error('[AUTH STORE] Error in auth state change:', error);
         set(produce((state) => {
-          state.user = null;
+          state.error = error instanceof Error ? error.message : 'Authentication error';
           state.initialized = true;
-          state.error = null;
+          state.isLoading = false;
         }));
       }
     });
@@ -70,19 +99,39 @@ const useAuthStore = create<AuthState>((set, get) => ({
 
   signIn: async (email, password) => {
     try {
-      console.log('[AUTH STORE] Attempting sign in with email:', email, 'and password (first char):', password ? password.charAt(0) + '...' : '');
-      console.log('[AUTH STORE] Type of email:', typeof email, ', Type of password:', typeof password);
+      set(produce((state) => { 
+        state.isLoading = true; 
+        state.error = null; 
+      }));
+
+      console.log('[AUTH STORE] Attempting sign in with email:', email);
       await signInWithEmailAndPassword(auth, email, password);
-      set(produce((state) => { state.error = null; })); // Clear error on successful sign in
+      set(produce((state) => { 
+        state.error = null; 
+        state.isLoading = false; 
+      }));
       // The onAuthStateChanged listener will update the user state
     } catch (err: any) {
-      set(produce((state) => { state.error = err.message || 'Failed to sign in.'; }));
+      console.error('[AUTH STORE] Sign in error:', err);
+      set(produce((state) => { 
+        state.error = err.message || 'Failed to sign in.'; 
+        state.isLoading = false; 
+      }));
       throw err; // Re-throw to allow component to handle
     }
   },
 
-  signUp: async (email, password) => {
+  signUp: async (email, password, confirmPassword, fullName) => {
     try {
+      set(produce((state) => { 
+        state.isLoading = true; 
+        state.error = null; 
+      }));
+
+      if (confirmPassword && password !== confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
@@ -90,29 +139,51 @@ const useAuthStore = create<AuthState>((set, get) => ({
         const newUserProfile: CurrentUser = {
           id: firebaseUser.uid,
           email: firebaseUser.email,
-          fullName: null,
+          fullName: fullName || null,
           avatarUrl: null,
           preferences: {},
         };
-        await db.collection('profiles').doc(firebaseUser.uid).set(newUserProfile);
-        set(produce((state) => { state.error = null; })); // Clear error on successful sign up
+        const profilesCollection = collection(db, 'profiles');
+        const profileDocRef = doc(profilesCollection, firebaseUser.uid);
+        await setDoc(profileDocRef, newUserProfile);
+        
+        set(produce((state) => { 
+          state.error = null; 
+          state.isLoading = false; 
+        }));
         // The onAuthStateChanged listener will update the user state
       } else {
         throw new Error('User not created during sign up.');
       }
     } catch (err: any) {
-      set(produce((state) => { state.error = err.message || 'Failed to sign up.'; }));
+      console.error('[AUTH STORE] Sign up error:', err);
+      set(produce((state) => { 
+        state.error = err.message || 'Failed to sign up.'; 
+        state.isLoading = false; 
+      }));
       throw err; // Re-throw to allow component to handle
     }
   },
 
   signOut: async () => {
     try {
+      set(produce((state) => { 
+        state.isLoading = true; 
+        state.error = null; 
+      }));
+
       await signOut(auth);
-      set(produce((state) => { state.error = null; })); // Clear error on successful sign out
+      set(produce((state) => { 
+        state.error = null; 
+        state.isLoading = false; 
+      }));
       // The onAuthStateChanged listener will update the user state
     } catch (err: any) {
-      set(produce((state) => { state.error = err.message || 'Failed to sign out.'; }));
+      console.error('[AUTH STORE] Sign out error:', err);
+      set(produce((state) => { 
+        state.error = err.message || 'Failed to sign out.'; 
+        state.isLoading = false; 
+      }));
       throw err; // Re-throw to allow component to handle
     }
   },

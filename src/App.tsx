@@ -1,6 +1,5 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
@@ -56,23 +55,7 @@ const FullScreenLoader: React.FC<{ message: string }> = ({ message }) => (
   </div>
 );
 
-// Smart basename detection para mobile compatibility
-const getBasename = (): string => {
-  // Local development
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return '/';
-  }
-  
-  // GitHub Pages detection
-  if (window.location.pathname.startsWith('/plantitas-app')) {
-    return '/plantitas-app/';
-  }
-  
-  // Fallback
-  return '/';
-};
-
-const App: React.FC = () => {
+const App = () => {
   const { user, isInitialized, initialize } = useAuthStore();
   
   // Solo log en desarrollo para debugging
@@ -155,16 +138,9 @@ const App: React.FC = () => {
       <NewToastProvider>
         <ToastProvider>
           <ErrorBoundary>
-            <Router 
-              basename={getBasename()}
-              future={{
-                v7_startTransition: true,
-                v7_relativeSplatPath: true,
-              }}
-            >
-              <Toaster position="top-center" richColors />
-              <MobileDebugPanel />
-              <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
+            <Toaster position="top-center" richColors />
+            <MobileDebugPanel />
+            <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
               <Routes>
                 <Route
                   path={routes.auth}
@@ -176,8 +152,7 @@ const App: React.FC = () => {
                 />
               </Routes>
             </Suspense>
-          </Router>
-        </ErrorBoundary>
+          </ErrorBoundary>
         </ToastProvider>
       </NewToastProvider>
     </QueryClientProvider>
