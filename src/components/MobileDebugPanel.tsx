@@ -31,6 +31,15 @@ export const MobileDebugPanel: React.FC = () => {
   const [networkStatus, setNetworkStatus] = useState(navigator.onLine);
   const [autoOpened, setAutoOpened] = useState(false);
 
+  // Log inmediato para confirmar que el debug está funcionando
+  useEffect(() => {
+    console.log('🐛 [DEBUG] Mobile Debug Panel initialized');
+    console.log('🐛 [DEBUG] Current URL:', window.location.href);
+    console.log('🐛 [DEBUG] User Agent:', navigator.userAgent);
+    console.log('🐛 [DEBUG] Screen size:', window.screen.width + 'x' + window.screen.height);
+    console.log('🐛 [DEBUG] Viewport size:', window.innerWidth + 'x' + window.innerHeight);
+  }, []);
+
   // Interceptar console.log, console.warn, console.error
   useEffect(() => {
     const originalLog = console.log;
@@ -150,18 +159,29 @@ export const MobileDebugPanel: React.FC = () => {
     }
   }, [logs, firebaseStatus, autoOpened]);
 
-  // Auto-open after 3 seconds if app seems stuck
+  // Auto-open after 1 second if app seems stuck (más agresivo)
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (!firebaseStatus.initialized && !autoOpened) {
-        console.warn('🚨 App appears stuck, auto-opening debug panel');
+      console.warn('🚨 App appears stuck, auto-opening debug panel');
+      setIsVisible(true);
+      setAutoOpened(true);
+    }, 1000); // Reducido de 3000 a 1000ms
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // También auto-abrir si no hay Firebase después de 2 segundos
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!firebaseStatus.initialized) {
+        console.warn('🚨 Firebase not initialized after 2s, opening debug panel');
         setIsVisible(true);
         setAutoOpened(true);
       }
-    }, 3000);
+    }, 2000);
 
     return () => clearTimeout(timer);
-  }, [firebaseStatus.initialized, autoOpened]);
+  }, [firebaseStatus.initialized]);
 
   const getLogIcon = (level: DebugLog['level']) => {
     switch (level) {
@@ -199,17 +219,45 @@ export const MobileDebugPanel: React.FC = () => {
 
   return (
     <>
+      {/* Emergency Banner - aparece en la parte superior si hay errores críticos */}
+      {(logs.some(l => l.level === 'error') || !firebaseStatus.initialized) && (
+        <motion.div
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
+          className="fixed top-0 left-0 right-0 z-40 bg-red-500 text-white p-2 text-center text-sm font-bold"
+          onClick={() => setIsVisible(true)}
+        >
+          🚨 ERROR DETECTADO - TOCA AQUÍ PARA VER DETALLES 🚨
+        </motion.div>
+      )}
+
       {/* Toggle Button */}
       <motion.button
         onClick={() => setIsVisible(!isVisible)}
-        className="fixed bottom-4 right-4 z-50 bg-red-500 text-white rounded-full p-3 shadow-lg"
+        className="fixed bottom-4 right-4 z-50 text-white rounded-full shadow-lg"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
+        animate={logs.some(l => l.level === 'error') ? { 
+          scale: [1, 1.2, 1],
+          boxShadow: ['0 0 0 0 rgba(239, 68, 68, 0.7)', '0 0 0 20px rgba(239, 68, 68, 0)', '0 0 0 0 rgba(239, 68, 68, 0)']
+        } : {}}
+        transition={{ 
+          duration: 1.5, 
+          repeat: logs.some(l => l.level === 'error') ? Infinity : 0 
+        }}
         style={{ 
           background: logs.some(l => l.level === 'error') ? '#ef4444' : '#6b7280',
+          width: '60px',
+          height: '60px',
+          fontSize: '24px'
         }}
       >
-        <Bug size={20} />
+        <div className="flex flex-col items-center justify-center">
+          <Bug size={24} />
+          {logs.some(l => l.level === 'error') && (
+            <div className="text-xs mt-1 font-bold">ERROR</div>
+          )}
+        </div>
       </motion.button>
 
       {/* Debug Panel */}
