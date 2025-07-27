@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, type FirebaseApp } from "firebase/app";
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -6,9 +6,10 @@ import {
   onAuthStateChanged, 
   signOut,
   signInWithPopup,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  type Auth,
+  type User
 } from "firebase/auth";
-import type { User } from "firebase/auth";
 import { 
   getFirestore, 
   serverTimestamp, 
@@ -25,14 +26,16 @@ import {
   limit,
   getDocs,
   onSnapshot,
-  writeBatch
+  writeBatch,
+  type Firestore
 } from "firebase/firestore";
 import { 
   getStorage, 
   ref, 
   uploadBytes, 
   getDownloadURL,
-  deleteObject 
+  deleteObject,
+  type FirebaseStorage 
 } from "firebase/storage";
 
 // Your web app's Firebase configuration
@@ -58,10 +61,10 @@ const validateFirebaseConfig = () => {
 };
 
 // Initialize Firebase
-let app;
-let auth;
-let db;
-let storage;
+let app: FirebaseApp | undefined;
+let auth: Auth | undefined;
+let db: Firestore | undefined;
+let storage: FirebaseStorage | undefined;
 
 try {
   if (validateFirebaseConfig()) {
@@ -115,7 +118,7 @@ export {
   onAuthStateChanged, 
   signOut,
   signInWithPopup,
-  User
+  type User as FirebaseUser
 };
 
 // Export Firestore functions
@@ -143,7 +146,4 @@ export {
   uploadBytes, 
   getDownloadURL,
   deleteObject
-};
-
-// Export types
-export type { User as FirebaseUser }; 
+}; 

@@ -26,8 +26,8 @@ const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> =
     // Mapear a formato esperado por AIAnalysisResponse
     const response: AIAnalysisResponse = {
       // Información principal
-      plantName: data.commonName || 'Planta identificada',
       species: data.species,
+      commonName: data.commonName || 'Planta identificada',
       variety: data.family,
       confidence: data.confidence,
       generalDescription: `${data.species} es una planta ${data.health.overallHealth === 'excellent' ? 'muy saludable' : 'que necesita atención'}.`,
@@ -37,25 +37,18 @@ const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> =
       healthScore: data.health.healthScore,
       issues: data.health.symptoms || [],
       recommendations: data.immediateActions || [],
+      careTips: data.seasonalTips || [],
       
       // Perfil de cuidados
       careProfile: data.careProfile,
       
       // Información adicional
-      plantEnvironment: data.careProfile.sunlight?.includes('directo') ? 'exterior' : 'interior',
-      lightRequirements: this.mapLightRequirements(data.careProfile.sunlight),
+      plantEnvironment: data.careProfile?.sunlight?.includes('directo') ? 'exterior' : 'interior',
+      lightRequirements: mapLightRequirements(data.careProfile?.sunlight),
       funFacts: data.seasonalTips || [],
       
       // Personalidad
       personality: data.personality,
-      
-      // Metadatos del análisis
-      analysis: {
-        agentResults: analysisResult.agentResults,
-        totalCost: analysisResult.totalCost,
-        analysisTime: Date.now(),
-        summary: analysisResult.summary
-      }
     };
 
     console.log(`✅ [AI SERVICE] Multi-agent analysis completed. Cost: ${analysisResult.totalCost} tokens`);
@@ -96,8 +89,6 @@ const generatePlantResponse = async (
       content: chatResult.data.content,
       emotion: chatResult.data.emotion,
       mood: plantContext.personality?.communicationStyle || 'friendly',
-      confidence: chatResult.confidence,
-      cost: chatResult.cost
     };
 
   } catch (error) {
@@ -128,7 +119,7 @@ const completePlantInfo = async (
           `${plant.species} es una planta ${speciesData.rareness || 'común'} conocida por ${speciesData.distinguishingFeatures?.join(' y ') || 'sus características únicas'}.` : undefined,
         funFacts: fields.funFacts ? careData.seasonalTips || speciesData.distinguishingFeatures : undefined,
         plantEnvironment: fields.plantEnvironment ? (speciesData.isIndoor ? 'interior' : 'exterior') : undefined,
-        lightRequirements: fields.lightRequirements ? this.mapLightRequirements(careData.careProfile?.sunlight) : undefined
+        lightRequirements: fields.lightRequirements ? mapLightRequirements(careData.careProfile?.sunlight) : undefined
       };
     }
 
@@ -237,7 +228,7 @@ const updateHealthAnalysis = async (
 /**
  * 🔧 Funciones auxiliares
  */
-const mapLightRequirements = (sunlightInfo: string): string => {
+const mapLightRequirements = (sunlightInfo?: string): string => {
   if (!sunlightInfo) return 'luz_indirecta';
   
   const lower = sunlightInfo.toLowerCase();

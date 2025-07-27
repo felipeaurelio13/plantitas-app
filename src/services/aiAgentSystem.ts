@@ -101,10 +101,11 @@ Sé preciso. Si no estás seguro, indica menor confidence.`;
 
     } catch (error) {
       console.error('Species Agent Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
         confidence: 0,
-        reasoning: `Error en identificación: ${error.message}`,
+        reasoning: `Error en identificación: ${errorMessage}`,
         cost: 0
       };
     }
@@ -196,10 +197,11 @@ Enfócate en evidencia visual clara.`;
 
     } catch (error) {
       console.error('Health Agent Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
         confidence: 0,
-        reasoning: `Error en diagnóstico: ${error.message}`,
+        reasoning: `Error en diagnóstico: ${errorMessage}`,
         cost: 0
       };
     }
@@ -214,7 +216,7 @@ class CareRecommendationAgent {
   private readonly MODEL = 'gpt-3.5-turbo';
   private readonly MAX_TOKENS = 350;
 
-  async analyze(speciesInfo: any, healthInfo: any, context: AnalysisContext): Promise<AgentResponse> {
+  async analyze(speciesInfo: any, healthInfo: any, _context: AnalysisContext): Promise<AgentResponse> {
     try {
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
       
@@ -291,10 +293,11 @@ Sé específico y práctico.`;
 
     } catch (error) {
       console.error('Care Agent Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
         confidence: 0,
-        reasoning: `Error en recomendaciones: ${error.message}`,
+        reasoning: `Error en recomendaciones: ${errorMessage}`,
         cost: 0
       };
     }
@@ -386,10 +389,11 @@ Hazla única y memorable.`;
 
     } catch (error) {
       console.error('Personality Agent Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
         confidence: 0,
-        reasoning: `Error en personalidad: ${error.message}`,
+        reasoning: `Error en personalidad: ${errorMessage}`,
         cost: 0
       };
     }
@@ -407,7 +411,6 @@ export class PlantAIAgentSystem {
   private personalityAgent = new PersonalityAgent();
   
   private analysisCache = new Map<string, any>();
-  private readonly CACHE_TTL = 1000 * 60 * 15; // 15 minutos
 
   /**
    * 🔬 Análisis Completo Multi-Agente
@@ -480,11 +483,12 @@ export class PlantAIAgentSystem {
 
     } catch (error) {
       console.error('❌ [AI AGENTS] System error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
         totalCost,
         agentResults,
-        summary: `Error en análisis multi-agente: ${error.message}`
+        summary: `Error en análisis multi-agente: ${errorMessage}`
       };
     }
   }
@@ -564,10 +568,11 @@ Mantén coherencia con tu personalidad establecida.`;
 
     } catch (error) {
       console.error('Chat Agent Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
         confidence: 0,
-        reasoning: `Error en chat: ${error.message}`,
+        reasoning: `Error en chat: ${errorMessage}`,
         cost: 0
       };
     }

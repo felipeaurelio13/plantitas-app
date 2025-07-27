@@ -23,9 +23,12 @@ export const PlantImageSchema = z.object({
 
 export const ChatMessageSchema = z.object({
   id: z.string().min(1, 'Message ID is required'),
+  plantId: z.string().min(1, 'Plant ID is required'),
+  userId: z.string().min(1, 'User ID is required'),
   sender: z.enum(['user', 'plant', 'system']),
   content: z.string().min(1, 'Message content cannot be empty'),
   timestamp: z.date(),
+  createdAt: z.date(),
   emotion: z.enum(['alegre', 'triste', 'enojado', 'neutral', 'juguetón', 'agradecido', 'happy', 'sad', 'excited', 'worried', 'grateful']).optional(),
   context: z.object({
     insights: z.array(z.object({
@@ -48,32 +51,93 @@ export const PlantNotificationSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   message: z.string().min(1, 'Message is required'),
   priority: z.enum(['low', 'medium', 'high']),
-  scheduledFor: z.date(),
-  completed: z.boolean(),
+  isRead: z.boolean().default(false),
+  createdAt: z.date(),
 });
 
+// Plant Schema with proper types
 export const PlantSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  species: z.string(),
+  id: z.string().min(1, 'Plant ID is required'),
+  userId: z.string().min(1, 'User ID is required'),
+  name: z.string().min(1, 'Plant name is required'),
+  species: z.string().min(1, 'Plant species is required'),
   variety: z.string().optional(),
   nickname: z.string().optional(),
-  description: z.string().optional(),
-  funFacts: z.array(z.string()).optional(),
-  location: z.string(),
-  // Nuevos campos para ambiente y luz
-  plantEnvironment: z.enum(['interior', 'exterior', 'ambos']).optional(),
-  lightRequirements: z.enum(['poca_luz', 'luz_indirecta', 'luz_directa_parcial', 'pleno_sol']).optional(),
+  location: z.string().min(1, 'Location is required'),
+  healthScore: z.number().min(0).max(100).default(85),
+  careProfile: CareProfileSchema,
+  personality: PlantPersonalitySchema.optional(),
   dateAdded: z.date(),
   lastWatered: z.date().optional(),
   lastFertilized: z.date().optional(),
-  images: z.array(PlantImageSchema),
-  healthScore: z.number().min(0).max(100),
-  careProfile: CareProfileSchema,
-  personality: PlantPersonalitySchema,
-  chatHistory: z.array(ChatMessageSchema),
-  notifications: z.array(PlantNotificationSchema),
+  createdAt: z.date(),
+  updatedAt: z.date().optional(),
+  description: z.string().optional(),
+  funFacts: z.array(z.string()).optional(),
+  plantEnvironment: z.enum(['interior', 'exterior', 'ambos']).optional(),
+  lightRequirements: z.enum(['poca_luz', 'luz_indirecta', 'luz_directa_parcial', 'pleno_sol']).optional(),
+  profileImageId: z.string().optional(),
+  
+  // Collections that are loaded separately
+  images: z.array(PlantImageSchema).default([]),
+  chatMessages: z.array(ChatMessageSchema).default([]),
+  notifications: z.array(PlantNotificationSchema).default([]),
 });
+
+// Response schemas for components
+export const PlantResponseSchema = z.object({
+  content: z.string(),
+  emotion: z.enum(['alegre', 'triste', 'enojado', 'neutral', 'juguetón', 'agradecido', 'happy', 'sad', 'excited', 'worried', 'grateful']).optional(),
+  mood: z.string().optional(),
+});
+
+// Data Export Schema
+export const DataExportSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    email: z.string().email(),
+    fullName: z.string().optional(),
+    createdAt: z.string(),
+  }),
+  plants: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    species: z.string(),
+    location: z.string(),
+    healthScore: z.number(),
+    dateAdded: z.string(),
+    images: z.array(z.object({
+      id: z.string(),
+      url: z.string(),
+      timestamp: z.string(),
+    })).optional(),
+    chatHistory: z.array(z.object({
+      sender: z.string(),
+      content: z.string(),
+      timestamp: z.string(),
+    })).optional(),
+  })),
+  exportedAt: z.string(),
+  format: z.enum(['json', 'csv']),
+});
+
+// Type exports
+export type PlantImage = z.infer<typeof PlantImageSchema>;
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+export type PlantNotification = z.infer<typeof PlantNotificationSchema>;
+export type Plant = z.infer<typeof PlantSchema>;
+export type PlantResponse = z.infer<typeof PlantResponseSchema>;
+export type DataExport = z.infer<typeof DataExportSchema>;
+
+// Re-export AI types
+export type {
+  HealthIssue,
+  HealthAnalysis,
+  CareProfile,
+  PlantPersonality,
+  AIAnalysisResponse,
+  Insight
+} from './ai-shared';
 
 export const PlantSummarySchema = z.object({
   id: z.string().min(1, 'Plant ID is required'),
@@ -88,12 +152,6 @@ export const PlantSummarySchema = z.object({
   profileImageUrl: z.string().url().optional(),
   lastWatered: z.date().optional(),
   wateringFrequency: z.number().positive().optional(),
-});
-
-export const PlantResponseSchema = z.object({
-  content: z.string(),
-  emotion: z.enum(['alegre', 'triste', 'enojado', 'neutral', 'juguetón', 'agradecido', 'happy', 'sad', 'excited', 'worried', 'grateful']),
-  mood: z.string().optional(),
 });
 
 export const ProgressAnalysisResponseSchema = z.object({
