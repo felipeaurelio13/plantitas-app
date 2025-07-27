@@ -1,147 +1,237 @@
 import { Plant } from '../schemas';
+import aiService from './aiService';
+import plantService from './plantService';
 
-/**
- * Servicio dedicado para actualizar diagnósticos de salud de plantas
- */
-export class HealthDiagnosisService {
-  
-  /**
-   * Actualiza el diagnóstico de salud de una planta usando su imagen más reciente
-   */
-  async updatePlantHealthDiagnosis(plant: Plant): Promise<{
-    healthScore: number;
-    healthAnalysis: any;
-    updatedImage: any;
-  }> {
-    if (import.meta.env.DEV) console.log('🩺 [Health] Iniciando actualización de diagnóstico para:', plant.name);
-    
-    // Verificar que la planta tenga imágenes
-    if (!plant.images || plant.images.length === 0) {
-      throw new Error('Esta planta no tiene imágenes para analizar. Toma una foto primero.');
-    }
-
-    // Obtener la imagen más reciente
-    const mostRecentImage = [...plant.images]
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
-
-    if (import.meta.env.DEV) {
-      console.log('📸 [Health] Analizando imagen más reciente:', {
-        imageId: mostRecentImage.id,
-        timestamp: mostRecentImage.timestamp,
-        imageUrl: mostRecentImage.url.substring(0, 100) + '...'
-      });
-    }
-
-    // Supabase-specific authentication and function invocation removed
-    // const { data: { session }, error: authError } = await supabase.auth.getSession();
-    
-    // if (authError || !session?.access_token) {
-    //   console.error('💥 [Health] User session not available:', authError);
-    //   throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
-    // }
-
-    // Verificar que la imagen sea accesible
-    try {
-      const testResponse = await fetch(mostRecentImage.url, { method: 'HEAD' });
-      if (!testResponse.ok) {
-        throw new Error(`Imagen no accesible: ${testResponse.status}`);
-      }
-    } catch (imageError) {
-      console.error('💥 [Health] Error verificando acceso a imagen:', imageError);
-      throw new Error('La imagen de la planta no está disponible. Intenta tomar una nueva foto.');
-    }
-
-    // Llamar a la nueva función específica de diagnóstico de salud
-    console.log('🔬 [Health] Llamando a update-health-diagnosis...');
-    
-    try {
-      // const { data, error } = await supabase.functions.invoke('update-health-diagnosis', {
-      //   body: { 
-      //     imageUrl: mostRecentImage.url,
-      //     plantName: plant.name,
-      //     species: plant.species
-      //   },
-      //   headers: {
-      //     'Authorization': `Bearer ${session.access_token}`,
-      //   },
-      // });
-
-      // For now, return a mock response or throw an error until Firebase Cloud Functions are integrated.
-      // TODO: Replace with actual Firebase Cloud Function invocation for update-health-diagnosis
-      console.warn("Firebase Cloud Function invocation for updatePlantHealthDiagnosis is not yet implemented.");
-      const mockData = {
-        overallHealth: 'good',
-        confidence: 80,
-        issues: [],
-        recommendations: [],
-      };
-
-      // if (error) {
-      //   console.error('💥 [Health] Error en función update-health-diagnosis:', error);
-      //   throw new Error(`Error en análisis: ${error.message}`);
-      // }
-
-      if (!mockData || !mockData.overallHealth) {
-        console.error('💥 [Health] Datos incompletos del análisis:', mockData);
-        throw new Error('El análisis no devolvió información de salud válida.');
-      }
-
-      console.log('🎯 [Health] Análisis de salud completado exitosamente:', {
-        overallHealth: mockData.overallHealth,
-        confidence: mockData.confidence,
-        issuesCount: mockData.issues?.length || 0,
-        recommendationsCount: mockData.recommendations?.length || 0
-      });
-
-      // Convertir el análisis cualitativo a un score numérico
-      const healthScoreMap = {
-        'excellent': 95,
-        'good': 80,
-        'fair': 60,
-        'poor': 30
-      };
-      
-      const newHealthScore = healthScoreMap[mockData.overallHealth as keyof typeof healthScoreMap] || mockData.confidence || 60;
-
-      console.log('📊 [Health] Nuevo score de salud calculado:', {
-        overallHealth: mockData.overallHealth,
-        numericScore: newHealthScore,
-        confidence: mockData.confidence
-      });
-
-      return {
-        healthScore: newHealthScore,
-        healthAnalysis: mockData,
-        updatedImage: mostRecentImage // Devuelve la imagen para actualizar su estado
-      };
-
-    } catch (error) {
-      console.error('💥 [Health] Error en updatePlantHealthDiagnosis:', error);
-      throw error;
-    }
-  }
-
-  async updatePlantHealthScore(
-    plantId: string,
-    userId: string,
-    healthScore: number,
-    healthAnalysis?: any,
-    imageId?: string
-  ): Promise<void> {
-    // TODO: Implement Firebase Firestore update for plant health score
-    console.warn("Firebase Firestore update for plant health score is not yet implemented.");
-    console.log(`Mock: Updating plant ${plantId} with health score ${healthScore}`);
-    // Example of how it might look with Firestore (requires 'db' instance from firebase.js):
-    // import { doc, updateDoc } from 'firebase/firestore';
-    // const plantRef = doc(db, 'plants', plantId);
-    // await updateDoc(plantRef, { 
-    //   health_score: healthScore, 
-    //   health_analysis: healthAnalysis, 
-    //   updated_image_id: imageId, 
-    //   updated_at: new Date() 
-    // });
-  }
+interface HealthAnalysisResponse {
+  overallHealth: 'excellent' | 'good' | 'fair' | 'poor';
+  confidence: number;
+  issues: string[];
+  recommendations: string[];
+  healthScore: number;
 }
 
-// Exportar instancia singleton
-export const healthDiagnosisService = new HealthDiagnosisService(); 
+interface UpdateHealthDiagnosisResponse {
+  success: boolean;
+  plantId: string;
+  healthScore: number;
+  analysis: HealthAnalysisResponse;
+  updatedAt: string;
+}
+
+const analyzeLatestPlantImage = async (
+  plant: Plant,
+  userId: string
+): Promise<HealthAnalysisResponse> => {
+  try {
+    console.log('[HEALTH DIAGNOSIS] Analyzing latest image for plant:', plant.id);
+
+    // Get the most recent image for this plant
+    const plantData = await plantService.getPlantById(plant.id, true);
+    
+    if (!plantData || !plantData.images || plantData.images.length === 0) {
+      throw new Error('No images available for health analysis');
+    }
+
+    // Get the most recent image
+    const latestImage = plantData.images
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+    if (!latestImage.url) {
+      throw new Error('Latest image does not have a valid URL');
+    }
+
+    console.log('[HEALTH DIAGNOSIS] Using image:', latestImage.id, 'URL:', latestImage.url.substring(0, 50) + '...');
+
+    // Use AI service to analyze the image
+    const analysisResult = await aiService.updateHealthAnalysis(plant, latestImage.url);
+    
+    if (!analysisResult || !analysisResult.healthAnalysis) {
+      throw new Error('Failed to get health analysis from AI service');
+    }
+
+    const { healthAnalysis } = analysisResult;
+
+    // Map health status to numeric score
+    const healthScoreMap = {
+      'excellent': 95,
+      'good': 80,
+      'fair': 60,
+      'poor': 30
+    };
+
+    const healthScore = healthAnalysis.healthScore || 
+      healthScoreMap[healthAnalysis.overallHealth as keyof typeof healthScoreMap] || 60;
+
+    const response: HealthAnalysisResponse = {
+      overallHealth: healthAnalysis.overallHealth,
+      confidence: healthAnalysis.confidence,
+      issues: healthAnalysis.issues || [],
+      recommendations: healthAnalysis.recommendations || [],
+      healthScore
+    };
+
+    console.log('[HEALTH DIAGNOSIS] Analysis completed:', response);
+    return response;
+
+  } catch (error) {
+    console.error('[HEALTH DIAGNOSIS] Error analyzing plant image:', error);
+    throw error;
+  }
+};
+
+const updatePlantHealthScore = async (
+  plantId: string,
+  userId: string,
+  healthAnalysis?: any,
+  imageId?: string
+): Promise<UpdateHealthDiagnosisResponse> => {
+  try {
+    console.log('[HEALTH DIAGNOSIS] Updating health score for plant:', plantId);
+
+    // Get current plant data
+    const plant = await plantService.getPlantById(plantId, true);
+    
+    if (!plant) {
+      throw new Error(`Plant with ID ${plantId} not found`);
+    }
+
+    if (plant.userId !== userId) {
+      throw new Error('User not authorized to update this plant');
+    }
+
+    let analysis: HealthAnalysisResponse;
+
+    if (healthAnalysis) {
+      // Use provided health analysis
+      analysis = healthAnalysis;
+    } else {
+      // Analyze the latest image
+      analysis = await analyzeLatestPlantImage(plant, userId);
+    }
+
+    // Update the plant's health score in Firebase
+    await plantService.updatePlantHealthScore(plantId, analysis.healthScore);
+
+    // If we have an image ID, update the image's health analysis
+    if (imageId && analysis) {
+      await plantService.updatePlantImage(plantId, imageId, {
+        healthAnalysis: {
+          overallHealth: analysis.overallHealth,
+          confidence: analysis.confidence,
+          issues: analysis.issues,
+          recommendations: analysis.recommendations,
+          analyzedAt: new Date().toISOString(),
+        }
+      });
+      console.log('[HEALTH DIAGNOSIS] Updated image health analysis for image:', imageId);
+    }
+
+    const response: UpdateHealthDiagnosisResponse = {
+      success: true,
+      plantId,
+      healthScore: analysis.healthScore,
+      analysis,
+      updatedAt: new Date().toISOString(),
+    };
+
+    console.log('[HEALTH DIAGNOSIS] Health score updated successfully:', response);
+    return response;
+
+  } catch (error) {
+    console.error('[HEALTH DIAGNOSIS] Error updating health score:', error);
+    throw error;
+  }
+};
+
+const getPlantHealthHistory = async (
+  plantId: string,
+  userId: string,
+  limit: number = 10
+): Promise<any[]> => {
+  try {
+    console.log('[HEALTH DIAGNOSIS] Getting health history for plant:', plantId);
+
+    const plant = await plantService.getPlantById(plantId, true);
+    
+    if (!plant) {
+      throw new Error(`Plant with ID ${plantId} not found`);
+    }
+
+    if (plant.userId !== userId) {
+      throw new Error('User not authorized to access this plant');
+    }
+
+    // Get images with health analysis, sorted by date
+    const imagesWithHealth = (plant.images || [])
+      .filter(img => img.healthAnalysis && img.healthAnalysis.overallHealth)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit)
+      .map(img => ({
+        id: img.id,
+        url: img.url,
+        createdAt: img.createdAt,
+        healthAnalysis: img.healthAnalysis,
+        healthScore: img.healthAnalysis.healthScore || 
+          (img.healthAnalysis.overallHealth === 'excellent' ? 95 :
+           img.healthAnalysis.overallHealth === 'good' ? 80 :
+           img.healthAnalysis.overallHealth === 'fair' ? 60 : 30)
+      }));
+
+    console.log('[HEALTH DIAGNOSIS] Retrieved health history:', imagesWithHealth.length, 'entries');
+    return imagesWithHealth;
+
+  } catch (error) {
+    console.error('[HEALTH DIAGNOSIS] Error getting health history:', error);
+    throw error;
+  }
+};
+
+const generateHealthRecommendations = async (
+  plant: Plant,
+  userId: string
+): Promise<string[]> => {
+  try {
+    console.log('[HEALTH DIAGNOSIS] Generating health recommendations for plant:', plant.id);
+
+    if (plant.userId !== userId) {
+      throw new Error('User not authorized to access this plant');
+    }
+
+    // Get recent health analysis
+    const analysis = await analyzeLatestPlantImage(plant, userId);
+    
+    // Combine AI recommendations with care profile suggestions
+    const recommendations = [...analysis.recommendations];
+
+    // Add care profile based recommendations
+    if (plant.careProfile) {
+      if (plant.careProfile.watering === 'diario' && analysis.overallHealth !== 'excellent') {
+        recommendations.push('Considera reducir la frecuencia de riego si la tierra está húmeda');
+      }
+      
+      if (plant.careProfile.sunlight === 'directo' && analysis.issues?.some(issue => 
+        issue.toLowerCase().includes('quemadura') || issue.toLowerCase().includes('marchita'))) {
+        recommendations.push('Mueve la planta a un lugar con luz indirecta para evitar quemaduras');
+      }
+    }
+
+    // Remove duplicates
+    const uniqueRecommendations = [...new Set(recommendations)];
+
+    console.log('[HEALTH DIAGNOSIS] Generated recommendations:', uniqueRecommendations);
+    return uniqueRecommendations;
+
+  } catch (error) {
+    console.error('[HEALTH DIAGNOSIS] Error generating recommendations:', error);
+    throw error;
+  }
+};
+
+export const healthDiagnosisService = {
+  analyzeLatestPlantImage,
+  updatePlantHealthScore,
+  getPlantHealthHistory,
+  generateHealthRecommendations,
+};
+
+export default healthDiagnosisService; 

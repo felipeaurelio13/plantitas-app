@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { produce } from 'immer';
 import { Plant, ChatMessage } from '../schemas';
 import plantService from '../services/plantService';
+import aiService from '../services/aiService';
 import { gardenCacheService } from '../services/gardenCacheService';
 
 interface PlantState {
@@ -185,13 +186,26 @@ const usePlantStore = create<PlantStore>((set, get) => ({
       // Save user message
       await plantService.addChatMessage(plantId, userMessage);
 
-      // Create AI response (mock for now)
+      // Generate AI response using real AI service
+      const plant = get().plants.find(p => p.id === plantId);
+      if (!plant) {
+        throw new Error('Plant not found for chat response');
+      }
+
+      const aiResponseResult = await aiService.generatePlantResponse(message, {
+        species: plant.species,
+        name: plant.name,
+        healthScore: plant.healthScore,
+        careProfile: plant.careProfile,
+        personality: plant.personality
+      });
+
       const aiResponse: Omit<ChatMessage, 'id'> = {
         plantId,
         userId,
         sender: 'plant',
-        content: `¡Hola! Soy tu planta. Gracias por tu mensaje: "${message}". ¡Estoy muy feliz de poder hablar contigo!`,
-        emotion: 'happy',
+        content: aiResponseResult.content,
+        emotion: aiResponseResult.emotion || 'happy',
         createdAt: new Date(),
       };
 
