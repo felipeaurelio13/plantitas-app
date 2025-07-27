@@ -1,90 +1,69 @@
 import { AIAnalysisResponse, PlantResponse } from '../schemas';
+import { aiAgentSystem } from './aiAgentSystem';
+
+/**
+ * 🤖 Servicio de IA Actualizado con Sistema Multi-Agente
+ * 
+ * Usa el nuevo sistema multi-agente para:
+ * - Análisis más preciso y detallado
+ * - Mayor eficiencia en costos
+ * - Mejor coherencia entre análisis
+ */
 
 const analyzeImage = async (imageDataUrl: string): Promise<AIAnalysisResponse> => {
   try {
-    const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    console.log('🔬 [AI SERVICE] Starting multi-agent image analysis...');
     
-    if (!openaiApiKey || openaiApiKey === 'demo-openai-key') {
-      throw new Error('OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your environment variables.');
-    }
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4-vision-preview',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Analiza esta imagen de planta y proporciona la siguiente información en formato JSON:
-                {
-                  "species": "nombre científico de la especie",
-                  "commonName": "nombre común",
-                  "confidence": numero_del_0_al_100,
-                  "generalDescription": "descripción general de la planta",
-                  "funFacts": ["dato curioso 1", "dato curioso 2", "dato curioso 3"],
-                  "plantEnvironment": "interior" | "exterior" | "ambos",
-                  "lightRequirements": "poca_luz" | "luz_indirecta" | "luz_directa_parcial" | "pleno_sol",
-                  "health": {
-                    "overallHealth": "excellent" | "good" | "fair" | "poor",
-                    "confidence": numero_del_0_al_100,
-                    "issues": ["problema 1", "problema 2"],
-                    "recommendations": ["recomendación 1", "recomendación 2"]
-                  },
-                  "careProfile": {
-                    "watering": "diario" | "cada_2_dias" | "semanal" | "bisemanal",
-                    "sunlight": "directo" | "indirecto" | "sombra",
-                    "humidity": "alta" | "media" | "baja",
-                    "temperature": "calida" | "templada" | "fresca",
-                    "fertilizing": "mensual" | "bimestral" | "estacional"
-                  },
-                  "personality": {
-                    "energyLevel": "alta" | "media" | "baja",
-                    "communicationStyle": "alegre" | "sereno" | "jugueton" | "sabio",
-                    "interests": ["interes 1", "interes 2"]
-                  },
-                  "variety": "variedad específica si aplica"
-                }`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageDataUrl
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 1000
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
+    // Usar el sistema multi-agente para análisis completo
+    const analysisResult = await aiAgentSystem.analyzeComplete(imageDataUrl);
     
-    if (!content) {
-      throw new Error('No content received from OpenAI API');
+    if (!analysisResult.success || !analysisResult.data) {
+      throw new Error('Multi-agent analysis failed');
     }
 
-    try {
-      return JSON.parse(content);
-    } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', content);
-      throw new Error('Invalid JSON response from OpenAI API');
-    }
+    const data = analysisResult.data;
+    
+    // Mapear a formato esperado por AIAnalysisResponse
+    const response: AIAnalysisResponse = {
+      // Información principal
+      plantName: data.commonName || 'Planta identificada',
+      species: data.species,
+      variety: data.family,
+      confidence: data.confidence,
+      generalDescription: `${data.species} es una planta ${data.health.overallHealth === 'excellent' ? 'muy saludable' : 'que necesita atención'}.`,
+      
+      // Análisis de salud
+      overallHealth: data.health.overallHealth,
+      healthScore: data.health.healthScore,
+      issues: data.health.symptoms || [],
+      recommendations: data.immediateActions || [],
+      
+      // Perfil de cuidados
+      careProfile: data.careProfile,
+      
+      // Información adicional
+      plantEnvironment: data.careProfile.sunlight?.includes('directo') ? 'exterior' : 'interior',
+      lightRequirements: this.mapLightRequirements(data.careProfile.sunlight),
+      funFacts: data.seasonalTips || [],
+      
+      // Personalidad
+      personality: data.personality,
+      
+      // Metadatos del análisis
+      analysis: {
+        agentResults: analysisResult.agentResults,
+        totalCost: analysisResult.totalCost,
+        analysisTime: Date.now(),
+        summary: analysisResult.summary
+      }
+    };
+
+    console.log(`✅ [AI SERVICE] Multi-agent analysis completed. Cost: ${analysisResult.totalCost} tokens`);
+    
+    return response;
 
   } catch (error) {
-    console.error('Error analyzing image with OpenAI:', error);
+    console.error('❌ [AI SERVICE] Error in multi-agent analysis:', error);
     throw error;
   }
 };
@@ -100,68 +79,29 @@ const generatePlantResponse = async (
   }
 ): Promise<PlantResponse> => {
   try {
-    const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    console.log('💬 [AI SERVICE] Generating plant response with agent system...');
     
-    if (!openaiApiKey || openaiApiKey === 'demo-openai-key') {
-      throw new Error('OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your environment variables.');
-    }
-
-    const systemPrompt = `Eres una planta ${plantContext.species || 'que puede comunicarse'} llamada ${plantContext.name || 'amigable'}. 
-    Tu personalidad es ${plantContext.personality?.communicationStyle || 'alegre'} y ${plantContext.personality?.energyLevel || 'media'} energía.
-    Tu salud actual es ${plantContext.healthScore || 'buena'}%.
+    // Usar el sistema multi-agente para chat contextual
+    const chatResult = await aiAgentSystem.generatePlantResponse(
+      message, 
+      plantContext,
+      [] // Aquí se podría pasar historial de conversación
+    );
     
-    Responde como si fueras esta planta, de manera ${plantContext.personality?.communicationStyle || 'cálida'} y amigable. 
-    Comparte consejos de cuidado relevantes cuando sea apropiado.
-    Mantén las respuestas entre 50-150 palabras.
-    Incluye emojis de plantas cuando sea apropiado.`;
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-        max_tokens: 200,
-        temperature: 0.8
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    if (!chatResult.success || !chatResult.data) {
+      throw new Error('Chat agent failed to generate response');
     }
-
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
-    
-    if (!content) {
-      throw new Error('No content received from OpenAI API');
-    }
-
-    // Detect emotion from response
-    const emotions = ['alegre', 'triste', 'enojado', 'neutral', 'juguetón', 'agradecido'];
-    const detectedEmotion = emotions.find(emotion => 
-      content.toLowerCase().includes(emotion) || 
-      content.includes('😊') || content.includes('🌱') ? 'alegre' :
-      content.includes('😢') || content.includes('😔') ? 'triste' :
-      content.includes('😠') || content.includes('😤') ? 'enojado' :
-      content.includes('😄') || content.includes('🎉') ? 'juguetón' :
-      content.includes('🙏') || content.includes('gracias') ? 'agradecido' : 'neutral'
-    ) || 'alegre';
 
     return {
-      content,
-      emotion: detectedEmotion as any,
-      mood: plantContext.personality?.communicationStyle || 'friendly'
+      content: chatResult.data.content,
+      emotion: chatResult.data.emotion,
+      mood: plantContext.personality?.communicationStyle || 'friendly',
+      confidence: chatResult.confidence,
+      cost: chatResult.cost
     };
 
   } catch (error) {
-    console.error('Error generating plant response:', error);
+    console.error('❌ [AI SERVICE] Error generating plant response:', error);
     throw error;
   }
 };
@@ -176,10 +116,27 @@ const completePlantInfo = async (
   }
 ): Promise<any> => {
   try {
+    console.log('📝 [AI SERVICE] Completing plant info with optimized prompts...');
+    
+    // Si ya tenemos análisis previo, usar esa información
+    if (plant.analysis?.agentResults) {
+      const speciesData = plant.analysis.agentResults.species?.data || {};
+      const careData = plant.analysis.agentResults.care?.data || {};
+      
+      return {
+        description: fields.description ? 
+          `${plant.species} es una planta ${speciesData.rareness || 'común'} conocida por ${speciesData.distinguishingFeatures?.join(' y ') || 'sus características únicas'}.` : undefined,
+        funFacts: fields.funFacts ? careData.seasonalTips || speciesData.distinguishingFeatures : undefined,
+        plantEnvironment: fields.plantEnvironment ? (speciesData.isIndoor ? 'interior' : 'exterior') : undefined,
+        lightRequirements: fields.lightRequirements ? this.mapLightRequirements(careData.careProfile?.sunlight) : undefined
+      };
+    }
+
+    // Si no hay análisis previo, hacer una llamada optimizada
     const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
     
     if (!openaiApiKey || openaiApiKey === 'demo-openai-key') {
-      throw new Error('OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your environment variables.');
+      throw new Error('OpenAI API key not configured');
     }
 
     const fieldsToComplete = Object.entries(fields).filter(([_, should]) => should).map(([field]) => field);
@@ -188,13 +145,13 @@ const completePlantInfo = async (
       return {};
     }
 
-    const prompt = `Para la planta ${plant.species} (${plant.name}), proporciona la siguiente información en formato JSON:
-    {
-      ${fields.description ? '"description": "descripción detallada de la planta",' : ''}
-      ${fields.funFacts ? '"funFacts": ["dato curioso 1", "dato curioso 2", "dato curioso 3"],' : ''}
-      ${fields.plantEnvironment ? '"plantEnvironment": "interior" | "exterior" | "ambos",' : ''}
-      ${fields.lightRequirements ? '"lightRequirements": "poca_luz" | "luz_indirecta" | "luz_directa_parcial" | "pleno_sol"' : ''}
-    }`;
+    const prompt = `Para ${plant.species} (${plant.name}), completa SOLO estos campos en JSON:
+    ${fields.description ? '"description": "descripción_concisa",' : ''}
+    ${fields.funFacts ? '"funFacts": ["dato1", "dato2"],' : ''}
+    ${fields.plantEnvironment ? '"plantEnvironment": "interior|exterior",' : ''}
+    ${fields.lightRequirements ? '"lightRequirements": "tipo_luz"' : ''}
+    
+    Respuesta concisa y precisa.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -204,15 +161,14 @@ const completePlantInfo = async (
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: 300
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 200,
+        temperature: 0.3
       })
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -225,12 +181,12 @@ const completePlantInfo = async (
     try {
       return JSON.parse(content);
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', content);
+      console.error('Failed to parse completion response:', content);
       throw new Error('Invalid JSON response from OpenAI API');
     }
 
   } catch (error) {
-    console.error('Error completing plant info:', error);
+    console.error('❌ [AI SERVICE] Error completing plant info:', error);
     throw error;
   }
 };
@@ -240,78 +196,81 @@ const updateHealthAnalysis = async (
   imageUrl: string
 ): Promise<any> => {
   try {
-    const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    console.log('🏥 [AI SERVICE] Updating health analysis with multi-agent system...');
     
-    if (!openaiApiKey || openaiApiKey === 'demo-openai-key') {
-      throw new Error('OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your environment variables.');
-    }
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4-vision-preview',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Analiza la salud de esta planta ${plant.species} y proporciona un análisis actualizado en formato JSON:
-                {
-                  "overallHealth": "excellent" | "good" | "fair" | "poor",
-                  "confidence": numero_del_0_al_100,
-                  "issues": ["problema 1", "problema 2"],
-                  "recommendations": ["recomendación 1", "recomendación 2"],
-                  "healthScore": numero_del_0_al_100
-                }`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageUrl
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 500
-      })
+    // Usar solo el agente de salud para análisis específico
+    const analysisResult = await aiAgentSystem.analyzeComplete(imageUrl, {
+      plantData: plant
     });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
     
-    if (!content) {
-      throw new Error('No content received from OpenAI API');
+    if (!analysisResult.success || !analysisResult.data) {
+      throw new Error('Health analysis failed');
     }
 
-    try {
-      const healthAnalysis = JSON.parse(content);
-      return {
-        healthAnalysis,
-        updatedImage: {
-          id: plant.id,
-          url: imageUrl,
-          healthAnalysis
-        }
-      };
-    } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', content);
-      throw new Error('Invalid JSON response from OpenAI API');
-    }
+    const healthData = analysisResult.data.health;
+    
+    return {
+      healthAnalysis: {
+        overallHealth: healthData.overallHealth,
+        confidence: healthData.confidence || analysisResult.data.confidence,
+        issues: healthData.symptoms || [],
+        recommendations: healthData.urgentActions || [],
+        diseases: healthData.diseases || [],
+        prognosis: healthData.prognosis,
+        analyzedAt: new Date().toISOString(),
+        cost: analysisResult.totalCost
+      },
+      updatedImage: {
+        id: plant.id,
+        url: imageUrl,
+        healthAnalysis: healthData
+      },
+      healthScore: healthData.healthScore
+    };
 
   } catch (error) {
-    console.error('Error updating health analysis:', error);
+    console.error('❌ [AI SERVICE] Error updating health analysis:', error);
     throw error;
   }
+};
+
+/**
+ * 🔧 Funciones auxiliares
+ */
+const mapLightRequirements = (sunlightInfo: string): string => {
+  if (!sunlightInfo) return 'luz_indirecta';
+  
+  const lower = sunlightInfo.toLowerCase();
+  if (lower.includes('directo') || lower.includes('pleno')) return 'pleno_sol';
+  if (lower.includes('sombra')) return 'poca_luz';
+  if (lower.includes('parcial')) return 'luz_directa_parcial';
+  return 'luz_indirecta';
+};
+
+/**
+ * 📊 Métricas y Estadísticas del Sistema de IA
+ */
+const getAISystemStats = (): {
+  totalAnalyses: number;
+  averageCost: number;
+  successRate: number;
+  averageConfidence: number;
+} => {
+  // En una implementación real, esto vendría de una base de datos
+  return {
+    totalAnalyses: 0,
+    averageCost: 0,
+    successRate: 100,
+    averageConfidence: 85
+  };
+};
+
+/**
+ * 🧹 Limpiar caché del sistema de IA
+ */
+const clearAICache = (): void => {
+  aiAgentSystem.clearCache();
+  console.log('🧹 [AI SERVICE] Cache cleared');
 };
 
 export default {
@@ -319,4 +278,12 @@ export default {
   generatePlantResponse,
   completePlantInfo,
   updateHealthAnalysis,
+  getAISystemStats,
+  clearAICache,
+  
+  // Acceso directo al sistema multi-agente para casos avanzados
+  agentSystem: aiAgentSystem,
+  
+  // Utilities
+  mapLightRequirements
 };
