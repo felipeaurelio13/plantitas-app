@@ -13,6 +13,7 @@ import { ToastProvider } from './components/ui/Toast';
 import { usePerformanceMonitoring } from './hooks/usePerformanceMonitoring';
 import { initViewportFix, getMobileDeviceInfo } from './utils/mobileViewport';
 import { MobileDebugPanel } from './components/MobileDebugPanel';
+import { EmergencyDebugOverlay } from './components/EmergencyDebugOverlay';
 import { logCriticalError } from './utils/mobileDebugAdvanced';
 
 import Layout from './components/Layout';
@@ -164,6 +165,7 @@ const App: React.FC = () => {
             >
               <Toaster position="top-center" richColors />
               <MobileDebugPanel />
+              <EmergencyDebugOverlay />
               <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
               <Routes>
                 <Route
