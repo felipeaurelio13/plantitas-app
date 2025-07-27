@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import useAuthStore from '../stores/useAuthStore';
-import { plantService } from '../services/plantService';
+import plantService from '../services/plantService';
 import { toast } from 'sonner';
 import aiService from '../services/aiService'; // Use default import for aiService
 import { Plant } from '../schemas';

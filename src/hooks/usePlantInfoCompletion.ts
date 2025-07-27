@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import useAuthStore from '../stores/useAuthStore';
 import { Plant } from '../schemas';
 import aiService from '../services/aiService'; // Use default import for aiService
-import { plantService } from '../services/plantService';
+import plantService from '../services/plantService';
 import { usePlantDetail } from './usePlantDetail';
 
 export const usePlantInfoCompletion = () => {

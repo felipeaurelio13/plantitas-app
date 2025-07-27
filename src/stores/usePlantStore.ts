@@ -1,11 +1,8 @@
 import { create } from 'zustand';
 import { produce } from 'immer';
 import { Plant, ChatMessage } from '../schemas';
-import { PlantService } from '../services/plantService';
+import plantService from '../services/plantService';
 import { gardenCacheService } from '../services/gardenCacheService';
-
-// Instantiate services
-const plantService = new PlantService();
 
 interface PlantState {
   plants: Plant[];
@@ -18,212 +15,216 @@ interface PlantActions {
   // loadPlants: (userId: string) => Promise<void>; // Removed
   getPlantById: (plantId: string) => Plant | undefined;
   addPlant: (
-    imageDataUrl: string,
-    location: string,
-    userId: string
-  ) => Promise<Plant | undefined>;
-  updatePlant: (plant: Plant, userId: string) => Promise<void>;
-  deletePlant: (plantId: string, userId: string) => Promise<void>;
-  addChatMessage: (
+    userId: string,
+    plantData: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>
+  ) => Promise<string>;
+  updatePlant: (plantId: string, updates: Partial<Plant>) => Promise<void>;
+  deletePlant: (plantId: string) => Promise<void>;
+  updatePlantHealthScore: (
     plantId: string,
-    userMessage: string,
-    userId: string
+    healthScore: number
   ) => Promise<void>;
-  addPlantImage: (
+  sendChatMessage: (
     plantId: string,
-    imageDataUrl: string,
-    userId: string
-  ) => Promise<void>;
-  selectPlant: (id: string | null) => void;
-  setPlant: (plant: Plant) => void;
+    userId: string,
+    message: string
+  ) => Promise<ChatMessage>;
+  setSelectedPlantId: (plantId: string | null) => void;
   clearError: () => void;
-  clearPlants: () => void;
 }
 
 type PlantStore = PlantState & PlantActions;
 
-export const usePlantStore = create<PlantStore>((set, get) => ({
+const usePlantStore = create<PlantStore>((set, get) => ({
   plants: [],
   isLoading: false,
   error: null,
   selectedPlantId: null,
 
-  // loadPlants: async (userId) => { ... }, // Removed
-
-  getPlantById: (plantId) => {
-    if (import.meta.env.DEV) {
-      console.log('[usePlantStore] Solicitando planta con ID:', plantId);
-      console.log('[usePlantStore] Estado actual de `plants`:', get().plants);
-    }
-    return get().plants.find((p) => p.id === plantId);
+  getPlantById: (plantId: string) => {
+    const { plants } = get();
+    return plants.find((plant) => plant.id === plantId);
   },
 
-  setPlant: (plant) => {
+  addPlant: async (userId: string, plantData) => {
     set(
-      produce((state: PlantState) => {
-        const index = state.plants.findIndex((p) => p.id === plant.id);
-        if (index !== -1) {
-          // If plant exists, update it
-          state.plants[index] = plant;
-        } else {
-          // If plant doesn't exist, add it
-          state.plants.push(plant);
-        }
+      produce((state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+    );
+
+    try {
+      // Create the plant in Firebase
+      const newPlantId = await plantService.createPlant({
+        ...plantData,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // Get the complete plant data
+      const newPlant = await plantService.getPlantById(newPlantId);
+      if (newPlant) {
+        set(
+          produce((state) => {
+            state.plants.push(newPlant);
+            state.isLoading = false;
+          })
+        );
+      }
+
+      return newPlantId;
+    } catch (error: any) {
+      set(
+        produce((state) => {
+          state.error = error.message || 'Failed to add plant';
+          state.isLoading = false;
+        })
+      );
+      throw error;
+    }
+  },
+
+  updatePlant: async (plantId: string, updates: Partial<Plant>) => {
+    set(
+      produce((state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+    );
+
+    try {
+      await plantService.updatePlant(plantId, updates);
+
+      set(
+        produce((state) => {
+          const index = state.plants.findIndex((plant) => plant.id === plantId);
+          if (index !== -1) {
+            state.plants[index] = { ...state.plants[index], ...updates };
+          }
+          state.isLoading = false;
+        })
+      );
+    } catch (error: any) {
+      set(
+        produce((state) => {
+          state.error = error.message || 'Failed to update plant';
+          state.isLoading = false;
+        })
+      );
+      throw error;
+    }
+  },
+
+  deletePlant: async (plantId: string) => {
+    set(
+      produce((state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+    );
+
+    try {
+      await plantService.deletePlant(plantId);
+
+      set(
+        produce((state) => {
+          state.plants = state.plants.filter((plant) => plant.id !== plantId);
+          state.isLoading = false;
+        })
+      );
+    } catch (error: any) {
+      set(
+        produce((state) => {
+          state.error = error.message || 'Failed to delete plant';
+          state.isLoading = false;
+        })
+      );
+      throw error;
+    }
+  },
+
+  updatePlantHealthScore: async (plantId: string, healthScore: number) => {
+    try {
+      await plantService.updatePlantHealthScore(plantId, healthScore);
+
+      set(
+        produce((state) => {
+          const plant = state.plants.find((p) => p.id === plantId);
+          if (plant) {
+            plant.healthScore = healthScore;
+          }
+        })
+      );
+    } catch (error: any) {
+      set(
+        produce((state) => {
+          state.error = error.message || 'Failed to update health score';
+        })
+      );
+      throw error;
+    }
+  },
+
+  sendChatMessage: async (
+    plantId: string,
+    userId: string,
+    message: string
+  ): Promise<ChatMessage> => {
+    try {
+      // Create user message
+      const userMessage: Omit<ChatMessage, 'id'> = {
+        plantId,
+        userId,
+        sender: 'user',
+        content: message,
+        createdAt: new Date(),
+      };
+
+      // Save user message
+      await plantService.addChatMessage(plantId, userMessage);
+
+      // Create AI response (mock for now)
+      const aiResponse: Omit<ChatMessage, 'id'> = {
+        plantId,
+        userId,
+        sender: 'plant',
+        content: `¡Hola! Soy tu planta. Gracias por tu mensaje: "${message}". ¡Estoy muy feliz de poder hablar contigo!`,
+        emotion: 'happy',
+        createdAt: new Date(),
+      };
+
+      // Save AI response
+      await plantService.addChatMessage(plantId, aiResponse);
+
+      return aiResponse as ChatMessage;
+    } catch (error: any) {
+      set(
+        produce((state) => {
+          state.error = error.message || 'Failed to send chat message';
+        })
+      );
+      throw error;
+    }
+  },
+
+  setSelectedPlantId: (plantId: string | null) => {
+    set(
+      produce((state) => {
+        state.selectedPlantId = plantId;
       })
     );
   },
 
-  addPlant: async (imageDataUrl, location, userId) => {
-    try {
-      const newPlant = await plantService.addPlantFromAnalysis(
-        userId,
-        imageDataUrl,
-        location
-      );
-
-      set(
-        produce((state: PlantState) => {
-          state.plants.unshift(newPlant);
-        })
-      );
-
-      // Invalidate garden cache since we added a new plant
-      gardenCacheService.invalidateOnPlantChange(userId);
-
-      return newPlant;
-    } catch (e) {
-      console.error(e);
-      throw e;
-    }
+  clearError: () => {
+    set(
+      produce((state) => {
+        state.error = null;
+      })
+    );
   },
+}));
 
-  updatePlant: async (plantToUpdate, userId) => {
-    // set({ isLoading: true, error: null }); // Removed
-    try {
-      const updatedPlant = await plantService.updatePlant(plantToUpdate, userId);
-      set(
-        produce((state: PlantState) => {
-          const index = state.plants.findIndex((p) => p.id === updatedPlant.id);
-          if (index !== -1) {
-            state.plants[index] = updatedPlant;
-          }
-          // state.isLoading = false; // Removed
-        })
-      );
-
-      // Invalidate garden cache since plant data changed
-      gardenCacheService.invalidateOnPlantChange(userId);
-    } catch (e) {
-      // const error = e instanceof Error ? e.message : 'Failed to update plant';
-      // set({ error, isLoading: false }); // Removed
-      console.error(e);
-      throw e;
-    }
-  },
-
-  deletePlant: async (plantId, userId) => {
-    // set({ isLoading: true, error: null }); // Removed
-    try {
-      await plantService.deletePlant(plantId, userId);
-      set(
-        produce((state: PlantState) => {
-          state.plants = state.plants.filter((p) => p.id !== plantId);
-          // state.isLoading = false; // Removed
-        })
-      );
-
-      // Invalidate garden cache since we deleted a plant
-      gardenCacheService.invalidateOnPlantChange(userId);
-    } catch (e) {
-      // const error = e instanceof Error ? e.message : 'Failed to delete plant';
-      // set({ error, isLoading: false }); // Removed
-      console.error(e);
-      throw e;
-    }
-  },
-
-  addChatMessage: async (plantId, userMessageContent, userId) => {
-    set({ isLoading: true, error: null });
-    const plant = get().getPlantById(plantId);
-    if (!plant) {
-      set({ isLoading: false, error: 'Plant not found to add message' });
-      return;
-    }
-
-    const tempUserMessage: ChatMessage = {
-      id: `temp-user-${Date.now()}`,
-      sender: 'user',
-      content: userMessageContent,
-      timestamp: new Date(),
-      // No context para el usuario
-    };
-
-    // Optimistic update
-    set(produce((state: PlantState) => {
-      state.plants.find(p => p.id === plantId)?.chatHistory.push(tempUserMessage);
-    }));
-
-    try {
-      const [savedUserMessage, savedPlantMessage] = await plantService.sendChatMessageAndGetResponse(
-        plant,
-        {
-          sender: 'user',
-          content: userMessageContent,
-          timestamp: tempUserMessage.timestamp,
-          // No context para el usuario
-        },
-        userId
-      );
-
-      // Replace optimistic update with real data
-      set(produce((state: PlantState) => {
-        const targetPlant = state.plants.find(p => p.id === plantId);
-        if (targetPlant) {
-          // Remove temp message and add persisted ones
-          targetPlant.chatHistory = [
-            ...targetPlant.chatHistory.filter(m => m.id !== tempUserMessage.id),
-            savedUserMessage,
-            savedPlantMessage
-          ];
-        }
-        state.isLoading = false;
-      }));
-    } catch (e) {
-      const error = e instanceof Error ? e.message : 'Failed to send message';
-      console.error(error);
-      set({ isLoading: false, error });
-      // Optionally revert optimistic update or show error in chat
-    }
-  },
-  
-  addPlantImage: async (plantId, imageDataUrl, userId) => {
-    // set({ isLoading: true, error: null }); // Removed
-    try {
-      const newImage = await plantService.addPlantImage(
-        plantId,
-        { url: imageDataUrl, timestamp: new Date(), isProfileImage: false },
-        userId
-      );
-      set(
-        produce((state: PlantState) => {
-          const plant = state.plants.find(p => p.id === plantId);
-          if(plant) {
-            plant.images.push(newImage);
-          }
-          // state.isLoading = false; // Removed
-        })
-      );
-    } catch (e) {
-      // const error = e instanceof Error ? e.message : 'Failed to add image';
-      // set({ error, isLoading: false }); // Removed
-      console.error(e);
-      throw e;
-    }
-  },
-
-  selectPlant: (id) => set({ selectedPlantId: id }),
-  
-  clearError: () => { /* This can be removed or do nothing */ },
-
-  clearPlants: () => set({ plants: [], selectedPlantId: null }), // isLoading removed
-})); 
+export default usePlantStore;
+export { usePlantStore }; 

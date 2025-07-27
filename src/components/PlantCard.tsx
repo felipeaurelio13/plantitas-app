@@ -7,7 +7,7 @@ import { PlantSummary } from '../schemas';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import LazyImage from './LazyImage';
 import { navigation } from '../lib/navigation';
-import { plantService } from '@/services/plantService'; // Import plantService
+import plantService from '@/services/plantService'; // Import plantService
 
 interface PlantCardProps {
   plant: PlantSummary;

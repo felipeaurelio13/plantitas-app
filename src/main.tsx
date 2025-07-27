@@ -6,7 +6,7 @@ import './index.css';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useAuthStore from './stores/useAuthStore';
-import { plantService } from './services/plantService';
+import plantService from './services/plantService';
 import { initAdvancedMobileDebug, logCriticalError } from './utils/mobileDebugAdvanced';
 import { Toaster } from 'sonner';
 

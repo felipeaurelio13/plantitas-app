@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import useAuthStore from '../stores/useAuthStore';
-import { plantService } from '../services/plantService';
+import plantService from '../services/plantService';
 import { PERFORMANCE_CONFIG } from '../lib/performance';
 
 export const usePlantsQuery = () => {

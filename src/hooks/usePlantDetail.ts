@@ -3,7 +3,7 @@ import { useMemo, useEffect } from 'react';
 import { differenceInDays } from 'date-fns';
 import { Plant, PlantImage, CareProfile, HealthAnalysis, PlantPersonality, ChatMessage, PlantNotification } from '@/schemas';
 import { usePlantStore } from '@/stores';
-import { plantService } from '@/services/plantService'; // Import the new plantService
+import plantService from '@/services/plantService'; // Import the new plantService
 
 const fetchPlantById = async (plantId: string): Promise<Plant> => {
   const plant = await plantService.getPlantById(plantId);
