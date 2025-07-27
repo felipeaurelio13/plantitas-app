@@ -53,8 +53,20 @@ const validateFirebaseConfig = () => {
   const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
   const missingKeys = requiredKeys.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig]);
   
+  console.log('🔥 Firebase Config Check:', {
+    hasAllKeys: missingKeys.length === 0,
+    missingKeys,
+    configKeys: Object.keys(firebaseConfig),
+    configValues: Object.fromEntries(
+      Object.entries(firebaseConfig).map(([key, value]) => [
+        key, 
+        value ? `${value.substring(0, 10)}...` : 'MISSING'
+      ])
+    )
+  });
+  
   if (missingKeys.length > 0) {
-    console.warn(`Firebase config missing: ${missingKeys.join(', ')}`);
+    console.error(`🔥 Firebase config missing: ${missingKeys.join(', ')}`);
     return false;
   }
   return true;
@@ -66,18 +78,40 @@ let auth: Auth | undefined;
 let db: Firestore | undefined;
 let storage: FirebaseStorage | undefined;
 
+console.log('🔥 Starting Firebase initialization...');
+
 try {
   if (validateFirebaseConfig()) {
+    console.log('✅ Firebase config validation passed');
+    
     app = initializeApp(firebaseConfig);
+    console.log('✅ Firebase app initialized');
+    
     auth = getAuth(app);
+    console.log('✅ Firebase Auth initialized');
+    
     db = getFirestore(app);
+    console.log('✅ Firestore initialized');
+    
     storage = getStorage(app);
-    console.log('Firebase initialized successfully');
+    console.log('✅ Firebase Storage initialized');
+    
+    // Make Firebase available globally for debugging
+    (window as any).firebaseApp = app;
+    (window as any).firebaseAuth = auth;
+    (window as any).firebaseDb = db;
+    
+    console.log('✅ Firebase initialized successfully - all services ready');
   } else {
-    console.warn('Firebase initialization skipped due to missing configuration');
+    console.error('❌ Firebase initialization skipped due to missing configuration');
   }
 } catch (error) {
-  console.error('Firebase initialization failed:', error);
+  console.error('❌ Firebase initialization failed:', error);
+  console.error('❌ Error details:', {
+    name: error instanceof Error ? error.name : 'Unknown',
+    message: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined
+  });
 }
 
 // Google Auth Provider
