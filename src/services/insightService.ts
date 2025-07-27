@@ -1,9 +1,9 @@
 import { Plant } from '../schemas';
 
 interface PlantInsight {
-  type: 'warning' | 'tip' | 'observation' | 'recommendation';
+  type: 'info' | 'warning' | 'tip' | 'alert'; // Cambiado para coincidir con InsightSchema
   title: string;
-  description: string;
+  message: string;
   affectedPlants?: string[];
 }
 
@@ -41,9 +41,9 @@ const generateInsights = async (plant: Plant): Promise<PlantInsight[]> => {
     Genera un array de insights con el formato:
     [
       {
-        "type": "warning" | "tip" | "observation" | "recommendation",
+        "type": "info" | "warning" | "tip" | "alert",
         "title": "Título breve del insight",
-        "description": "Descripción detallada del insight",
+        "message": "Descripción detallada del insight",
         "affectedPlants": ["${plant.id}"]
       }
     ]
@@ -138,9 +138,9 @@ const generateGardenInsights = async (plants: Plant[]): Promise<PlantInsight[]> 
     Genera un array de insights con el formato:
     [
       {
-        "type": "warning" | "tip" | "observation" | "recommendation",
+        "type": "info" | "warning" | "tip" | "alert",
         "title": "Título breve del insight",
-        "description": "Descripción detallada del insight",
+        "message": "Descripción detallada del insight",
         "affectedPlants": ["id1", "id2"] // IDs de plantas afectadas si aplica
       }
     ]

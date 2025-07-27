@@ -69,13 +69,15 @@ class StorageService {
         ...img,
         timestamp: new Date(img.timestamp),
       })),
-      chatHistory: plant.chatHistory.map(msg => ({
+      // Fix: usar chatMessages en lugar de chatHistory
+      chatHistory: (plant as any).chatMessages?.map((msg: any) => ({
         ...msg,
         timestamp: new Date(msg.timestamp),
-      })),
+      })) || [],
       notifications: plant.notifications.map(notif => ({
         ...notif,
-        scheduledFor: new Date(notif.scheduledFor),
+        // Fix: las notificaciones no tienen scheduledFor en la interfaz actual
+        createdAt: new Date(notif.createdAt),
       })),
     }));
   }
