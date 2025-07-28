@@ -5,7 +5,7 @@ import { PlantSummary } from '../schemas';
 import { Button } from './ui/Button';
 import { usePlantMutations } from '../hooks/usePlantMutations';
 import { usePlantDetail } from '../hooks/usePlantDetail';
-import { useAuthStore } from '../stores/useAuthStore';
+import useAuthStore from '../stores/useAuthStore';
 import { useToast } from './ui/Toast';
 
 interface UpdateHealthDiagnosisButtonProps {
@@ -24,7 +24,7 @@ const UpdateHealthDiagnosisButton: React.FC<UpdateHealthDiagnosisButtonProps> = 
   className = ''
 }) => {
   const { updatePlantHealthMutation, isUpdatingPlantHealth } = usePlantMutations();
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore((state: any) => state.user);
   const { addToast } = useToast();
 
   // Obtener los datos completos de la planta

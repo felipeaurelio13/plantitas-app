@@ -5,7 +5,7 @@ import {
   Route,
   Navigate,
 } from 'react-router-dom';
-import { useAuthStore } from './stores/useAuthStore';
+import useAuthStore from './stores/useAuthStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ToastProvider as NewToastProvider } from './components/ui/Toast/ToastProvider';
@@ -73,11 +73,11 @@ const getBasename = (): string => {
 };
 
 const App: React.FC = () => {
-  const { session, isInitialized, initialize } = useAuthStore();
+  const { user, initialized, initialize } = useAuthStore();
   
   // Solo log en desarrollo para debugging
   if (import.meta.env.DEV) {
-    console.log('[APP] App component mounting... Session:', !!session, 'Initialized:', isInitialized);
+    console.log('[APP] App component mounting... User:', !!user, 'Initialized:', initialized);
   }
   
   // Monitoreo de performance en desarrollo
@@ -116,16 +116,16 @@ const App: React.FC = () => {
   useEffect(() => {
     // Si después de 3 segundos no se inicializa, forzar render
     const emergencyTimeout = setTimeout(() => {
-      if (!isInitialized) {
+      if (!initialized) {
         console.warn('[APP] Emergency timeout - forcing app render');
         setForceRender(true);
       }
     }, 3000);
     
     return () => clearTimeout(emergencyTimeout);
-  }, [isInitialized]);
+  }, [initialized]);
 
-      if (!isInitialized && !forceRender) {
+      if (!initialized && !forceRender) {
       return <FullScreenLoader message="Inicializando..." />;
     }
 
@@ -168,11 +168,11 @@ const App: React.FC = () => {
               <Routes>
                 <Route
                   path={routes.auth}
-                  element={!session ? <AuthPage /> : <Navigate to={routes.dashboard} replace />}
+                  element={!user ? <AuthPage /> : <Navigate to={routes.dashboard} replace />}
                 />
                 <Route
                   path="/*"
-                  element={session ? <PrivateRoutes /> : <Navigate to={routes.auth} replace />}
+                  element={user ? <PrivateRoutes /> : <Navigate to={routes.auth} replace />}
                 />
               </Routes>
             </Suspense>

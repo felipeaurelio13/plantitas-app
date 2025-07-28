@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { completePlantInfo } from '../services/aiService';
 import { PlantService } from '../services/plantService';
-import { useAuthStore } from '../stores/useAuthStore';
+import useAuthStore from '../stores/useAuthStore';
 import { useToast } from '../components/ui/Toast';
 
 const plantService = new PlantService();
@@ -10,7 +10,7 @@ const plantService = new PlantService();
 export const usePlantInfoCompletion = () => {
   const [isCompleting, setIsCompleting] = useState(false);
   const queryClient = useQueryClient();
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore((state: any) => state.user);
   const { addToast } = useToast();
 
   const completePlantInfoMutation = useMutation({

@@ -22,7 +22,7 @@ interface CurrentUser {
   preferences: Record<string, any>;
 }
 
-const useAuthStore = create<AuthState>((set, get) => ({
+const useAuthStore = create<AuthState>((set, _get) => ({
   user: null,
   initialized: false,
   isLoading: false,

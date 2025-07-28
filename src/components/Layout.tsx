@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNavigation from './BottomNavigation';
 import OfflineIndicator from './OfflineIndicator';
+import Footer from './Footer';
 import { useThemeStore } from '../stores';
 
 const Layout: React.FC = () => {
@@ -107,6 +108,15 @@ const Layout: React.FC = () => {
         <nav role="navigation" aria-label="Navegación inferior">
           <BottomNavigation />
         </nav>
+      )}
+
+      {/* Footer with version info */}
+      {!isCamera && (
+        <Footer 
+          className="mt-auto pt-4 pb-20" 
+          showVersion={true}
+          showBuildInfo={false}
+        />
       )}
 
       {/* High contrast mode detection and styles */}

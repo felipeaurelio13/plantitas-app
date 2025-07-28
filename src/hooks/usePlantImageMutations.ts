@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '../stores/useAuthStore';
+import useAuthStore from '../stores/useAuthStore';
 import { usePlantStore } from '../stores/usePlantStore';
 import { plantService } from '../services/plantService';
 import { uploadImage } from '../services/imageService';
@@ -8,7 +8,7 @@ import { useToast } from '../components/ui/Toast';
 
 export const usePlantImageMutations = () => {
   const queryClient = useQueryClient();
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore((state: any) => state.user);
   const userId = user?.id;
   const { addToast } = useToast();
 

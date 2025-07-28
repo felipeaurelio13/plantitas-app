@@ -10,7 +10,7 @@ const AuthPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isOAuthLoading, setOAuthLoading] = useState(false);
+  // const [isOAuthLoading, setOAuthLoading] = useState(false);
 
   // Use the store for state and actions
   const { signIn, signUp, isLoading, error, clearError } = useAuthStore();

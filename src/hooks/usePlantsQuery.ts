@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuthStore } from '../stores/useAuthStore';
+import useAuthStore from '../stores/useAuthStore';
 import { plantService } from '../services/plantService';
 import { PERFORMANCE_CONFIG } from '../lib/performance';
 
 export const usePlantsQuery = () => {
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore((state: any) => state.user);
 
   return useQuery({
     queryKey: ['plants', user?.id],
