@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useThemeStore, useAuthStore } from '../stores';
 import { storageService } from '../services/storageService';
 import { useNavigate } from 'react-router-dom';
+import { getFullVersion } from '../config/version';
 
 export const useSettings = () => {
   const { isDark, toggleTheme } = useThemeStore();
@@ -95,28 +96,31 @@ export const useSettings = () => {
     {
       title: 'Soporte',
       items: [
-        // Funciones de soporte temporalmente ocultas - ver ROADMAP.md
+        {
+          id: 'about',
+          icon: 'Info',
+          label: 'Acerca de Plantitas',
+          value: getFullVersion(),
+          onClick: () => { 
+            console.log('Show about modal with version info');
+            // Aquí se podría abrir un modal con información detallada
+          },
+          type: 'button' as const,
+        },
+        // Funciones de soporte adicionales - ver ROADMAP.md
         /* 
         {
           id: 'help',
           icon: 'HelpCircle',
           label: 'Ayuda y FAQ',
-          action: () => { console.log('Navigate to help page'); },
+          onClick: () => { console.log('Navigate to help page'); },
           type: 'button' as const,
         },
         {
           id: 'privacy',
           icon: 'Shield',
           label: 'Política de Privacidad',
-          action: () => { console.log('Navigate to privacy page'); },
-          type: 'button' as const,
-        },
-        {
-          id: 'about',
-          icon: 'Info',
-          label: 'Acerca de Plantitas',
-          value: 'v1.0.0', // This should be dynamic
-          action: () => { console.log('Show about modal'); },
+          onClick: () => { console.log('Navigate to privacy page'); },
           type: 'button' as const,
         }
         */

@@ -6,9 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "build:skip-tsc": "vite build",
-    "build:force": "vite build --mode production",
+    "update-version": "node scripts/update-version.cjs",
+    "build": "npm run update-version && tsc && vite build",
+    "build:skip-tsc": "npm run update-version && vite build",
+    "build:force": "npm run update-version && vite build --mode production",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "clean": "rm -rf node_modules .vite",
@@ -21,7 +22,7 @@
     "test:ui": "vitest --ui",
     "test:debug": "vitest --inspect-brk",
     "test:firebase": "vitest tests/firebase",
-    "predeploy": "npm run build",
+    "predeploy": "npm run build:skip-tsc",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
