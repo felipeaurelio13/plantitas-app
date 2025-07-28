@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Deploy - Plantitas</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .status {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Deploy - Plantitas</h1>
+        
+        <div class="status">
+            <h2>✅ Deploy Funcionando</h2>
+            <p><strong>Fecha:</strong> 28 de julio de 2025, 15:35</p>
+            <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+            <p><strong>Branch:</strong> firebase-v9-migration</p>
+            <p><strong>Estado:</strong> ✅ GitHub Pages sirviendo archivos</p>
+        </div>
+        
+        <div class="status">
+            <h3>🔍 Debug Info:</h3>
+            <p>User Agent: <span id="userAgent"></span></p>
+            <p>URL: <span id="currentUrl"></span></p>
+            <p>Timestamp: <span id="jsTimestamp"></span></p>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('timestamp').textContent = new Date().toISOString();
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('jsTimestamp').textContent = Date.now();
+        
+        console.log('✅ Test Deploy - Plantitas funcionando');
+        console.log('URL:', window.location.href);
+        console.log('User Agent:', navigator.userAgent);
+        console.log('Timestamp:', new Date().toISOString());
+    </script>
+</body>
+</html>
