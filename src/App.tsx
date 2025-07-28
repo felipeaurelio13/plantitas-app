@@ -14,6 +14,7 @@ import { usePerformanceMonitoring } from './hooks/usePerformanceMonitoring';
 import { initViewportFix, getMobileDeviceInfo } from './utils/mobileViewport';
 import { MobileDebugPanel } from './components/MobileDebugPanel';
 import { EmergencyDebugOverlay } from './components/EmergencyDebugOverlay';
+import { FirebaseConfigMissing } from './components/FirebaseConfigMissing';
 import { logCriticalError } from './utils/mobileDebugAdvanced';
 
 import Layout from './components/Layout';
@@ -79,6 +80,25 @@ const App: React.FC = () => {
   // Solo log en desarrollo para debugging
   if (import.meta.env.DEV) {
     console.log('[APP] App component mounting... User:', !!user, 'Initialized:', isInitialized);
+  }
+  
+  // Check if Firebase is configured
+  const firebaseConfigured = !!(
+    import.meta.env.VITE_FIREBASE_API_KEY && 
+    import.meta.env.VITE_FIREBASE_PROJECT_ID
+  );
+  
+  console.log('[APP] Firebase configured:', firebaseConfigured);
+  
+  // If Firebase is not configured, show configuration screen
+  if (!firebaseConfigured) {
+    return (
+      <>
+        <MobileDebugPanel />
+        <EmergencyDebugOverlay />
+        <FirebaseConfigMissing />
+      </>
+    );
   }
   
   // Monitoreo de performance en desarrollo

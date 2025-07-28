@@ -48,6 +48,24 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Log de configuración para debug
+console.log('🔥 Firebase Config Debug:', {
+  apiKeyPresent: !!firebaseConfig.apiKey,
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain,
+  environment: import.meta.env.MODE,
+  allEnvVars: {
+    NODE_ENV: import.meta.env.NODE_ENV,
+    MODE: import.meta.env.MODE,
+    PROD: import.meta.env.PROD,
+    DEV: import.meta.env.DEV,
+    // No log sensitive data, just check presence
+    hasApiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
+    hasProjectId: !!import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    hasAuthDomain: !!import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  }
+});
+
 // Validate Firebase configuration
 const validateFirebaseConfig = () => {
   const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
@@ -67,6 +85,13 @@ const validateFirebaseConfig = () => {
   
   if (missingKeys.length > 0) {
     console.error(`🔥 Firebase config missing: ${missingKeys.join(', ')}`);
+    
+    // En desarrollo, mostrar error detallado
+    if (import.meta.env.DEV) {
+      console.error('🔥 Dev Mode: Check your .env file has all VITE_FIREBASE_* variables');
+    } else {
+      console.error('🔥 Production Mode: Check GitHub Secrets are configured correctly');
+    }
     return false;
   }
   return true;
@@ -104,6 +129,16 @@ try {
     console.log('✅ Firebase initialized successfully - all services ready');
   } else {
     console.error('❌ Firebase initialization skipped due to missing configuration');
+    
+    // Create mock Firebase services for development/testing
+    console.warn('🔄 Creating mock Firebase services for fallback mode');
+    
+    (window as any).firebaseApp = null;
+    (window as any).firebaseAuth = null;
+    (window as any).firebaseDb = null;
+    
+    // En modo de fallback, la app debería mostrar un mensaje de configuración
+    console.warn('🔄 App will run in fallback mode - some features may be limited');
   }
 } catch (error) {
   console.error('❌ Firebase initialization failed:', error);
@@ -112,6 +147,11 @@ try {
     message: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : undefined
   });
+  
+  // Fallback to mock services
+  (window as any).firebaseApp = null;
+  (window as any).firebaseAuth = null;
+  (window as any).firebaseDb = null;
 }
 
 // Google Auth Provider
