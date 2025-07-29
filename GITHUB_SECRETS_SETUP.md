@@ -155,3 +155,4 @@ Una vez configurados los secrets, tu aplicación Plantitas funcionará completam
 - ✅ **Tema beautiful** (mobile-first)
 
 **🌱 ¡Tu jardín inteligente está listo para crecer!**
+

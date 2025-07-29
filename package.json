@@ -1,7 +1,7 @@
 {
   "name": "plant-care-companion",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "homepage": "https://felipeaurelio13.github.io/plantitas-app",
   "type": "module",
   "scripts": {
