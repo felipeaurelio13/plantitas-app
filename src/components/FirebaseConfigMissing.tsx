@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, Settings, ExternalLink } from 'lucide-react';
+import Footer from './Footer';
 
 export const FirebaseConfigMissing: React.FC = () => {
   const copyEnvTemplate = () => {
@@ -99,6 +100,7 @@ VITE_OPENAI_API_KEY=your_openai_key_here`}</pre>
           </p>
         </div>
       </div>
+      <Footer className="mt-8" showVersion />
     </div>
   );
 };

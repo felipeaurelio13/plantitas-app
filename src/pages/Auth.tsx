@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Footer from '../components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff, Leaf, Sprout, Flower2 } from 'lucide-react';
 import useAuthStore from '../stores/useAuthStore';
@@ -282,6 +283,7 @@ const AuthPage: React.FC = () => {
           </p>
         </motion.div>
       </motion.div>
+      <Footer className="mt-8" showVersion />
     </div>
   );
 };
