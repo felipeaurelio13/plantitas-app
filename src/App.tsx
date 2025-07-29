@@ -58,21 +58,8 @@ const FullScreenLoader: React.FC<{ message: string }> = ({ message }) => (
   </div>
 );
 
-// Smart basename detection para mobile compatibility
-const getBasename = (): string => {
-  // Local development
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return '/';
-  }
-  
-  // GitHub Pages detection
-  if (window.location.pathname.startsWith('/plantitas-app')) {
-    return '/plantitas-app/';
-  }
-  
-  // Fallback
-  return '/';
-};
+// Basename único para enrutamiento en web y móvil
+const getBasename = (): string => '/plantitas-app/';
 
 const App: React.FC = () => {
   const { user, isInitialized, initialize } = useAuthStore();
