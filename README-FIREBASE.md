@@ -40,6 +40,15 @@ VITE_FIREBASE_APP_ID=tu_app_id
 VITE_OPENAI_API_KEY=tu_openai_api_key
 ```
 
+### Dominios autorizados
+
+En la [Firebase Console](https://console.firebase.google.com/) ve a **Authentication → Settings** y en **Authorized domains** agrega:
+
+- `felipeaurelio13.github.io`
+- `localhost`
+
+Esto permite iniciar sesión desde GitHub Pages y durante el desarrollo local.
+
 ### Estructura de Firestore
 
 ```

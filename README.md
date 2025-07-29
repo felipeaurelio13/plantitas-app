@@ -10,8 +10,8 @@
 - **Interfaz móvil** optimizada
 
 ### 🚀 Estado del Deploy
-- **Versión actual:** v1.0.0
-- **Último deploy:** 28 de julio de 2025, 15:27
+- **Versión actual:** v1.0.1
+- **Último deploy:** 29 de julio de 2025, 10:00
 - **Branch:** firebase-v9-migration
 - **URL:** https://felipeaurelio13.github.io/plantitas-app/
 
