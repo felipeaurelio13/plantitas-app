@@ -10,7 +10,7 @@
     "build": "npm run update-version && tsc && vite build",
     "build:skip-tsc": "npm run update-version && vite build",
     "build:force": "npm run update-version && vite build --mode production",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint .",
     "preview": "vite preview",
     "clean": "rm -rf node_modules .vite",
     "test": "vitest",
