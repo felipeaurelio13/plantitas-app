@@ -1,6 +1,0 @@
-  const {
-    messages,
-    isLoading,
-    sendMessage,
-    refreshData,
-  } = useGardenChat();
