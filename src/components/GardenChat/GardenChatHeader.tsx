@@ -127,7 +127,7 @@ const GardenChatHeader: React.FC<GardenChatHeaderProps> = ({
       {/* System Diagnostics Modal */}
       <AnimatePresence>
         {showDiagnostics && (
-          <SystemDiagnostics onClose={() => setShowDiagnostics(false)} />
+          <SystemDiagnostics />
         )}
       </AnimatePresence>
     </header>

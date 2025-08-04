@@ -20,7 +20,7 @@ interface UpdateHealthDiagnosisResponse {
 
 const analyzeLatestPlantImage = async (
   plant: Plant,
-  userId: string
+  _userId: string
 ): Promise<HealthAnalysisResponse> => {
   try {
     console.log('[HEALTH DIAGNOSIS] Analyzing latest image for plant:', plant.id);
@@ -163,7 +163,7 @@ const getPlantHealthHistory = async (
 
     // Get images with health analysis, sorted by date
     const imagesWithHealth = (plant.images || [])
-      .filter(img => img.healthAnalysis && img.healthAnalysis.overallHealth)
+      .filter(img => img.healthAnalysis && img.healthAnalysis?.overallHealth)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limit)
       .map(img => ({
@@ -171,10 +171,10 @@ const getPlantHealthHistory = async (
         url: img.url,
         createdAt: img.createdAt,
         healthAnalysis: img.healthAnalysis,
-        healthScore: img.healthAnalysis.healthScore || 
-          (img.healthAnalysis.overallHealth === 'excellent' ? 95 :
-           img.healthAnalysis.overallHealth === 'good' ? 80 :
-           img.healthAnalysis.overallHealth === 'fair' ? 60 : 30)
+        healthScore: img.healthAnalysis?.healthScore || 
+          (img.healthAnalysis?.overallHealth === 'excellent' ? 95 :
+           img.healthAnalysis?.overallHealth === 'good' ? 80 :
+           img.healthAnalysis?.overallHealth === 'fair' ? 60 : 30)
       }));
 
     console.log('[HEALTH DIAGNOSIS] Retrieved health history:', imagesWithHealth.length, 'entries');
@@ -205,11 +205,11 @@ const generateHealthRecommendations = async (
 
     // Add care profile based recommendations
     if (plant.careProfile) {
-      if (plant.careProfile.watering === 'diario' && analysis.overallHealth !== 'excellent') {
+      if (plant.careProfile?.watering === 'diario' && analysis.overallHealth !== 'excellent') {
         recommendations.push('Considera reducir la frecuencia de riego si la tierra está húmeda');
       }
       
-      if (plant.careProfile.sunlight === 'directo' && analysis.issues?.some(issue => 
+      if (plant.careProfile?.sunlight === 'directo' && analysis.issues?.some(issue => 
         issue.toLowerCase().includes('quemadura') || issue.toLowerCase().includes('marchita'))) {
         recommendations.push('Mueve la planta a un lugar con luz indirecta para evitar quemaduras');
       }

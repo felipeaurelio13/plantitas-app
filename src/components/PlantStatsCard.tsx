@@ -17,7 +17,7 @@ const PlantStatsCard: React.FC<PlantStatsCardProps> = ({ plant, className = '' }
 
   // const getHealthTrend = () => {
   //   // Calculate real trend based on health analysis from plant images
-  //   if (!plant.images || plant.images.length < 2) {
+  //   if (!plant.images || plant.images?.length || 0 < 2) {
   //     return null; // No trend data available
   //   }
 
@@ -103,7 +103,7 @@ const PlantStatsCard: React.FC<PlantStatsCardProps> = ({ plant, className = '' }
     {
       icon: TrendingUp,
       label: 'Progreso',
-      value: plant.images.length.toString(),
+      value: (plant.images?.length || 0).toString(),
       color: 'text-indigo-500',
       bgColor: 'bg-indigo-100 dark:bg-indigo-900',
       subtitle: 'Fotos tomadas',

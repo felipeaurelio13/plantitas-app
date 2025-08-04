@@ -8,8 +8,8 @@ import { usePlantDetail } from './usePlantDetail';
 
 export const usePlantInfoCompletion = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
-  const { plant: selectedPlant } = usePlantDetail(undefined);
+  const { _user } = useAuthStore();
+  const { plant: _selectedPlant } = usePlantDetail(undefined);
 
   const completePlantInfoMutation = useMutation({
     mutationFn: async ({ plant, userId }: { plant: Plant; userId: string }) => {

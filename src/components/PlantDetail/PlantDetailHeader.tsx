@@ -18,8 +18,8 @@ const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
   const navigate = useNavigate();
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const { deletePlant, isDeletingPlant } = usePlantMutations();
-  const { completeInfo, isCompleting } = usePlantInfoCompletion();
+  const { deletePlant, isDeleting } = usePlantMutations();
+  const { completePlantInfoMutation } = usePlantInfoCompletion();
   const { scrollY } = useScroll();
   
   // Parallax effect
@@ -260,7 +260,20 @@ const PlantDetailHeader = ({ plant }: PlantDetailHeaderProps) => {
                       
                       <div className="flex w-full items-center px-2 py-1">
                         <UpdateHealthDiagnosisButton
-                          plant={plant}
+                          plant={{
+                            id: plant.id,
+                            name: plant.name,
+                            species: plant.species,
+                            location: plant.location,
+                            healthScore: plant.healthScore,
+                            dateAdded: plant.dateAdded,
+                            imageCount: plant.images?.length || 0,
+                            notificationCount: plant.notifications?.length || 0,
+                            nickname: plant.nickname,
+                            plantEnvironment: plant.plantEnvironment,
+                            lightRequirements: plant.lightRequirements,
+                            lastWatered: plant.lastWatered
+                          }}
                           variant="outline"
                           size="sm"
                           showLabel={true}

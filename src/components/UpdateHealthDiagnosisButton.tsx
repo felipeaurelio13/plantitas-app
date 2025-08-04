@@ -5,7 +5,7 @@ interface UpdateHealthDiagnosisButtonProps {
   plant: PlantSummary;
 }
 
-const UpdateHealthDiagnosisButton: React.FC<UpdateHealthDiagnosisButtonProps> = ({ plant }) => {
+const UpdateHealthDiagnosisButton: React.FC<UpdateHealthDiagnosisButtonProps> = ({ _plant }) => {
   return (
     <div className="text-sm text-gray-500">
       Diagnóstico de salud temporalmente deshabilitado

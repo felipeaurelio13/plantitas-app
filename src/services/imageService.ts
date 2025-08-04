@@ -63,9 +63,9 @@ declare const firebase: any;
 
 // This function is no longer needed as plantService handles image upload directly
 export const uploadImage = async (
-  imageDataUrl: string,
-  bucket: string,
-  path: string
+  _imageDataUrl: string,
+  _bucket: string,
+  _path: string
 ): Promise<string> => {
     console.warn('ImageService.uploadImage is deprecated and should not be called directly. Use PlantService.addPlantImage instead.');
     throw new Error('Deprecated function: Use PlantService.addPlantImage.');

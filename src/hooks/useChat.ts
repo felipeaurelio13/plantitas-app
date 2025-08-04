@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
-export const useChat = (plantId?: string) => {
+export const useChat = (_plantId?: string) => {
   const [isLoading, setIsLoading] = useState(false);
   
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (_content: string) => {
     setIsLoading(true);
     // Stub implementation
     await new Promise(resolve => setTimeout(resolve, 1000));

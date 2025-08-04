@@ -55,7 +55,7 @@ export const ExpandableInfoSection: React.FC<ExpandableInfoSectionProps> = ({
       title: 'Análisis de Salud',
       icon: <HeartPulse className="w-5 h-5" />,
       badge: hasHealthIssues ? 'Atención' : 'Saludable',
-      component: <HealthAnalysisCard analysis={firstImageAnalysis} />,
+      component: firstImageAnalysis ? <HealthAnalysisCard analysis={firstImageAnalysis} /> : <div>No analysis available</div>,
       priority: hasHealthIssues ? 1 : 3
     },
     {

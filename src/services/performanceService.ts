@@ -3,11 +3,11 @@ class PerformanceService {
     console.log('✅ Performance service initialized (stub)');
   }
 
-  measureOperation<T>(name: string, operation: () => Promise<T>): Promise<T> {
+  measureOperation<T>(_name: string, operation: () => Promise<T>): Promise<T> {
     return operation();
   }
 
-  measureFirebaseOperation<T>(name: string, operation: () => Promise<T>): Promise<T> {
+  measureFirebaseOperation<T>(_name: string, operation: () => Promise<T>): Promise<T> {
     return operation();
   }
 

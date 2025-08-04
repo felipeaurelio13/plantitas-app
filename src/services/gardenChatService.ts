@@ -16,7 +16,7 @@ interface GardenAIResponse {
 }
 
 class GardenChatService {
-  async sendMessage(message: string, sessionId: string, userId: string): Promise<GardenAIResponse> {
+  async sendMessage(message: string, _sessionId: string, _userId: string): Promise<GardenAIResponse> {
     try {
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
       
@@ -87,7 +87,7 @@ class GardenChatService {
         throw new Error('OpenAI API key not configured. Please add VITE_OPENAI_API_KEY to your environment variables.');
       }
 
-      const { plants, userId } = gardenContext;
+      const { plants, _userId } = gardenContext;
 
       // Prepare garden context
       const gardenSummary = {
@@ -283,7 +283,7 @@ class GardenChatService {
     }
   }
 
-  async getGardenContext(userId: string): Promise<{
+  async getGardenContext(_userId: string): Promise<{
     plants: Plant[];
     recentActivity: any[];
     overallHealth: number;

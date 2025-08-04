@@ -34,7 +34,7 @@ const PlantProgressChart: React.FC<PlantProgressChartProps> = ({ plant, classNam
   // Generate health data from actual plant images with health analysis
   const generateHealthData = () => {
     // Get images with health analysis, sorted by date
-    const imagesWithHealth = plant.images
+    const imagesWithHealth = plant.images || []
       .filter(img => img.healthAnalysis)
       .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
@@ -148,7 +148,7 @@ const PlantProgressChart: React.FC<PlantProgressChartProps> = ({ plant, classNam
     },
   };
 
-  const hasHealthData = plant.images.some(img => img.healthAnalysis);
+  const hasHealthData = plant.images || [].some(img => img.healthAnalysis);
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-2xl p-4 ${className}`}>

@@ -55,7 +55,7 @@ export const useDataExport = () => {
           lastWatered: plant.lastWatered?.toISOString(),
           // Note: Some fields may not be available in current schema
           ...(options.includeImages && {
-            profileImageUrl: plant.profileImageUrl
+            profileImageUrl: plant.profileImageId
           }),
           // Placeholder for future chat integration
           ...(options.includeChats && {
@@ -118,7 +118,7 @@ export const useDataExport = () => {
 
         if (options.includeImages) {
           row.push(
-            sanitizeForCSV(plant.profileImageUrl || '')
+            sanitizeForCSV(plant.profileImageId || '')
           );
         }
 

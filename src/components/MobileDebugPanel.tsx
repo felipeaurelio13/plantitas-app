@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle, CheckCircle, Wifi, WifiOff } from 'lucide-react';
+import { X, AlertCircle, CheckCircle, Wifi } from 'lucide-react';
 
 const MobileDebugPanel: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);

@@ -1,7 +1,6 @@
-import { PlantSummary } from '../schemas';
 
 export class GardenCacheService {
-  async cacheGardenData(data: any): Promise<void> {
+  async cacheGardenData(_data: any): Promise<void> {
     // Stub implementation
   }
 

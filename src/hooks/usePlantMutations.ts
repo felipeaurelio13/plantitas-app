@@ -11,7 +11,7 @@ export const usePlantMutations = () => {
 
   const addPlantMutation = useMutation({
     mutationFn: async ({
-      imageDataUrl,
+      _imageDataUrl,
       location,
     }: {
       imageDataUrl: string;

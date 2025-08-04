@@ -181,6 +181,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                       case 'good': emoji = '🌿'; label = 'Buena'; break;
                       case 'fair': emoji = '🍃'; label = 'Regular'; break;
                       case 'poor': emoji = '🥀'; label = 'Baja'; break;
+                      case 'critical': emoji = '💀'; label = 'Crítica'; break;
                       default: emoji = '🌱'; label = analysis.overallHealth;
                     }
                     let score = undefined;
@@ -188,7 +189,8 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                       'excellent': 95,
                       'good': 80,
                       'fair': 60,
-                      'poor': 30
+                      'poor': 30,
+                      'critical': 20
                     };
                     if (analysis.overallHealth && healthScoreMap[analysis.overallHealth]) {
                       score = healthScoreMap[analysis.overallHealth];

@@ -4,7 +4,7 @@ export const usePlantImageMutations = () => {
   const queryClient = useQueryClient();
 
   const addPlantImageMutation = useMutation({
-    mutationFn: async ({ plantId, imageBase64 }: { plantId: string; imageBase64: string; isProfileImage?: boolean }) => {
+    mutationFn: async (_: { plantId: string; imageBase64: string; isProfileImage?: boolean }) => {
       // Stub implementation
       return 'new-image-id';
     },

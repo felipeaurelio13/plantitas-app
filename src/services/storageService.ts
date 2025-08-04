@@ -65,7 +65,7 @@ class StorageService {
       dateAdded: new Date(plant.dateAdded),
       lastWatered: plant.lastWatered ? new Date(plant.lastWatered) : undefined,
       lastFertilized: plant.lastFertilized ? new Date(plant.lastFertilized) : undefined,
-      images: plant.images.map(img => ({
+      images: plant.images?.map || [](img => ({
         ...img,
         timestamp: new Date(img.timestamp),
       })),
@@ -74,7 +74,7 @@ class StorageService {
         ...msg,
         timestamp: new Date(msg.timestamp),
       })) || [],
-      notifications: plant.notifications.map(notif => ({
+      notifications: plant.notifications?.map || [](notif => ({
         ...notif,
         // Fix: las notificaciones no tienen scheduledFor en la interfaz actual
         createdAt: new Date(notif.createdAt),

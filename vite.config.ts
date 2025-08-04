@@ -8,25 +8,28 @@ import path from 'path';
 export default defineConfig({
   base: '/plantitas-app/',
   plugins: [
-    react({
-      jsxRuntime: 'automatic'
-    }),
+    react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['plant-icon.svg', 'manifest.json'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+      },
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Plant Care Companion - Firebase Edition',
-        short_name: 'PlantApp',
-        description: 'Tu asistente IA para el cuidado de plantas con Firebase',
+        name: 'Plantitas - Cuidado de Plantas',
+        short_name: 'Plantitas',
+        description: 'Tu asistente personal para el cuidado de plantas',
         theme_color: '#22c55e',
-        background_color: '#ffffff',
-        display: 'standalone',
-        start_url: '/plantitas-app/',
         icons: [
           {
-            src: 'plant-icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml'
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
           }
         ]
       }
@@ -50,7 +53,7 @@ export default defineConfig({
 
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
     minify: 'terser',
     target: 'esnext',
     rollupOptions: {

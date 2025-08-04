@@ -21,15 +21,8 @@ const GardenChat: React.FC = () => {
   const {
     messages,
     isLoading,
-    isTyping,
-    error,
-    gardenSummary,
-    suggestedQuestions,
     sendMessage,
-    clearMessages,
-    retryLastMessage,
-    refreshGardenData,
-    cacheStats,
+    refreshData,
   } = useGardenChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
