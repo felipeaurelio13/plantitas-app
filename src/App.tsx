@@ -5,10 +5,9 @@ import {
   Route,
   Navigate,
 } from 'react-router-dom';
-import useAuthStore from './stores/useAuthStore';
+import { useAuthInitialization } from './hooks/useAuthInitialization';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
-import { ToastProvider as NewToastProvider } from './components/ui/Toast/ToastProvider';
 import { ToastProvider } from './components/ui/Toast';
 import { usePerformanceMonitoring } from './hooks/usePerformanceMonitoring';
 import { initViewportFix, getMobileDeviceInfo } from './utils/mobileViewport';
@@ -73,11 +72,12 @@ const getBasename = (): string => {
 };
 
 const App: React.FC = () => {
-  const { user, initialized, initialize } = useAuthStore();
+  // Use enhanced auth initialization hook
+  const authState = useAuthInitialization();
   
   // Solo log en desarrollo para debugging
   if (import.meta.env.DEV) {
-    console.log('[APP] App component mounting... User:', !!user, 'Initialized:', initialized);
+    console.log('[APP] App component mounting... User:', !!authState.user, 'Initialized:', authState.initialized);
   }
   
   // Monitoreo de performance en desarrollo
@@ -95,11 +95,6 @@ const App: React.FC = () => {
         console.log('[Mobile Debug]', getMobileDeviceInfo());
       }
       
-      // The initialize function is now async and handles its own lifecycle.
-      console.log('[APP] Calling initialize...');
-      initialize();
-      console.log('[APP] Initialize called');
-      
       return () => {
         console.log('[APP] Cleanup running...');
         cleanupViewport();
@@ -108,26 +103,16 @@ const App: React.FC = () => {
       logCriticalError('APP_INITIALIZATION', error);
       throw error;
     }
-  }, [initialize]);
+  }, []); // Remove initialize dependency as it's handled by the hook
 
-  // 🚨 EMERGENCY FIX: Timeout para auth initialization
-  const [forceRender, setForceRender] = useState(false);
-  
-  useEffect(() => {
-    // Si después de 3 segundos no se inicializa, forzar render
-    const emergencyTimeout = setTimeout(() => {
-      if (!initialized) {
-        console.warn('[APP] Emergency timeout - forcing app render');
-        setForceRender(true);
-      }
-    }, 3000);
+  // Show loading screen with progress if not initialized
+  if (!authState.initialized) {
+    const message = authState.loading 
+      ? authState.progress.message 
+      : authState.error || "Inicializando...";
     
-    return () => clearTimeout(emergencyTimeout);
-  }, [initialized]);
-
-      if (!initialized && !forceRender) {
-      return <FullScreenLoader message="Inicializando..." />;
-    }
+    return <FullScreenLoader message={message} />;
+  }
 
   const PrivateRoutes = () => (
     <Routes>
@@ -152,34 +137,32 @@ const App: React.FC = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <NewToastProvider>
-        <ToastProvider>
-          <ErrorBoundary>
-            <Router 
-              basename={getBasename()}
-              future={{
-                v7_startTransition: true,
-                v7_relativeSplatPath: true,
-              }}
-            >
-              <Toaster position="top-center" richColors />
-              <MobileDebugPanel />
-              <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
-              <Routes>
-                <Route
-                  path={routes.auth}
-                  element={!user ? <AuthPage /> : <Navigate to={routes.dashboard} replace />}
-                />
-                <Route
-                  path="/*"
-                  element={user ? <PrivateRoutes /> : <Navigate to={routes.auth} replace />}
-                />
-              </Routes>
-            </Suspense>
-          </Router>
-        </ErrorBoundary>
-        </ToastProvider>
-      </NewToastProvider>
+      <ToastProvider>
+        <ErrorBoundary>
+          <Router 
+            basename={getBasename()}
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            <Toaster position="top-center" richColors />
+            <MobileDebugPanel />
+            <Suspense fallback={<FullScreenLoader message="Cargando..." />}>
+            <Routes>
+              <Route
+                path={routes.auth}
+                element={!authState.user ? <AuthPage /> : <Navigate to={routes.dashboard} replace />}
+              />
+              <Route
+                path="/*"
+                element={authState.user ? <PrivateRoutes /> : <Navigate to={routes.auth} replace />}
+              />
+            </Routes>
+          </Suspense>
+        </Router>
+      </ErrorBoundary>
+      </ToastProvider>
     </QueryClientProvider>
   );
 };

@@ -8,8 +8,10 @@ interface LazyImageProps {
   fallback?: React.ReactNode;
   onLoad?: () => void;
   onError?: () => void;
-  priority?: boolean; // Para imágenes críticas que necesitan carga inmediata
-  sizes?: string;     // Para responsive images
+  priority?: boolean;
+  sizes?: string;
+  srcSet?: string;      // Added for responsive images
+  blurDataUrl?: string; // Added for blur placeholder
 }
 
 // Simple in-memory cache para imágenes ya cargadas
@@ -24,11 +26,39 @@ const LazyImage: React.FC<LazyImageProps> = ({
   onLoad,
   onError,
   priority = false,
-  sizes = "(max-width: 768px) 100vw, 50vw"
+  sizes = "(max-width: 768px) 100vw, 50vw",
+  srcSet,
+  blurDataUrl
 }) => {
   const [imageLoaded, setImageLoaded] = useState(() => imageCache.has(src));
   const [imageError, setImageError] = useState(false);
+  const [isInView, setIsInView] = useState(priority); // Start with priority value
   const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // IntersectionObserver for lazy loading (unless priority)
+  useEffect(() => {
+    if (priority) return; // Skip intersection observer for priority images
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
+      {
+        rootMargin: '50px', // Start loading 50px before entering viewport
+        threshold: 0.1
+      }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [priority]);
 
   // Preload critical images
   useEffect(() => {
@@ -71,35 +101,62 @@ const LazyImage: React.FC<LazyImageProps> = ({
   }
 
   return (
-    <div className={`relative overflow-hidden ${className}`}>
-      {/* Loading skeleton */}
+    <div 
+      ref={containerRef}
+      className={`relative overflow-hidden ${className}`}
+      style={{ backgroundColor: '#f0f0f0' }}
+    >
+      {/* Blur placeholder */}
+      {blurDataUrl && (
+        <img
+          src={blurDataUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{
+            filter: 'blur(10px)',
+            transform: 'scale(1.1)', // Slightly larger to hide blur edges
+            opacity: imageLoaded ? 0 : 1,
+            transition: 'opacity 0.3s ease-in-out',
+          }}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Loading skeleton (fallback when no blur data) */}
       <AnimatePresence>
-        {!imageLoaded && (
+        {!imageLoaded && !blurDataUrl && (
           <motion.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }} // Reduced from 0.3
+            transition={{ duration: 0.2 }}
             className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse"
           />
         )}
       </AnimatePresence>
 
-      {/* Actual image */}
-      <motion.img
-        ref={imgRef}
-        src={src}
-        alt={alt}
-        className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-        loading={priority ? "eager" : "lazy"} // Eager para priority, lazy para el resto
-        decoding="async" // Async decoding for smoother loading
-        fetchPriority={priority ? "high" : "low"} // Hint al navegador sobre prioridad
-        sizes={sizes} // Responsive image sizing
-        onLoad={handleLoad}
-        onError={handleError}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: imageLoaded ? 1 : 0 }}
-        transition={{ duration: 0.15 }} // Reducido de 0.2 a 0.15 para más velocidad
-      />
+      {/* Actual image - only load when in viewport (or priority) */}
+      {isInView && (
+        <motion.img
+          ref={imgRef}
+          src={src}
+          srcSet={srcSet}
+          alt={alt}
+          className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={priority ? "high" : "low"}
+          sizes={sizes}
+          onLoad={handleLoad}
+          onError={handleError}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: imageLoaded ? 1 : 0 }}
+          transition={{ duration: 0.15 }}
+          style={{
+            transition: 'opacity 0.3s ease-in-out, filter 0.3s ease-in-out',
+            filter: imageLoaded ? 'blur(0)' : 'blur(2px)',
+          }}
+        />
+      )}
     </div>
   );
 };
