@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -8,8 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useAuthStore from './stores/useAuthStore';
 import plantService from './services/plantService';
 import cacheService from './services/cacheService';
-import performanceService from './services/performanceService';
-import { initAdvancedMobileDebug, logCriticalError } from './utils/mobileDebugAdvanced';
+import { logCriticalError } from './utils/mobileDebugAdvanced';
 import { Toaster } from 'sonner';
 
 // 🚨 CRITICAL: iOS Safari compatibility check
@@ -22,8 +20,8 @@ console.log('[MOBILE] Pathname:', window.location.pathname);
 console.log('[MOBILE] User Agent:', navigator.userAgent);
 
 // Function to handle global errors (for advanced debugging)
-(window as any).logGlobalError = (error: Error, type: string = 'GLOBAL', details: any = {}) => {
-  logCriticalError(error, type, details);
+(window as any).logGlobalError = (error: Error, type: string = 'GLOBAL') => {
+  logCriticalError(type, error);
 };
 
 // Initialize services

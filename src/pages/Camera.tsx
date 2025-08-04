@@ -1,114 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
 
-import { usePlantMutations } from '@/hooks/usePlantMutations';
-// import { LoadingStates } from '@/components/ui/LoadingState'; // Commented out as not used
-import { useCamera } from '@/hooks/useCamera';
-
-import { CameraErrorState } from '../components/camera/CameraErrorState';
-import { ImagePreview } from '../components/camera/ImagePreview';
-import { CameraCaptureView } from '../components/camera/CameraCaptureView';
-import { navigation } from '../lib/navigation';
-
-const CameraPage: React.FC = () => {
+const Camera: React.FC = () => {
   const navigate = useNavigate();
-  const { createPlant, isCreatingPlant } = usePlantMutations();
-
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const photoRef = useRef<HTMLCanvasElement>(null);
-
-  const {
-    isCapturing,
-    capturedImage,
-    cameraError,
-    captureImage,
-    retakePhoto,
-    switchCamera,
-    startCamera,
-    selectFromGallery,
-  } = useCamera({ videoRef, canvasRef: photoRef });
-
-  const [flashEnabled, setFlashEnabled] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const analyzeAndSave = () => {
-    if (!capturedImage) return;
-
-    // Use default location "Interior" - user can edit it later if needed
-    const location = "Interior";
-
-    const promise = new Promise((resolve, reject) => {
-      createPlant({ imageDataUrl: capturedImage, location }, {
-        onSuccess: (newPlant) => {
-          // We navigate to the new plant's detail page on success.
-          if (newPlant?.id) {
-            navigate(navigation.toPlantDetail(newPlant.id));
-          } else {
-            // Fallback to the dashboard if for some reason the new plant has no ID.
-            navigate(navigation.toDashboard());
-          }
-          resolve(newPlant);
-        },
-        onError: (error) => {
-          reject(error);
-        },
-      });
-    });
-
-    toast.promise(promise, {
-      loading: 'Analizando imagen con IA...',
-      success: (data: any) => `¡Planta "${data.name}" creada con éxito!`,
-      error: (err) => `Error: ${err.message}`,
-    });
-  };
-
-  const toggleFlash = () => setFlashEnabled((prev) => !prev);
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      selectFromGallery(file);
-    }
-  };
 
   return (
-    <div className="fixed inset-0 bg-black z-50">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        className="hidden"
-        id="gallery-input"
-      />
-      <AnimatePresence mode="wait">
-        {cameraError ? (
-          <CameraErrorState key="error" error={cameraError} onRetry={startCamera} />
-        ) : !isCapturing ? (
-          <CameraCaptureView
-            key="capture"
-            videoRef={videoRef}
-            canvasRef={photoRef}
-            flashEnabled={flashEnabled}
-            onCapture={captureImage}
-            onSwitchCamera={switchCamera}
-            onToggleFlash={toggleFlash}
-            onSelectFromGallery={() => fileInputRef.current?.click()}
-          />
-        ) : (
-          <ImagePreview
-            key="preview"
-            image={capturedImage!}
-            isAnalyzing={isCreatingPlant} // Use the mutation's loading state
-            onRetake={retakePhoto}
-            onAnalyze={analyzeAndSave}
-          />
-        )}
-      </AnimatePresence>
+    <div className="flex flex-col items-center justify-center h-full p-4">
+      <h1 className="text-2xl font-bold mb-4">Cámara</h1>
+      <p className="text-gray-600 text-center mb-6">
+        Funcionalidad de cámara temporalmente deshabilitada
+      </p>
+      <button
+        onClick={() => navigate('/dashboard')}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        Volver al Dashboard
+      </button>
     </div>
   );
 };
 
-export default CameraPage;
+export default Camera;

@@ -1,237 +1,233 @@
 import { create } from 'zustand';
-import { produce } from 'immer';
-import { Plant, ChatMessage } from '../schemas';
+import { immer } from 'zustand/middleware/immer';
 import plantService from '../services/plantService';
-import aiService from '../services/aiService';
+import { Plant, ChatMessage } from '../schemas';
 
-interface PlantState {
+interface PlantStore {
   plants: Plant[];
+  selectedPlant: Plant | null;
   isLoading: boolean;
   error: string | null;
-  selectedPlantId: string | null; // Keep UI state
-}
 
-interface PlantActions {
-  getPlantById: (plantId: string) => Plant | undefined;
-  addPlant: (
-    userId: string,
-    plantData: Omit<Plant, 'id' | 'createdAt' | 'updatedAt' | 'images' | 'chatMessages' | 'notifications'>
-  ) => Promise<string>;
+  // Actions
+  loadPlants: (userId: string) => Promise<void>;
+  loadPlantById: (plantId: string) => Promise<Plant | null>;
+  createPlant: (plantData: Omit<Plant, 'id'>) => Promise<string>;
   updatePlant: (plantId: string, updates: Partial<Plant>) => Promise<void>;
   deletePlant: (plantId: string) => Promise<void>;
-  updatePlantHealthScore: (
-    plantId: string,
-    healthScore: number
-  ) => Promise<void>;
-  sendChatMessage: (
-    plantId: string,
-    userId: string,
-    message: string
-  ) => Promise<ChatMessage>;
-  setSelectedPlantId: (plantId: string | null) => void;
+  setSelectedPlant: (plant: Plant | null) => void;
+  sendChatMessage: (plantId: string, content: string, userId: string) => Promise<void>;
   clearError: () => void;
-  loadPlants: (userId: string) => Promise<void>;
 }
 
-type PlantStore = PlantState & PlantActions;
+const usePlantStore = create<PlantStore>()(
+  immer((set) => ({
+    plants: [],
+    selectedPlant: null,
+    isLoading: false,
+    error: null,
 
-const usePlantStore = create<PlantStore>((set, get) => ({
-  plants: [],
-  isLoading: false,
-  error: null,
-  selectedPlantId: null,
-
-  getPlantById: (plantId: string) => {
-    const { plants } = get();
-    return plants.find((plant) => plant.id === plantId);
-  },
-
-  loadPlants: async (userId: string) => {
-    set(produce((state) => {
-      state.isLoading = true;
-      state.error = null;
-    }));
-
-    try {
-      const plants = await plantService.getUserPlants(userId);
-      set(produce((state) => {
-        state.plants = plants;
-        state.isLoading = false;
-      }));
-    } catch (error: any) {
-      set(produce((state) => {
-        state.error = error.message || 'Failed to load plants';
-        state.isLoading = false;
-      }));
-    }
-  },
-
-  addPlant: async (userId: string, plantData) => {
-    set(produce((state) => {
-      state.isLoading = true;
-      state.error = null;
-    }));
-
-    try {
-      // Create the plant in Firebase
-      const newPlantId = await plantService.createPlant({
-        ...plantData,
-        userId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+    loadPlants: async (userId: string) => {
+      set((state) => {
+        state.isLoading = true;
+        state.error = null;
       });
 
-      // Get the complete plant data
-      const newPlant = await plantService.getPlantById(newPlantId);
-      if (newPlant) {
-        set(produce((state) => {
+      try {
+        console.log('[PLANT STORE] Loading plants for user:', userId);
+        const plants = await plantService.getUserPlants(userId);
+        
+        set((state) => {
+          state.plants = plants;
+          state.isLoading = false;
+        });
+        
+        console.log('[PLANT STORE] Loaded plants:', plants.length);
+      } catch (error) {
+        console.error('[PLANT STORE] Error loading plants:', error);
+        set((state) => {
+          state.error = error instanceof Error ? error.message : 'Failed to load plants';
+          state.isLoading = false;
+        });
+      }
+    },
+
+    loadPlantById: async (plantId: string): Promise<Plant | null> => {
+      try {
+        console.log('[PLANT STORE] Loading plant by ID:', plantId);
+        const plant = await plantService.getPlantById(plantId);
+        
+        if (plant) {
+          set((state) => {
+            state.selectedPlant = plant;
+          });
+        }
+        
+        return plant;
+      } catch (error) {
+        console.error('[PLANT STORE] Error loading plant by ID:', error);
+        set((state) => {
+          state.error = error instanceof Error ? error.message : 'Failed to load plant';
+        });
+        return null;
+      }
+    },
+
+    createPlant: async (plantData: Omit<Plant, 'id'>): Promise<string> => {
+      set((state) => {
+        state.isLoading = true;
+        state.error = null;
+      });
+
+      try {
+        console.log('[PLANT STORE] Creating new plant:', plantData.name);
+        const newPlantId = await plantService.createPlant({
+          ...plantData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        // Create the new plant object with ID
+        const newPlant: Plant = {
+          ...plantData,
+          id: newPlantId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        set((state) => {
           state.plants.push(newPlant);
           state.isLoading = false;
-        }));
+        });
+
+        console.log('[PLANT STORE] Plant created with ID:', newPlantId);
+        return newPlantId;
+      } catch (error) {
+        console.error('[PLANT STORE] Error creating plant:', error);
+        set((state) => {
+          state.error = error instanceof Error ? error.message : 'Failed to create plant';
+          state.isLoading = false;
+        });
+        throw error;
       }
+    },
 
-      return newPlantId;
-    } catch (error: any) {
-      set(produce((state) => {
-        state.error = error.message || 'Failed to add plant';
-        state.isLoading = false;
-      }));
-      throw error;
-    }
-  },
+    updatePlant: async (plantId: string, updates: Partial<Plant>) => {
+      try {
+        console.log('[PLANT STORE] Updating plant:', plantId);
+        await plantService.updatePlant(plantId, updates);
 
-  updatePlant: async (plantId: string, updates: Partial<Plant>) => {
-    set(produce((state) => {
-      state.isLoading = true;
-      state.error = null;
-    }));
+        set((state) => {
+          const index = state.plants.findIndex((plant) => plant.id === plantId);
+          if (index !== -1) {
+            state.plants[index] = { ...state.plants[index], ...updates };
+          }
+          
+          if (state.selectedPlant && state.selectedPlant.id === plantId) {
+            state.selectedPlant = { ...state.selectedPlant, ...updates };
+          }
+        });
 
-    try {
-      await plantService.updatePlant(plantId, updates);
-
-      set(produce((state) => {
-        const index = state.plants.findIndex((plant) => plant.id === plantId);
-        if (index !== -1) {
-          state.plants[index] = { ...state.plants[index], ...updates };
-        }
-        state.isLoading = false;
-      }));
-    } catch (error: any) {
-      set(produce((state) => {
-        state.error = error.message || 'Failed to update plant';
-        state.isLoading = false;
-      }));
-      throw error;
-    }
-  },
-
-  deletePlant: async (plantId: string) => {
-    set(produce((state) => {
-      state.isLoading = true;
-      state.error = null;
-    }));
-
-    try {
-      await plantService.deletePlant(plantId);
-
-      set(produce((state) => {
-        state.plants = state.plants.filter((plant) => plant.id !== plantId);
-        state.isLoading = false;
-      }));
-    } catch (error: any) {
-      set(produce((state) => {
-        state.error = error.message || 'Failed to delete plant';
-        state.isLoading = false;
-      }));
-      throw error;
-    }
-  },
-
-  updatePlantHealthScore: async (plantId: string, healthScore: number) => {
-    try {
-      await plantService.updatePlantHealthScore(plantId, healthScore);
-
-      set(produce((state) => {
-        const plant = state.plants.find((p) => p.id === plantId);
-        if (plant) {
-          plant.healthScore = healthScore;
-        }
-      }));
-    } catch (error: any) {
-      set(produce((state) => {
-        state.error = error.message || 'Failed to update health score';
-      }));
-      throw error;
-    }
-  },
-
-  sendChatMessage: async (
-    plantId: string,
-    userId: string,
-    message: string
-  ): Promise<ChatMessage> => {
-    try {
-      // Create user message
-      const userMessage: Omit<ChatMessage, 'id'> = {
-        plantId,
-        userId,
-        sender: 'user',
-        content: message,
-        timestamp: new Date(),
-        createdAt: new Date(),
-      };
-
-      // Save user message
-      await plantService.addChatMessage(plantId, userMessage);
-
-      // Generate AI response using real AI service
-      const plant = get().plants.find(p => p.id === plantId);
-      if (!plant) {
-        throw new Error('Plant not found for chat response');
+        console.log('[PLANT STORE] Plant updated successfully');
+      } catch (error) {
+        console.error('[PLANT STORE] Error updating plant:', error);
+        set((state) => {
+          state.error = error instanceof Error ? error.message : 'Failed to update plant';
+        });
+        throw error;
       }
+    },
 
-      const aiResponseResult = await aiService.generatePlantResponse(message, {
-        species: plant.species,
-        name: plant.name,
-        healthScore: plant.healthScore,
-        careProfile: plant.careProfile,
-        personality: plant.personality
+    deletePlant: async (plantId: string) => {
+      try {
+        console.log('[PLANT STORE] Deleting plant:', plantId);
+        await plantService.deletePlant(plantId);
+
+        set((state) => {
+          state.plants = state.plants.filter((plant) => plant.id !== plantId);
+          
+          if (state.selectedPlant && state.selectedPlant.id === plantId) {
+            state.selectedPlant = null;
+          }
+        });
+
+        console.log('[PLANT STORE] Plant deleted successfully');
+      } catch (error) {
+        console.error('[PLANT STORE] Error deleting plant:', error);
+        set((state) => {
+          state.error = error instanceof Error ? error.message : 'Failed to delete plant';
+        });
+        throw error;
+      }
+    },
+
+    setSelectedPlant: (plant: Plant | null) => {
+      set((state) => {
+        state.selectedPlant = plant;
       });
+    },
 
-      const aiResponse: Omit<ChatMessage, 'id'> = {
-        plantId,
-        userId,
-        sender: 'plant',
-        content: aiResponseResult.content,
-        emotion: aiResponseResult.emotion || 'happy',
-        timestamp: new Date(),
-        createdAt: new Date(),
-      };
+    sendChatMessage: async (plantId: string, content: string, userId: string) => {
+      try {
+        console.log('[PLANT STORE] Sending chat message to plant:', plantId);
 
-      // Save AI response
-      await plantService.addChatMessage(plantId, aiResponse);
+        // Create user message
+        const userMessage: Omit<ChatMessage, 'id'> = {
+          plantId,
+          userId,
+          sender: 'user',
+          content,
+          timestamp: new Date(),
+          createdAt: new Date(),
+        };
 
-      return aiResponse as ChatMessage;
-    } catch (error: any) {
-      set(produce((state) => {
-        state.error = error.message || 'Failed to send chat message';
-      }));
-      throw error;
-    }
-  },
+        await plantService.addChatMessage(plantId, userMessage);
 
-  setSelectedPlantId: (plantId: string | null) => {
-    set(produce((state) => {
-      state.selectedPlantId = plantId;
-    }));
-  },
+        // TODO: Generate AI response here
+        // For now, just add a simple response
+        const aiResponse: Omit<ChatMessage, 'id'> = {
+          plantId,
+          userId,
+          sender: 'plant',
+          content: `¡Gracias por tu mensaje! Como una planta, aprecio mucho tu atención. 🌱`,
+          emotion: 'alegre',
+          timestamp: new Date(),
+          createdAt: new Date(),
+        };
 
-  clearError: () => {
-    set(produce((state) => {
-      state.error = null;
-    }));
-  },
-}));
+        await plantService.addChatMessage(plantId, aiResponse);
 
-export default usePlantStore;
-export { usePlantStore }; 
+        // Update local state if this is the selected plant
+        const updatedPlant = await plantService.getPlantById(plantId, true);
+        if (updatedPlant) {
+          set((state) => {
+            if (state.selectedPlant && state.selectedPlant.id === plantId) {
+              state.selectedPlant = updatedPlant;
+            }
+            
+            const plantIndex = state.plants.findIndex((p) => p.id === plantId);
+            if (plantIndex !== -1) {
+              state.plants[plantIndex] = updatedPlant;
+            }
+          });
+        }
+
+        console.log('[PLANT STORE] Chat message sent successfully');
+      } catch (error) {
+        console.error('[PLANT STORE] Error sending chat message:', error);
+        set((state) => {
+          state.error = error instanceof Error ? error.message : 'Failed to send message';
+        });
+        throw error;
+      }
+    },
+
+    clearError: () => {
+      set((state) => {
+        state.error = null;
+      });
+    },
+  }))
+);
+
+export default usePlantStore; 

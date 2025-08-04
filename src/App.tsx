@@ -13,7 +13,7 @@ import { ToastProvider as NewToastProvider } from './components/ui/Toast/ToastPr
 import { ToastProvider } from './components/ui/Toast';
 import { usePerformanceMonitoring } from './hooks/usePerformanceMonitoring';
 import { initViewportFix, getMobileDeviceInfo } from './utils/mobileViewport';
-import { MobileDebugPanel } from './components/MobileDebugPanel';
+import MobileDebugPanel from './components/MobileDebugPanel';
 import { EmergencyDebugOverlay } from './components/EmergencyDebugOverlay';
 import { FirebaseConfigMissing } from './components/FirebaseConfigMissing';
 import { logCriticalError } from './utils/mobileDebugAdvanced';
@@ -211,7 +211,7 @@ const App: React.FC = () => {
           cleanupViewport();
         };
       } catch (error) {
-        logCriticalError(error, 'APP_INITIALIZATION');
+        logCriticalError("APP_INITIALIZATION", error instanceof Error ? error : new Error(String(error)));
         console.error('[APP] Initialization failed:', error);
         setForceRender(true);
       }

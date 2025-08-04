@@ -44,7 +44,6 @@ class FirebaseRecoveryService {
   private readonly FAILURE_THRESHOLD = 5;
   private readonly RECOVERY_TIMEOUT = 60000; // 1 minute
   private readonly HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
-  private readonly MAX_BACKOFF_TIME = 300000; // 5 minutes
 
   private healthCheckTimer: NodeJS.Timeout | null = null;
   private recoveryStrategies: RecoveryStrategy[] = [];

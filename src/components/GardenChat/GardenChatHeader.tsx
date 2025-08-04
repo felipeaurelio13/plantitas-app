@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, MoreVertical, Sprout, Activity, RefreshCw, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SystemDiagnostics } from './SystemDiagnostics';
+import SystemDiagnostics from './SystemDiagnostics';
 import { navigation } from '../../lib/navigation';
 
 interface GardenChatHeaderProps {

@@ -1,70 +1,45 @@
 import React from 'react';
-import {
-  User, LogOut, Sun, Moon, Bell, Download, Trash2, HelpCircle, Shield, Info
-} from 'lucide-react';
 import { useSettings } from '../hooks/useSettings';
-import { SettingsGroup, SettingsItem } from '../components/Settings';
-import { ExportModal } from '../components/data/ExportModal';
-
-const iconMap: { [key: string]: React.ElementType } = {
-  User, LogOut, Sun, Moon, Bell, Download, Trash2, HelpCircle, Shield, Info
-};
 
 const Settings: React.FC = () => {
-  const { settingsSections, isExportModalOpen, setIsExportModalOpen } = useSettings();
+  const { user, isExporting, exportData, deleteAccount, signOut } = useSettings();
 
   return (
-    <div className="p-4 space-y-6">
-      <header>
-        <h1 className="text-3xl font-bold text-foreground">
-          Configuración
-        </h1>
-        <p className="text-muted-foreground">
-          Gestiona tu cuenta y preferencias de la app.
-        </p>
-      </header>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-6">Configuración</h1>
+      
+      <div className="space-y-4">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h2 className="font-semibold mb-2">Usuario</h2>
+          <p className="text-gray-600">{user?.email}</p>
+        </div>
 
-      {settingsSections.map((section, index) => (
-        <SettingsGroup key={section.title} title={section.title} delay={index}>
-          {section.items.map((item, itemIndex) => {
-            const IconComponent = iconMap[item.icon as string];
-            const isLast = itemIndex === section.items.length - 1;
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h2 className="font-semibold mb-4">Datos</h2>
+          <button
+            onClick={exportData}
+            disabled={isExporting}
+            className="mr-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+          >
+            {isExporting ? 'Exportando...' : 'Exportar Datos'}
+          </button>
+          <button
+            onClick={deleteAccount}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Eliminar Cuenta
+          </button>
+        </div>
 
-            if (item.type === 'toggle') {
-              return (
-                <SettingsItem
-                  key={item.id}
-                  icon={IconComponent}
-                  label={item.label}
-                  isLast={isLast}
-                  type="toggle"
-                  toggleState={"toggleState" in item ? item.toggleState : false}
-                  onToggleChange={"onToggleChange" in item ? item.onToggleChange : undefined}
-                />
-              );
-            }
-            
-            return (
-              <SettingsItem
-                key={item.id}
-                icon={IconComponent}
-                label={item.label}
-                value={"value" in item && typeof item.value === 'string' ? item.value : undefined}
-                onClick={"onClick" in item ? item.onClick : undefined}
-                isLast={isLast}
-                type="button"
-                disabled={"disabled" in item ? item.disabled : false}
-              />
-            );
-          })}
-        </SettingsGroup>
-      ))}
-
-      {/* Export Modal */}
-      <ExportModal 
-        isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
-      />
+        <div className="bg-white p-4 rounded-lg shadow">
+          <button
+            onClick={signOut}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            Cerrar Sesión
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

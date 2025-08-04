@@ -1,50 +1,18 @@
-import { useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { usePlantStore, useAuthStore } from '../stores';
+import { useState } from 'react';
 
-export const useChat = () => {
-  const { plantId } = useParams<{ plantId: string }>();
-  const navigate = useNavigate();
-  const { user } = useAuthStore();
-
-  const plant = usePlantStore((state) => state.getPlantById(plantId || ''));
-  const addChatMessage = usePlantStore((state) => state.addChatMessage);
-  const isLoading = usePlantStore((state) => state.isLoading);
-
-  if (import.meta.env.DEV) {
-    console.log('--- DEBUG CHAT ---');
-    console.log('ID de planta desde URL:', plantId);
-    console.log('Planta encontrada en el store:', plant);
-  }
-
-
-  const isTyping = useMemo(() => {
-    if (!plant || !plant.chatHistory || plant.chatHistory.length === 0) {
-      return false;
-    }
-    const lastMessage = plant.chatHistory[plant.chatHistory.length - 1];
-    return isLoading && lastMessage.sender === 'user';
-  }, [plant, isLoading]);
-
-  const handleSendMessage = async (content: string) => {
-    if (!plantId || !user || !content.trim()) return;
-
-    try {
-      await addChatMessage(plantId, content.trim(), user.id);
-    } catch (error) {
-      console.error("Failed to send message:", error);
-    }
-  };
+export const useChat = (plantId?: string) => {
+  const [isLoading, setIsLoading] = useState(false);
   
-  const handleGoBack = () => {
-    navigate(`/plant/${plantId}`);
+  const sendMessage = async (content: string) => {
+    setIsLoading(true);
+    // Stub implementation
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsLoading(false);
   };
 
   return {
-    plant,
-    isTyping,
-    handleSendMessage,
-    handleGoBack,
-    currentUser: user,
+    plant: null,
+    isLoading,
+    sendMessage,
   };
-}; 
+};

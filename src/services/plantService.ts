@@ -1,6 +1,5 @@
 import { 
-  db, 
-  storage, 
+  getFirestore, 
   serverTimestamp,
   collection,
   doc,
@@ -17,92 +16,37 @@ import {
   writeBatch
 } from '../lib/firebase';
 
-interface Plant {
-  id: string;
-  userId: string;
-  name: string;
-  species: string;
-  variety?: string;
-  nickname?: string;
-  location: string;
-  healthScore: number;
-  careProfile: Record<string, any>;
-  personality: Record<string, any>;
-  dateAdded: Date;
-  lastWatered?: Date;
-  lastFertilized?: Date;
-  createdAt: Date;
-  updatedAt?: Date;
-  description?: string;
-  funFacts?: string[];
-  plantEnvironment?: string;
-  lightRequirements?: string;
-  profileImageId?: string;
-}
-
-interface PlantImage {
-  id: string;
-  plantId: string;
-  userId: string;
-  storagePath: string;
-  healthAnalysis: Record<string, any>;
-  isProfileImage: boolean;
-  createdAt: Date;
-  url: string;
-}
-
-interface ChatMessage {
-  id: string;
-  plantId: string;
-  userId: string;
-  sender: 'user' | 'plant';
-  content: string;
-  emotion?: string;
-  createdAt: Date;
-  context?: Record<string, any>;
-}
-
-interface DBPlant {
-  [key: string]: any;
-}
-
-interface PlantNotification {
-  id: string;
-  plantId: string;
-  userId: string;
-  type: string;
-  message: string;
-  isRead: boolean;
-  createdAt: Date;
-}
+import { Plant, ChatMessage, PlantImage, PlantNotification } from '../schemas';
 
 // Helper function to validate Firebase is available
 const ensureFirebaseAvailable = () => {
+  const db = getFirestore();
   if (!db) {
     throw new Error('Firebase Firestore not initialized');
   }
+  return db;
 };
 
 // Plant CRUD Operations
 
 export const getUserPlants = async (userId: string): Promise<Plant[]> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Fetching plants for user:', userId);
     
-    const plantsRef = collection(db!, 'plants');
+    const plantsRef = collection(db, 'plants');
     const plantsQuery = query(plantsRef, where('userId', '==', userId));
     const plantsSnapshot = await getDocs(plantsQuery);
 
     const plants: Plant[] = [];
 
     for (const plantDoc of plantsSnapshot.docs) {
-      const plantData = { id: plantDoc.id, ...plantDoc.data() } as DBPlant;
+      const plantData = { id: plantDoc.id, ...plantDoc.data() } as any;
 
       // Get profile image
       const profileImageQuery = query(
-        collection(db!, 'plants', plantDoc.id, 'plant_images'),
+        collection(db, 'plants', plantDoc.id, 'plant_images'),
         where('isProfileImage', '==', true),
         limit(1)
       );
@@ -114,7 +58,7 @@ export const getUserPlants = async (userId: string): Promise<Plant[]> => {
         };
       }
 
-      plants.push(plantData as Plant);
+      plants.push(plantData);
     }
 
     console.log('[PLANT SERVICE] Retrieved plants:', plants.length);
@@ -126,12 +70,12 @@ export const getUserPlants = async (userId: string): Promise<Plant[]> => {
 };
 
 export const getPlantById = async (plantId: string, includeSubcollections = true): Promise<Plant | null> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Fetching plant by ID:', plantId);
     
-    const plantDocRef = doc(db!, 'plants', plantId);
+    const plantDocRef = doc(db, 'plants', plantId);
     const plantDoc = await getDoc(plantDocRef);
 
     if (!plantDoc.exists()) {
@@ -139,14 +83,14 @@ export const getPlantById = async (plantId: string, includeSubcollections = true
       return null;
     }
 
-    const plantData = { id: plantDoc.id, ...plantDoc.data() } as DBPlant;
+    const plantData = { id: plantDoc.id, ...plantDoc.data() } as any;
 
     if (includeSubcollections) {
       // Get subcollections
       const [imagesSnapshot, messagesSnapshot, notificationsSnapshot] = await Promise.all([
-        getDocs(query(collection(db!, 'plants', plantId, 'plant_images'), orderBy('createdAt', 'asc'))),
-        getDocs(query(collection(db!, 'plants', plantId, 'chat_messages'), orderBy('createdAt', 'asc'))),
-        getDocs(query(collection(db!, 'plants', plantId, 'plant_notifications'), orderBy('createdAt', 'asc')))
+        getDocs(query(collection(db, 'plants', plantId, 'plant_images'), orderBy('createdAt', 'asc'))),
+        getDocs(query(collection(db, 'plants', plantId, 'chat_messages'), orderBy('createdAt', 'asc'))),
+        getDocs(query(collection(db, 'plants', plantId, 'plant_notifications'), orderBy('createdAt', 'asc')))
       ]);
 
       plantData.images = imagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -162,12 +106,12 @@ export const getPlantById = async (plantId: string, includeSubcollections = true
 };
 
 export const createPlant = async (plantData: Omit<Plant, 'id'>): Promise<string> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Creating new plant:', plantData.name);
     
-    const plantsRef = collection(db!, 'plants');
+    const plantsRef = collection(db, 'plants');
     const newPlantDoc = await addDoc(plantsRef, {
       ...plantData,
       createdAt: serverTimestamp(),
@@ -185,12 +129,12 @@ export const createPlant = async (plantData: Omit<Plant, 'id'>): Promise<string>
 };
 
 export const updatePlant = async (plantId: string, updates: Partial<Plant>): Promise<void> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Updating plant:', plantId);
     
-    const plantDocRef = doc(db!, 'plants', plantId);
+    const plantDocRef = doc(db, 'plants', plantId);
     await updateDoc(plantDocRef, {
       ...updates,
       updatedAt: serverTimestamp(),
@@ -204,17 +148,17 @@ export const updatePlant = async (plantId: string, updates: Partial<Plant>): Pro
 };
 
 export const deletePlant = async (plantId: string): Promise<void> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Deleting plant:', plantId);
     
     // Delete subcollections first
     const deleteSubcollection = async (subcollectionName: string) => {
-      const subcollectionRef = collection(db!, 'plants', plantId, subcollectionName);
+      const subcollectionRef = collection(db, 'plants', plantId, subcollectionName);
       const snapshot = await getDocs(subcollectionRef);
       
-      const batch = writeBatch(db!);
+      const batch = writeBatch(db);
       snapshot.docs.forEach((doc) => {
         batch.delete(doc.ref);
       });
@@ -228,7 +172,7 @@ export const deletePlant = async (plantId: string): Promise<void> => {
     ]);
 
     // Delete main document
-    const plantDocRef = doc(db!, 'plants', plantId);
+    const plantDocRef = doc(db, 'plants', plantId);
     await deleteDoc(plantDocRef);
 
     console.log('[PLANT SERVICE] Plant deleted successfully');
@@ -241,12 +185,12 @@ export const deletePlant = async (plantId: string): Promise<void> => {
 // Chat Operations
 
 export const addChatMessage = async (plantId: string, message: Omit<ChatMessage, 'id'>): Promise<string> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Adding chat message to plant:', plantId);
     
-    const messagesRef = collection(db!, 'plants', plantId, 'chat_messages');
+    const messagesRef = collection(db, 'plants', plantId, 'chat_messages');
     const newMessageDoc = await addDoc(messagesRef, {
       ...message,
       createdAt: serverTimestamp(),
@@ -261,10 +205,10 @@ export const addChatMessage = async (plantId: string, message: Omit<ChatMessage,
 };
 
 export const saveChatMessage = async (plantId: string, message: ChatMessage): Promise<void> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
-    const messagesRef = collection(db!, 'plants', plantId, 'chat_messages');
+    const messagesRef = collection(db, 'plants', plantId, 'chat_messages');
     const messageDocRef = doc(messagesRef, message.id);
     
     await setDoc(messageDocRef, {
@@ -282,12 +226,12 @@ export const saveChatMessage = async (plantId: string, message: ChatMessage): Pr
 // Image Operations
 
 export const addPlantImage = async (plantId: string, imageData: Omit<PlantImage, 'id'>): Promise<string> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Adding plant image to plant:', plantId);
     
-    const imagesRef = collection(db!, 'plants', plantId, 'plant_images');
+    const imagesRef = collection(db, 'plants', plantId, 'plant_images');
     const newImageDoc = await addDoc(imagesRef, {
       ...imageData,
       createdAt: serverTimestamp(),
@@ -302,12 +246,12 @@ export const addPlantImage = async (plantId: string, imageData: Omit<PlantImage,
 };
 
 export const updatePlantImage = async (plantId: string, imageId: string, updates: Partial<PlantImage>): Promise<void> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Updating plant image:', imageId);
     
-    const imageDocRef = doc(db!, 'plants', plantId, 'plant_images', imageId);
+    const imageDocRef = doc(db, 'plants', plantId, 'plant_images', imageId);
     await updateDoc(imageDocRef, {
       ...updates,
       updatedAt: serverTimestamp(),
@@ -321,13 +265,13 @@ export const updatePlantImage = async (plantId: string, imageId: string, updates
 };
 
 export const setProfileImage = async (plantId: string, newProfileImageId: string): Promise<void> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Setting profile image for plant:', plantId);
     
-    const imagesRef = collection(db!, 'plants', plantId, 'plant_images');
-    const batch = writeBatch(db!);
+    const imagesRef = collection(db, 'plants', plantId, 'plant_images');
+    const batch = writeBatch(db);
 
     // Reset all images to not be profile image
     const allImagesSnapshot = await getDocs(imagesRef);
@@ -340,7 +284,7 @@ export const setProfileImage = async (plantId: string, newProfileImageId: string
     batch.update(newProfileImageRef, { isProfileImage: true });
 
     // Update the plant document
-    const plantDocRef = doc(db!, 'plants', plantId);
+    const plantDocRef = doc(db, 'plants', plantId);
     batch.update(plantDocRef, { profileImageId: newProfileImageId });
 
     await batch.commit();
@@ -352,12 +296,12 @@ export const setProfileImage = async (plantId: string, newProfileImageId: string
 };
 
 export const deletePlantImage = async (plantId: string, imageId: string): Promise<void> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Deleting plant image:', imageId);
     
-    const imageDocRef = doc(db!, 'plants', plantId, 'plant_images', imageId);
+    const imageDocRef = doc(db, 'plants', plantId, 'plant_images', imageId);
     await deleteDoc(imageDocRef);
 
     console.log('[PLANT SERVICE] Plant image deleted successfully');
@@ -370,12 +314,12 @@ export const deletePlantImage = async (plantId: string, imageId: string): Promis
 // Notification Operations
 
 export const addPlantNotification = async (plantId: string, notification: Omit<PlantNotification, 'id'>): Promise<string> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Adding notification to plant:', plantId);
     
-    const notificationsRef = collection(db!, 'plants', plantId, 'plant_notifications');
+    const notificationsRef = collection(db, 'plants', plantId, 'plant_notifications');
     const newNotificationDoc = await addDoc(notificationsRef, {
       ...notification,
       createdAt: serverTimestamp(),
@@ -391,10 +335,10 @@ export const addPlantNotification = async (plantId: string, notification: Omit<P
 };
 
 export const markNotificationAsRead = async (plantId: string, notificationId: string): Promise<void> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
-    const notificationDocRef = doc(db!, 'plants', plantId, 'plant_notifications', notificationId);
+    const notificationDocRef = doc(db, 'plants', plantId, 'plant_notifications', notificationId);
     await updateDoc(notificationDocRef, {
       isRead: true,
       readAt: serverTimestamp(),
@@ -410,12 +354,12 @@ export const markNotificationAsRead = async (plantId: string, notificationId: st
 // Health Operations
 
 export const updatePlantHealthScore = async (plantId: string, healthScore: number): Promise<void> => {
-  ensureFirebaseAvailable();
+  const db = ensureFirebaseAvailable();
   
   try {
     console.log('[PLANT SERVICE] Updating health score for plant:', plantId, 'to:', healthScore);
     
-    const plantDocRef = doc(db!, 'plants', plantId);
+    const plantDocRef = doc(db, 'plants', plantId);
     await updateDoc(plantDocRef, {
       healthScore,
       updatedAt: serverTimestamp(),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Progress } from './ui/Progress';
@@ -11,8 +11,6 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Clock,
-  TrendingUp,
-  TrendingDown,
   RefreshCw,
   Settings
 } from 'lucide-react';

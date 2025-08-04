@@ -1,6 +1,6 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
 import { 
-  getAuth, 
+  getAuth as getFirebaseAuth, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   onAuthStateChanged, 
@@ -11,7 +11,7 @@ import {
   type User
 } from "firebase/auth";
 import { 
-  getFirestore, 
+  getFirestore as getFirebaseFirestore, 
   serverTimestamp, 
   collection, 
   doc, 
@@ -30,7 +30,7 @@ import {
   type Firestore
 } from "firebase/firestore";
 import { 
-  getStorage, 
+  getStorage as getFirebaseStorage, 
   ref, 
   uploadBytes, 
   getDownloadURL,
@@ -121,9 +121,9 @@ class FirebaseManager {
         console.log(`🔥 Firebase initialization attempt ${this.retryCount + 1}/${this.maxRetries}`);
         
         this.app = initializeApp(config!);
-        this.auth = getAuth(this.app);
-        this.db = getFirestore(this.app);
-        this.storage = getStorage(this.app);
+        this.auth = getFirebaseAuth(this.app);
+        this.db = getFirebaseFirestore(this.app);
+        this.storage = getFirebaseStorage(this.app);
 
         // Health check
         await this.performHealthCheck();
@@ -197,6 +197,10 @@ class FirebaseManager {
     return this.storage;
   }
 
+  getApp(): FirebaseApp | null {
+    return this.app;
+  }
+
   isReady(): boolean {
     return this.isInitialized;
   }
@@ -214,6 +218,7 @@ firebaseManager.initialize().catch(error => {
 export const getAuth = () => firebaseManager.getAuth();
 export const getFirestore = () => firebaseManager.getFirestore();
 export const getStorage = () => firebaseManager.getStorage();
+export const getApp = () => firebaseManager.getApp();
 export const isFirebaseReady = () => firebaseManager.isReady();
 
 // Re-export Firebase functions

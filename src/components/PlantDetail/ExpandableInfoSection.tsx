@@ -7,7 +7,7 @@ import {
 import { Plant } from '@/schemas';
 import { cn } from '@/lib/utils';
 import { PlantCharacteristics } from './PlantCharacteristics';
-import { HealthAnalysisCard } from './HealthAnalysisCard';
+import HealthAnalysisCard from './HealthAnalysisCard';
 import { DescriptionCard } from './DescriptionCard';
 import { PlantEvolutionTracker } from './PlantEvolutionTracker';
 import { Card } from '../ui/Card';

@@ -228,13 +228,24 @@ const updateHealthAnalysis = async (
 /**
  * 🔧 Funciones auxiliares
  */
-const mapLightRequirements = (sunlightInfo?: string): string => {
-  if (!sunlightInfo) return 'luz_indirecta';
+const mapLightRequirements = (sunlight?: string): 'poca_luz' | 'luz_indirecta' | 'luz_directa_parcial' | 'pleno_sol' => {
+  if (!sunlight) return 'luz_indirecta';
   
-  const lower = sunlightInfo.toLowerCase();
-  if (lower.includes('directo') || lower.includes('pleno')) return 'pleno_sol';
-  if (lower.includes('sombra')) return 'poca_luz';
-  if (lower.includes('parcial')) return 'luz_directa_parcial';
+  const normalized = sunlight.toLowerCase();
+  if (normalized.includes('low') || normalized.includes('shade') || normalized.includes('poca')) {
+    return 'poca_luz';
+  }
+  if (normalized.includes('indirect') || normalized.includes('indirecta')) {
+    return 'luz_indirecta';
+  }
+  if (normalized.includes('partial') || normalized.includes('parcial')) {
+    return 'luz_directa_parcial';
+  }
+  if (normalized.includes('direct') || normalized.includes('full') || normalized.includes('pleno')) {
+    return 'pleno_sol';
+  }
+  
+  // Default fallback
   return 'luz_indirecta';
 };
 
