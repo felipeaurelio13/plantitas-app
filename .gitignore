@@ -18,6 +18,15 @@ lerna-debug.log*
 .env*.local
 .env.production
 .env.development
+.env.test
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.json
+credentials.json
+service-account.json
+firebase-service-account.json
 
 # Editor directories and files
 .vscode/*
