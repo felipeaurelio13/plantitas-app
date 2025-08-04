@@ -7,15 +7,27 @@ import { gardenCacheService } from '../services/gardenCacheService';
 // Instantiate services
 const plantService = new PlantService();
 
-interface PlantState {
-  plants: Plant[];
+interface LoadingState {
   isLoading: boolean;
   error: string | null;
-  selectedPlantId: string | null; // Keep UI state
+  lastOperation?: string;
+}
+
+interface OperationStates {
+  add: LoadingState;
+  update: LoadingState;
+  delete: LoadingState;
+  addImage: LoadingState;
+  chat: LoadingState;
+}
+
+interface PlantState {
+  plants: Plant[];
+  operationStates: OperationStates;
+  selectedPlantId: string | null;
 }
 
 interface PlantActions {
-  // loadPlants: (userId: string) => Promise<void>; // Removed
   getPlantById: (plantId: string) => Plant | undefined;
   addPlant: (
     imageDataUrl: string,
@@ -36,19 +48,30 @@ interface PlantActions {
   ) => Promise<void>;
   selectPlant: (id: string | null) => void;
   setPlant: (plant: Plant) => void;
-  clearError: () => void;
+  clearError: (operation?: keyof OperationStates) => void;
   clearPlants: () => void;
+  getOperationState: (operation: keyof OperationStates) => LoadingState;
 }
 
 type PlantStore = PlantState & PlantActions;
 
-export const usePlantStore = create<PlantStore>((set, get) => ({
-  plants: [],
+const initialLoadingState: LoadingState = {
   isLoading: false,
   error: null,
+};
+
+export const usePlantStore = create<PlantStore>((set, get) => ({
+  plants: [],
+  operationStates: {
+    add: { ...initialLoadingState },
+    update: { ...initialLoadingState },
+    delete: { ...initialLoadingState },
+    addImage: { ...initialLoadingState },
+    chat: { ...initialLoadingState },
+  },
   selectedPlantId: null,
 
-  // loadPlants: async (userId) => { ... }, // Removed
+  getOperationState: (operation) => get().operationStates[operation],
 
   getPlantById: (plantId) => {
     if (import.meta.env.DEV) {
@@ -74,6 +97,12 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
   },
 
   addPlant: async (imageDataUrl, location, userId) => {
+    set(produce((state: PlantState) => {
+      state.operationStates.add.isLoading = true;
+      state.operationStates.add.error = null;
+      state.operationStates.add.lastOperation = 'addPlant';
+    }));
+
     try {
       const newPlant = await plantService.addPlantFromAnalysis(
         userId,
@@ -81,72 +110,89 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
         location
       );
 
-      set(
-        produce((state: PlantState) => {
-          state.plants.unshift(newPlant);
-        })
-      );
+      set(produce((state: PlantState) => {
+        state.plants.unshift(newPlant);
+        state.operationStates.add.isLoading = false;
+      }));
 
-      // Invalidate garden cache since we added a new plant
       gardenCacheService.invalidateOnPlantChange(userId);
-
       return newPlant;
     } catch (e) {
-      console.error(e);
+      const error = e instanceof Error ? e.message : 'Failed to add plant';
+      set(produce((state: PlantState) => {
+        state.operationStates.add.isLoading = false;
+        state.operationStates.add.error = error;
+      }));
       throw e;
     }
   },
 
   updatePlant: async (plantToUpdate, userId) => {
-    // set({ isLoading: true, error: null }); // Removed
+    set(produce((state: PlantState) => {
+      state.operationStates.update.isLoading = true;
+      state.operationStates.update.error = null;
+      state.operationStates.update.lastOperation = `updatePlant-${plantToUpdate.id}`;
+    }));
+
     try {
       const updatedPlant = await plantService.updatePlant(plantToUpdate, userId);
-      set(
-        produce((state: PlantState) => {
-          const index = state.plants.findIndex((p) => p.id === updatedPlant.id);
-          if (index !== -1) {
-            state.plants[index] = updatedPlant;
-          }
-          // state.isLoading = false; // Removed
-        })
-      );
+      set(produce((state: PlantState) => {
+        const index = state.plants.findIndex((p) => p.id === updatedPlant.id);
+        if (index !== -1) {
+          state.plants[index] = updatedPlant;
+        }
+        state.operationStates.update.isLoading = false;
+      }));
 
-      // Invalidate garden cache since plant data changed
       gardenCacheService.invalidateOnPlantChange(userId);
     } catch (e) {
-      // const error = e instanceof Error ? e.message : 'Failed to update plant';
-      // set({ error, isLoading: false }); // Removed
-      console.error(e);
+      const error = e instanceof Error ? e.message : 'Failed to update plant';
+      set(produce((state: PlantState) => {
+        state.operationStates.update.isLoading = false;
+        state.operationStates.update.error = error;
+      }));
       throw e;
     }
   },
 
   deletePlant: async (plantId, userId) => {
-    // set({ isLoading: true, error: null }); // Removed
+    set(produce((state: PlantState) => {
+      state.operationStates.delete.isLoading = true;
+      state.operationStates.delete.error = null;
+      state.operationStates.delete.lastOperation = `deletePlant-${plantId}`;
+    }));
+
     try {
       await plantService.deletePlant(plantId, userId);
-      set(
-        produce((state: PlantState) => {
-          state.plants = state.plants.filter((p) => p.id !== plantId);
-          // state.isLoading = false; // Removed
-        })
-      );
+      set(produce((state: PlantState) => {
+        state.plants = state.plants.filter((p) => p.id !== plantId);
+        state.operationStates.delete.isLoading = false;
+      }));
 
-      // Invalidate garden cache since we deleted a plant
       gardenCacheService.invalidateOnPlantChange(userId);
     } catch (e) {
-      // const error = e instanceof Error ? e.message : 'Failed to delete plant';
-      // set({ error, isLoading: false }); // Removed
-      console.error(e);
+      const error = e instanceof Error ? e.message : 'Failed to delete plant';
+      set(produce((state: PlantState) => {
+        state.operationStates.delete.isLoading = false;
+        state.operationStates.delete.error = error;
+      }));
       throw e;
     }
   },
 
   addChatMessage: async (plantId, userMessageContent, userId) => {
-    set({ isLoading: true, error: null });
+    set(produce((state: PlantState) => {
+      state.operationStates.chat.isLoading = true;
+      state.operationStates.chat.error = null;
+      state.operationStates.chat.lastOperation = `addChatMessage-${plantId}`;
+    }));
+
     const plant = get().getPlantById(plantId);
     if (!plant) {
-      set({ isLoading: false, error: 'Plant not found to add message' });
+      set(produce((state: PlantState) => {
+        state.operationStates.chat.isLoading = false;
+        state.operationStates.chat.error = 'Plant not found to add message';
+      }));
       return;
     }
 
@@ -186,44 +232,64 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
             savedPlantMessage
           ];
         }
-        state.isLoading = false;
+        state.operationStates.chat.isLoading = false;
       }));
     } catch (e) {
       const error = e instanceof Error ? e.message : 'Failed to send message';
-      console.error(error);
-      set({ isLoading: false, error });
+      set(produce((state: PlantState) => {
+        state.operationStates.chat.isLoading = false;
+        state.operationStates.chat.error = error;
+      }));
       // Optionally revert optimistic update or show error in chat
     }
   },
   
   addPlantImage: async (plantId, imageDataUrl, userId) => {
-    // set({ isLoading: true, error: null }); // Removed
+    set(produce((state: PlantState) => {
+      state.operationStates.addImage.isLoading = true;
+      state.operationStates.addImage.error = null;
+      state.operationStates.addImage.lastOperation = `addImage-${plantId}`;
+    }));
+
     try {
       const newImage = await plantService.addPlantImage(
         plantId,
         { url: imageDataUrl, timestamp: new Date(), isProfileImage: false },
         userId
       );
-      set(
-        produce((state: PlantState) => {
-          const plant = state.plants.find(p => p.id === plantId);
-          if(plant) {
-            plant.images.push(newImage);
-          }
-          // state.isLoading = false; // Removed
-        })
-      );
+      set(produce((state: PlantState) => {
+        const plant = state.plants.find(p => p.id === plantId);
+        if(plant) {
+          plant.images.push(newImage);
+        }
+        state.operationStates.addImage.isLoading = false;
+      }));
     } catch (e) {
-      // const error = e instanceof Error ? e.message : 'Failed to add image';
-      // set({ error, isLoading: false }); // Removed
-      console.error(e);
+      const error = e instanceof Error ? e.message : 'Failed to add image';
+      set(produce((state: PlantState) => {
+        state.operationStates.addImage.isLoading = false;
+        state.operationStates.addImage.error = error;
+      }));
       throw e;
     }
   },
 
   selectPlant: (id) => set({ selectedPlantId: id }),
   
-  clearError: () => { /* This can be removed or do nothing */ },
+  clearError: (operation) => {
+    if (operation) {
+      set(produce((state: PlantState) => {
+        state.operationStates[operation].error = null;
+      }));
+    } else {
+      // Clear all operation errors
+      set(produce((state: PlantState) => {
+        Object.keys(state.operationStates).forEach(key => {
+          state.operationStates[key as keyof OperationStates].error = null;
+        });
+      }));
+    }
+  },
 
-  clearPlants: () => set({ plants: [], selectedPlantId: null }), // isLoading removed
+  clearPlants: () => set({ plants: [], selectedPlantId: null }),
 })); 
