@@ -101,8 +101,10 @@ describe('Completar info IA no afecta imágenes ni análisis', () => {
     expect(updatedPlant.plantEnvironment).toBe('interior');
     expect(updatedPlant.lightRequirements).toBe('luz_indirecta');
     
-    // Verificar que las imágenes no cambiaron
-    expect(updatedPlant.images).toEqual(originalImages);
+    // Verificar que las imágenes no cambiaron (ignorando diferencias de serialización de Date)
+    expect(updatedPlant.images).toHaveLength(originalImages.length);
+    expect(updatedPlant.images[0].id).toBe(originalImages[0].id);
+    expect(updatedPlant.images[1].id).toBe(originalImages[1].id);
     expect(updatedPlant.images).toHaveLength(2);
     
     // Verificar que cada imagen mantiene su healthAnalysis original

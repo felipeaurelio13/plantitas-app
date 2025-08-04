@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -11,11 +12,7 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   });
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+  return React.createElement(QueryClientProvider, { client: queryClient }, children);
 };
 
 describe('useOfflineStatus Hook', () => {

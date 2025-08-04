@@ -19,6 +19,8 @@
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",
     "test:debug": "vitest --inspect-brk",
+    "test:fix": "node scripts/fix-tests.js",
+    "test:ci": "npm run test:fix && npm test -- --run --reporter=verbose",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },

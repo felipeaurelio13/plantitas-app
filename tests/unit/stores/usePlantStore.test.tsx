@@ -44,7 +44,7 @@ describe('usePlantStore - Operation States', () => {
         setTimeout(() => resolve(mockPlant), 100)
       );
       
-      vi.mocked(require('../../../src/services/plantService').PlantService.prototype.addPlantFromAnalysis)
+      vi.mocked(require('../../src/services/plantService').PlantService.prototype.addPlantFromAnalysis)
         .mockReturnValue(addPlantPromise);
 
       // Start the operation
@@ -62,7 +62,7 @@ describe('usePlantStore - Operation States', () => {
       const { result } = renderHook(() => usePlantStore());
       
       const error = new Error('Failed to analyze image');
-      vi.mocked(require('../../../src/services/plantService').PlantService.prototype.addPlantFromAnalysis)
+      vi.mocked(require('../../src/services/plantService').PlantService.prototype.addPlantFromAnalysis)
         .mockRejectedValue(error);
 
       await act(async () => {
@@ -84,7 +84,7 @@ describe('usePlantStore - Operation States', () => {
       const { result } = renderHook(() => usePlantStore());
       
       const mockPlant = { id: '1', name: 'Updated Plant' };
-      vi.mocked(require('../../../src/services/plantService').PlantService.prototype.updatePlant)
+      vi.mocked(require('../../src/services/plantService').PlantService.prototype.updatePlant)
         .mockResolvedValue(mockPlant);
 
       await act(async () => {
@@ -102,7 +102,7 @@ describe('usePlantStore - Operation States', () => {
     it('should track delete operation state', async () => {
       const { result } = renderHook(() => usePlantStore());
       
-      vi.mocked(require('../../../src/services/plantService').PlantService.prototype.deletePlant)
+      vi.mocked(require('../../src/services/plantService').PlantService.prototype.deletePlant)
         .mockResolvedValue(undefined);
 
       await act(async () => {
@@ -121,7 +121,7 @@ describe('usePlantStore - Operation States', () => {
       const { result } = renderHook(() => usePlantStore());
       
       const mockImage = { id: '1', url: 'test-url', timestamp: new Date() };
-      vi.mocked(require('../../../src/services/plantService').PlantService.prototype.addPlantImage)
+      vi.mocked(require('../../src/services/plantService').PlantService.prototype.addPlantImage)
         .mockResolvedValue(mockImage);
 
       await act(async () => {

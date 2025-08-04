@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { GardenChatService } from '../src/services/gardenChatService';
+import { GardenChatService } from '../../src/services/gardenChatService';
 
 // Mock Supabase with auth session
-vi.mock('../src/lib/supabase', () => ({
+vi.mock('../../src/lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn(() => ({

@@ -89,11 +89,11 @@ export const usePlantCardLogic = (plant: PlantSummary, index: number) => {
 
   // Navigation actions
   const navigateToPlant = useCallback(() => {
-    navigate(navigation.plantDetail(plant.id));
+    navigate(navigation.toPlantDetail(plant.id));
   }, [navigate, plant.id]);
 
   const navigateToChat = useCallback(() => {
-    navigate(navigation.plantChat(plant.id));
+    navigate(navigation.toPlantChat(plant.id));
   }, [navigate, plant.id]);
 
   // Event handlers

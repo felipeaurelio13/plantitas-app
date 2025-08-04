@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import '../src/index.css';
+import './mocks/supabase';
 
 // Mock global objects
 global.ResizeObserver = vi.fn().mockImplementation(() => ({

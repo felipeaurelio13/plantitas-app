@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { GardenCacheService } from '../src/services/gardenCacheService';
-import { GardenAnalysisContext, PlantSummary } from '../src/schemas';
+import { GardenCacheService } from '../../src/services/gardenCacheService';
+import { GardenAnalysisContext, PlantSummary } from '../../src/schemas';
 
 describe('GardenCacheService', () => {
   let cacheService: GardenCacheService;

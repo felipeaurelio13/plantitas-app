@@ -86,7 +86,12 @@ describe('usePlantCardLogic', () => {
 
   describe('Health Status Calculation', () => {
     it('should return excellent status for high health scores', () => {
-      const healthyPlant = { ...mockPlant, healthScore: 90 };
+      const healthyPlant = { 
+        ...mockPlant, 
+        healthScore: 90,
+        lastWatered: new Date().toISOString(), // Recently watered
+        wateringFrequency: 7
+      };
       const { result } = renderHook(() => usePlantCardLogic(healthyPlant, 0));
 
       expect(result.current.state.healthStatus.status).toBe('Excelente');
@@ -94,7 +99,12 @@ describe('usePlantCardLogic', () => {
     });
 
     it('should return attention status for low health scores', () => {
-      const unhealthyPlant = { ...mockPlant, healthScore: 40 };
+      const unhealthyPlant = { 
+        ...mockPlant, 
+        healthScore: 40,
+        lastWatered: new Date().toISOString(), // Recently watered
+        wateringFrequency: 7
+      };
       const { result } = renderHook(() => usePlantCardLogic(unhealthyPlant, 0));
 
       expect(result.current.state.healthStatus.status).toBe('Atención');
@@ -134,7 +144,10 @@ describe('usePlantCardLogic', () => {
 
     it('should call navigate on handleClick', () => {
       const mockNavigate = vi.fn();
-      vi.mocked(require('react-router-dom').useNavigate).mockReturnValue(mockNavigate);
+      const mockUseNavigate = vi.fn().mockReturnValue(mockNavigate);
+      vi.doMock('react-router-dom', () => ({
+        useNavigate: mockUseNavigate
+      }));
 
       const { result } = renderHook(() => usePlantCardLogic(mockPlant, 0));
 
@@ -149,9 +162,12 @@ describe('usePlantCardLogic', () => {
   describe('Prefetching', () => {
     it('should prefetch plant data on mouse enter', async () => {
       const mockPrefetchQuery = vi.fn();
-      vi.mocked(require('@tanstack/react-query').useQueryClient).mockReturnValue({
+      const mockUseQueryClient = vi.fn().mockReturnValue({
         prefetchQuery: mockPrefetchQuery,
       });
+      vi.doMock('@tanstack/react-query', () => ({
+        useQueryClient: mockUseQueryClient
+      }));
 
       const { result } = renderHook(() => usePlantCardLogic(mockPlant, 0));
 

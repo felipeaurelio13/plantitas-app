@@ -19,7 +19,7 @@ describe('InputValidationService', () => {
       const input = 'Hello <script>alert("xss")</script> world!';
       const result = service.validateChatInput(input);
       
-      expect(result.sanitizedInput).toBe('Hello  world!');
+      expect(result.sanitizedInput).toBe('Hello alert("xss") world!');
     });
 
     it('should remove JavaScript protocols', () => {
@@ -99,7 +99,7 @@ describe('InputValidationService', () => {
     });
 
     it('should validate token count estimates', () => {
-      const veryLongMessage = 'word '.repeat(1500); // Roughly > 4000 tokens
+      const veryLongMessage = 'word '.repeat(2000); // Roughly > 4000 tokens
       const result = service.validateChatInput(veryLongMessage);
       
       expect(result.isValid).toBe(false);

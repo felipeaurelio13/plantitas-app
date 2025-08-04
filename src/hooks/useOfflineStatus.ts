@@ -16,5 +16,22 @@ export const useOfflineStatus = () => {
     };
   }, []);
 
-  return isOnline;
+  return {
+    isOnline,
+    isOffline: !isOnline,
+    networkQuality: 'unknown',
+    isSlowConnection: false,
+    networkType: 'unknown',
+    connectionSpeed: 0,
+    connectionLatency: 0,
+    networkStatus: {
+      isOnline,
+      isOffline: !isOnline,
+      networkQuality: 'unknown',
+      isSlowConnection: false,
+      networkType: 'unknown',
+      connectionSpeed: 0,
+      connectionLatency: 0,
+    }
+  };
 };

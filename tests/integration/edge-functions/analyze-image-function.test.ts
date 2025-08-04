@@ -36,7 +36,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const imageFile = new File(['fake-image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await imageFile.arrayBuffer();
+      const imageData = new TextEncoder().encode('fake-image-data').buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -80,7 +80,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const sickPlantImage = new File(['sick-plant-data'], 'sick-plant.jpg', { type: 'image/jpeg' });
-      const imageData = await sickPlantImage.arrayBuffer();
+      const imageData = new TextEncoder().encode('sick-plant-data').buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -116,7 +116,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const orchidImage = new File(['orchid-data'], 'orchid.jpg', { type: 'image/jpeg' });
-      const imageData = await orchidImage.arrayBuffer();
+      const imageData = new TextEncoder().encode('orchid-data').buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -145,7 +145,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const invalidFile = new File(['invalid-data'], 'document.pdf', { type: 'application/pdf' });
-      const fileData = await invalidFile.arrayBuffer();
+      const fileData = new TextEncoder().encode('invalid-data').buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -172,7 +172,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const corruptedImage = new File(['corrupted-data'], 'corrupted.jpg', { type: 'image/jpeg' });
-      const imageData = await corruptedImage.arrayBuffer();
+      const imageData = new TextEncoder().encode('corrupted-data').buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -199,7 +199,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const imageFile = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await imageFile.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -227,7 +227,7 @@ describe('Analyze Image Edge Function Integration', () => {
 
       // Simular imagen grande (15MB)
       const largeImage = new File(['x'.repeat(15 * 1024 * 1024)], 'large.jpg', { type: 'image/jpeg' });
-      const imageData = await largeImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -261,7 +261,7 @@ describe('Analyze Image Edge Function Integration', () => {
 
       const responses = await Promise.all(
         images.map(async (image) => {
-          const imageData = await image.arrayBuffer();
+          const imageData = new TextEncoder().encode("data").buffer;
           return supabase.functions.invoke('analyze-image', {
             body: {
               image: Array.from(new Uint8Array(imageData)),
@@ -299,7 +299,7 @@ describe('Analyze Image Edge Function Integration', () => {
       ];
 
       for (const image of imageFormats) {
-        const imageData = await image.arrayBuffer();
+        const imageData = new TextEncoder().encode("data").buffer;
         const response = await supabase.functions.invoke('analyze-image', {
           body: {
             image: Array.from(new Uint8Array(imageData)),
@@ -335,7 +335,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const imageFile = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await imageFile.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -374,7 +374,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const imageFile = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await imageFile.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -407,7 +407,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const blurryImage = new File(['blurry-data'], 'blurry.jpg', { type: 'image/jpeg' });
-      const imageData = await blurryImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -437,7 +437,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const imageFile = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await imageFile.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {
@@ -464,7 +464,7 @@ describe('Analyze Image Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const imageFile = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await imageFile.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
 
       const response = await supabase.functions.invoke('analyze-image', {
         body: {

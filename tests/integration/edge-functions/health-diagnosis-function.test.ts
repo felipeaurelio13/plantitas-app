@@ -49,7 +49,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const newImage = new File(['new-health-data'], 'new-health.jpg', { type: 'image/jpeg' });
-      const imageData = await newImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -110,7 +110,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const sickPlantImage = new File(['sick-plant-data'], 'sick-plant.jpg', { type: 'image/jpeg' });
-      const imageData = await sickPlantImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -169,7 +169,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const improvingPlantImage = new File(['improving-plant-data'], 'improving-plant.jpg', { type: 'image/jpeg' });
-      const imageData = await improvingPlantImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -202,7 +202,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const newImage = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await newImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -231,7 +231,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const newImage = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await newImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const invalidPlantId = 'invalid-plant-id';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -260,7 +260,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const corruptedImage = new File(['corrupted-data'], 'corrupted.jpg', { type: 'image/jpeg' });
-      const imageData = await corruptedImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -289,7 +289,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const newImage = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await newImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -367,7 +367,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
 
       // Simular imagen grande (8MB)
       const largeImage = new File(['x'.repeat(8 * 1024 * 1024)], 'large-health.jpg', { type: 'image/jpeg' });
-      const imageData = await largeImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -414,7 +414,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const newImage = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await newImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -458,7 +458,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const newImage = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await newImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -498,7 +498,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const blurryImage = new File(['blurry-data'], 'blurry-health.jpg', { type: 'image/jpeg' });
-      const imageData = await blurryImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -529,7 +529,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const newImage = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await newImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -595,7 +595,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const newImage = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await newImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {
@@ -625,7 +625,7 @@ describe('Health Diagnosis Edge Function Integration', () => {
       (supabase.functions.invoke as any).mockImplementation(mockInvoke);
 
       const newImage = new File(['image-data'], 'plant.jpg', { type: 'image/jpeg' });
-      const imageData = await newImage.arrayBuffer();
+      const imageData = new TextEncoder().encode("data").buffer;
       const plantId = 'plant-123';
 
       const response = await supabase.functions.invoke('update-health-diagnosis', {

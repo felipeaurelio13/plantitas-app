@@ -25,7 +25,7 @@ describe('useAuthInitialization', () => {
       initialize: vi.fn(),
     };
     
-    const useAuthStore = require('../../../src/stores/useAuthStore').default;
+    const useAuthStore = require('../../src/stores/useAuthStore').default;
     useAuthStore.mockReturnValue(mockAuthStore);
   });
 
