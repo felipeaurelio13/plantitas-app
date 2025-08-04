@@ -7,6 +7,8 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useAuthStore from './stores/useAuthStore';
 import plantService from './services/plantService';
+import cacheService from './services/cacheService';
+import performanceService from './services/performanceService';
 import { initAdvancedMobileDebug, logCriticalError } from './utils/mobileDebugAdvanced';
 import { Toaster } from 'sonner';
 
@@ -24,6 +26,28 @@ console.log('[MOBILE] User Agent:', navigator.userAgent);
   logCriticalError(error, type, details);
 };
 
+// Initialize services
+const initializeServices = async () => {
+  try {
+    console.log('[SERVICES] Initializing application services...');
+    
+    // Initialize cache service first (for offline capability)
+    await cacheService.initialize();
+    console.log('[SERVICES] ✅ Cache service initialized');
+    
+    // Performance service is auto-initialized
+    console.log('[SERVICES] ✅ Performance service initialized');
+    
+    console.log('[SERVICES] All services initialized successfully');
+  } catch (error) {
+    console.error('[SERVICES] Failed to initialize services:', error);
+    logCriticalError('SERVICES_INITIALIZATION', error);
+  }
+};
+
+// Start service initialization
+initializeServices();
+
 // Test de compatibilidad desactivado temporalmente
 // El problema podría estar en los compatibility tests
 
@@ -36,7 +60,7 @@ function PrefetchOnLogin() {
     if (user?.id) {
       queryClient.prefetchQuery({
         queryKey: ['plants', user.id],
-        queryFn: () => plantService.getUserPlantSummaries(user.id),
+        queryFn: () => plantService.getUserPlants(user.id),
         staleTime: 1000 * 60 * 5,
       });
     }

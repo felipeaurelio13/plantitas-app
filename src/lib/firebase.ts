@@ -38,165 +38,192 @@ import {
   type FirebaseStorage 
 } from "firebase/storage";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
-// Log de configuración para debug
-console.log('🔥 Firebase Config Debug:', {
-  apiKeyPresent: !!firebaseConfig.apiKey,
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain,
-  environment: import.meta.env.MODE,
-  allEnvVars: {
-    NODE_ENV: import.meta.env.NODE_ENV,
-    MODE: import.meta.env.MODE,
-    PROD: import.meta.env.PROD,
-    DEV: import.meta.env.DEV,
-    // No log sensitive data, just check presence
-    hasApiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
-    hasProjectId: !!import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    hasAuthDomain: !!import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  }
-});
-
-// Validate Firebase configuration
-const validateFirebaseConfig = () => {
-  const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
-  const missingKeys = requiredKeys.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig]);
-  
-  console.log('🔥 Firebase Config Check:', {
-    hasAllKeys: missingKeys.length === 0,
-    missingKeys,
-    configKeys: Object.keys(firebaseConfig),
-    configValues: Object.fromEntries(
-      Object.entries(firebaseConfig).map(([key, value]) => [
-        key, 
-        value ? `${value.substring(0, 10)}...` : 'MISSING'
-      ])
-    )
-  });
-  
-  if (missingKeys.length > 0) {
-    console.error(`🔥 Firebase config missing: ${missingKeys.join(', ')}`);
-    
-    // En desarrollo, mostrar error detallado
-    if (import.meta.env.DEV) {
-      console.error('🔥 Dev Mode: Check your .env file has all VITE_FIREBASE_* variables');
-    } else {
-      console.error('🔥 Production Mode: Check GitHub Secrets are configured correctly');
-    }
-    return false;
-  }
-  return true;
-};
-
-// Initialize Firebase
-let app: FirebaseApp | undefined;
-let auth: Auth | undefined;
-let db: Firestore | undefined;
-let storage: FirebaseStorage | undefined;
-
-console.log('🔥 Starting Firebase initialization...');
-
-try {
-  if (validateFirebaseConfig()) {
-    console.log('✅ Firebase config validation passed');
-    
-    app = initializeApp(firebaseConfig);
-    console.log('✅ Firebase app initialized');
-    
-    auth = getAuth(app);
-    console.log('✅ Firebase Auth initialized');
-    
-    db = getFirestore(app);
-    console.log('✅ Firestore initialized');
-    
-    storage = getStorage(app);
-    console.log('✅ Firebase Storage initialized');
-    
-    // Make Firebase available globally for debugging
-    (window as any).firebaseApp = app;
-    (window as any).firebaseAuth = auth;
-    (window as any).firebaseDb = db;
-    
-    console.log('✅ Firebase initialized successfully - all services ready');
-  } else {
-    console.error('❌ Firebase initialization skipped due to missing configuration');
-    
-    // Create mock Firebase services for development/testing
-    console.warn('🔄 Creating mock Firebase services for fallback mode');
-    
-    (window as any).firebaseApp = null;
-    (window as any).firebaseAuth = null;
-    (window as any).firebaseDb = null;
-    
-    // En modo de fallback, la app debería mostrar un mensaje de configuración
-    console.warn('🔄 App will run in fallback mode - some features may be limited');
-  }
-} catch (error) {
-  console.error('❌ Firebase initialization failed:', error);
-  console.error('❌ Error details:', {
-    name: error instanceof Error ? error.name : 'Unknown',
-    message: error instanceof Error ? error.message : String(error),
-    stack: error instanceof Error ? error.stack : undefined
-  });
-  
-  // Fallback to mock services
-  (window as any).firebaseApp = null;
-  (window as any).firebaseAuth = null;
-  (window as any).firebaseDb = null;
+interface FirebaseConfig {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
 }
 
-// Google Auth Provider
-const googleProvider = new GoogleAuthProvider();
+class FirebaseManager {
+  private static instance: FirebaseManager | null = null;
+  private app: FirebaseApp | null = null;
+  private auth: Auth | null = null;
+  private db: Firestore | null = null;
+  private storage: FirebaseStorage | null = null;
+  private isInitialized = false;
+  private initializationPromise: Promise<boolean> | null = null;
+  private retryCount = 0;
+  private maxRetries = 3;
 
-// Helper functions for Firestore operations
-export const firestoreHelpers = {
-  // Collections
-  getCollection: (collectionName: string) => collection(db!, collectionName),
-  
-  // Documents
-  getDocRef: (collectionName: string, docId: string) => doc(db!, collectionName, docId),
-  
-  // Subcollections
-  getSubcollection: (parentCollection: string, parentDocId: string, subcollectionName: string) => 
-    collection(db!, parentCollection, parentDocId, subcollectionName),
-  
-  // Queries
-  createQuery: (collectionRef: any, ...queryConstraints: any[]) => query(collectionRef, ...queryConstraints),
-  
-  // Batch operations
-  getBatch: () => writeBatch(db!),
-};
+  private constructor() {}
 
-// Export Firebase services and utilities
-export { 
-  app, 
-  auth, 
-  db, 
-  storage,
-  googleProvider
-};
+  static getInstance(): FirebaseManager {
+    if (!FirebaseManager.instance) {
+      FirebaseManager.instance = new FirebaseManager();
+    }
+    return FirebaseManager.instance;
+  }
 
-// Export auth functions
+  private validateConfig(): { isValid: boolean; config: FirebaseConfig | null; errors: string[] } {
+    const errors: string[] = [];
+    const config: Partial<FirebaseConfig> = {
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    };
+
+    const requiredKeys: (keyof FirebaseConfig)[] = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+    
+    requiredKeys.forEach(key => {
+      if (!config[key]) {
+        errors.push(`Missing ${key} (VITE_FIREBASE_${key.toUpperCase()})`);
+      }
+    });
+
+    console.log('🔥 Firebase Config Validation:', {
+      environment: import.meta.env.MODE,
+      hasAllKeys: errors.length === 0,
+      errors,
+      projectId: config.projectId || 'MISSING'
+    });
+
+    return {
+      isValid: errors.length === 0,
+      config: errors.length === 0 ? config as FirebaseConfig : null,
+      errors
+    };
+  }
+
+  private async initializeWithRetry(): Promise<boolean> {
+    const { isValid, config, errors } = this.validateConfig();
+    
+    if (!isValid) {
+      const errorMessage = `Firebase configuration invalid: ${errors.join(', ')}`;
+      console.error('❌ Firebase Config Error:', errorMessage);
+      
+      if (import.meta.env.DEV) {
+        console.error('💡 Development: Ensure your .env file contains all VITE_FIREBASE_* variables');
+      } else {
+        console.error('💡 Production: Verify environment variables are set correctly');
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    while (this.retryCount < this.maxRetries) {
+      try {
+        console.log(`🔥 Firebase initialization attempt ${this.retryCount + 1}/${this.maxRetries}`);
+        
+        this.app = initializeApp(config!);
+        this.auth = getAuth(this.app);
+        this.db = getFirestore(this.app);
+        this.storage = getStorage(this.app);
+
+        // Health check
+        await this.performHealthCheck();
+        
+        this.isInitialized = true;
+        console.log('✅ Firebase initialized successfully');
+        
+        // Global debug access
+        (window as any).firebaseManager = this;
+        
+        return true;
+      } catch (error) {
+        this.retryCount++;
+        const delay = Math.min(1000 * Math.pow(2, this.retryCount), 10000);
+        
+        console.error(`❌ Firebase initialization failed (attempt ${this.retryCount}):`, error);
+        
+        if (this.retryCount < this.maxRetries) {
+          console.log(`🔄 Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          console.error('❌ All Firebase initialization attempts failed');
+          throw error;
+        }
+      }
+    }
+    
+    return false;
+  }
+
+  private async performHealthCheck(): Promise<void> {
+    if (!this.db) throw new Error('Firestore not initialized');
+    
+    try {
+      // Simple connectivity test
+      const testDoc = doc(this.db, '__health__', 'test');
+      await getDoc(testDoc);
+      console.log('✅ Firebase connectivity verified');
+    } catch (error) {
+      console.warn('⚠️ Firebase health check failed:', error);
+      // Don't throw here, as the document might not exist
+    }
+  }
+
+  async initialize(): Promise<boolean> {
+    if (this.isInitialized) return true;
+    if (this.initializationPromise) return this.initializationPromise;
+
+    this.initializationPromise = this.initializeWithRetry();
+    return this.initializationPromise;
+  }
+
+  getAuth(): Auth {
+    if (!this.isInitialized || !this.auth) {
+      throw new Error('Firebase Auth not initialized. Call initialize() first.');
+    }
+    return this.auth;
+  }
+
+  getFirestore(): Firestore {
+    if (!this.isInitialized || !this.db) {
+      throw new Error('Firestore not initialized. Call initialize() first.');
+    }
+    return this.db;
+  }
+
+  getStorage(): FirebaseStorage {
+    if (!this.isInitialized || !this.storage) {
+      throw new Error('Firebase Storage not initialized. Call initialize() first.');
+    }
+    return this.storage;
+  }
+
+  isReady(): boolean {
+    return this.isInitialized;
+  }
+}
+
+// Create global instance
+const firebaseManager = FirebaseManager.getInstance();
+
+// Initialize Firebase immediately
+firebaseManager.initialize().catch(error => {
+  console.error('❌ Critical: Firebase initialization failed:', error);
+});
+
+// Export services with safety checks
+export const getAuth = () => firebaseManager.getAuth();
+export const getFirestore = () => firebaseManager.getFirestore();
+export const getStorage = () => firebaseManager.getStorage();
+export const isFirebaseReady = () => firebaseManager.isReady();
+
+// Re-export Firebase functions
 export { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   onAuthStateChanged, 
   signOut,
   signInWithPopup,
-  type User as FirebaseUser
-};
-
-// Export Firestore functions
-export { 
+  GoogleAuthProvider,
   serverTimestamp, 
   collection, 
   doc, 
@@ -211,13 +238,35 @@ export {
   limit,
   getDocs,
   onSnapshot,
-  writeBatch
-};
-
-// Export Storage functions
-export { 
+  writeBatch,
   ref, 
   uploadBytes, 
   getDownloadURL,
-  deleteObject
+  deleteObject,
+  type User as FirebaseUser
+};
+
+// Legacy exports for backward compatibility
+export const auth = firebaseManager.isReady() ? firebaseManager.getAuth() : null;
+export const db = firebaseManager.isReady() ? firebaseManager.getFirestore() : null;
+export const storage = firebaseManager.isReady() ? firebaseManager.getStorage() : null;
+export const googleProvider = new GoogleAuthProvider();
+
+// Helper functions for Firestore operations
+export const firestoreHelpers = {
+  // Collections
+  getCollection: (collectionName: string) => collection(firebaseManager.getFirestore(), collectionName),
+  
+  // Documents
+  getDocRef: (collectionName: string, docId: string) => doc(firebaseManager.getFirestore(), collectionName, docId),
+  
+  // Subcollections
+  getSubcollection: (parentCollection: string, parentDocId: string, subcollectionName: string) => 
+    collection(firebaseManager.getFirestore(), parentCollection, parentDocId, subcollectionName),
+  
+  // Queries
+  createQuery: (collectionRef: any, ...queryConstraints: any[]) => query(collectionRef, ...queryConstraints),
+  
+  // Batch operations
+  getBatch: () => writeBatch(firebaseManager.getFirestore()),
 }; 
