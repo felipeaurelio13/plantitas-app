@@ -147,8 +147,8 @@
         if (!anchor) return;
         const href = anchor.getAttribute('href');
         if (!href || href.startsWith('http')) return;
-        var startViewTransition = (document && (document as any).startViewTransition)
-          ? (document as any).startViewTransition.bind(document)
+        var startViewTransition = (document && (document)['startViewTransition'])
+          ? (document)['startViewTransition'].bind(document)
           : null;
         if (startViewTransition) {
           event.preventDefault();
@@ -159,7 +159,7 @@
         }
       }, { capture: true });
     </script>
-    <script type="module" crossorigin src="/plantitas-app/assets/js/index-Cc8cQLUd.js"></script>
+    <script type="module" crossorigin src="/plantitas-app/assets/js/index-CFGs3ill.js"></script>
     <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/vendor-DZ-WnDgw.js">
     <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/query-DbrUQU2d.js">
     <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/supabase-pWErzozG.js">
