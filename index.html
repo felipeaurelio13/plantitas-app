@@ -134,7 +134,16 @@
 
       // Install view-transition friendly navigation for same-origin anchor clicks
       document.addEventListener('click', (event) => {
-        const anchor = (event.target as HTMLElement).closest('a');
+        var target = event.target;
+        // Cross-shadow-root: prefer composedPath when available
+        if (event.composedPath) {
+          var path = event.composedPath();
+          for (var i = 0; i < path.length; i++) {
+            var el = path[i];
+            if (el && el.tagName === 'A') { target = el; break; }
+          }
+        }
+        var anchor = target && target.closest ? target.closest('a') : null;
         if (!anchor) return;
         const href = anchor.getAttribute('href');
         if (!href || href.startsWith('http')) return;
@@ -148,7 +157,7 @@
         }
       }, { capture: true });
     </script>
-    <script type="module" crossorigin src="/plantitas-app/assets/js/index-CXrUxsAU.js"></script>
+    <script type="module" crossorigin src="/plantitas-app/assets/js/index-BDAXuqjt.js"></script>
     <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/vendor-ohv-86MT.js">
     <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/query-D9cK7eLy.js">
     <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/supabase-ChG5PfJU.js">
@@ -197,5 +206,16 @@
       // NO interceptar errores - dejar que React los maneje
     </script>
     
+    <script>
+      // Fallback Firebase config for static hosting (GH Pages)
+      window.__FIREBASE_CONFIG__ = {
+        apiKey: 'AIzaSyAXe23KlB86uzbcPZ4yNmvPJTcT_217S3I',
+        authDomain: 'plantitas-app.firebaseapp.com',
+        projectId: 'plantitas-app',
+        storageBucket: 'plantitas-app.firebasestorage.app',
+        messagingSenderId: '1043760234213',
+        appId: '1:1043760234213:web:e65079358482d71c545e0c'
+      };
+    </script>
   </body>
 </html>
