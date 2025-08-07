@@ -147,7 +147,9 @@
         if (!anchor) return;
         const href = anchor.getAttribute('href');
         if (!href || href.startsWith('http')) return;
-        const startViewTransition = (document as any).startViewTransition?.bind(document);
+        var startViewTransition = (document && (document as any).startViewTransition)
+          ? (document as any).startViewTransition.bind(document)
+          : null;
         if (startViewTransition) {
           event.preventDefault();
           startViewTransition(() => {
@@ -157,12 +159,12 @@
         }
       }, { capture: true });
     </script>
-    <script type="module" crossorigin src="/plantitas-app/assets/js/index-BDAXuqjt.js"></script>
-    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/vendor-ohv-86MT.js">
-    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/query-D9cK7eLy.js">
-    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/supabase-ChG5PfJU.js">
-    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/router-Lz5I7iQY.js">
-    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/ui-BW4tJjqg.js">
+    <script type="module" crossorigin src="/plantitas-app/assets/js/index-Cc8cQLUd.js"></script>
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/vendor-DZ-WnDgw.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/query-DbrUQU2d.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/supabase-pWErzozG.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/router-8pqLaH9a.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/ui-DPEBMuFB.js">
     <link rel="stylesheet" crossorigin href="/plantitas-app/assets/css/index-BGJUK6HN.css">
   <link rel="manifest" href="/plantitas-app/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/plantitas-app/registerSW.js"></script></head>
   <body>
