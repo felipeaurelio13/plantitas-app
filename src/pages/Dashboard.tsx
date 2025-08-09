@@ -151,99 +151,137 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="container-spacing element-spacing bg-gradient-to-br from-green-50/30 via-white to-emerald-50/20 min-h-screen" style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom))' }}>
-        <header className="flex items-center justify-between border-b border-green-100/50 bg-white/70 backdrop-blur-sm pb-4 mb-6 rounded-xl px-4 py-3 shadow-sm shadow-green-100/20">
-            <div className="flex items-center gap-3">
-                {/* Icono hoja minimal */}
-                <Tooltip content="Tu jardín personal de plantas">
-                  <Leaf size={20} strokeWidth={2} className="text-[#2A7F3E] flex-shrink-0" />
-                </Tooltip>
-                <h1 className="font-semibold text-[28px] leading-[1.2] text-[#222]">Mi Jardín</h1>
-                {/* Contador como pill */}
-                <Tooltip content={`Tienes ${plants.length} ${plants.length === 1 ? 'planta registrada' : 'plantas registradas'} en tu jardín`}>
-                  <span className="ml-2 bg-[#E0F2E9]/50 text-[#2A7F3E] text-sm font-medium rounded-full px-[6px] py-[2px] cursor-help">
-                    {plants.length} {plants.length === 1 ? 'planta' : 'plantas'}
-                  </span>
-                </Tooltip>
+    <div className="min-h-screen bg-gradient-to-br from-green-50/20 via-background to-primary-50/10 pb-safe-bottom">
+      {/* Header optimizado mobile-first */}
+      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-lg border-b border-border/50 shadow-sm">
+        <div className="px-4 py-3 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <Leaf size={22} strokeWidth={2.5} className="text-primary-600 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <h1 className="font-bold text-2xl text-foreground truncate">Mi Jardín</h1>
+                {plants.length > 0 && (
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-sm text-muted-foreground">
+                      {plants.length} {plants.length === 1 ? 'planta' : 'plantas'}
+                    </span>
+                    {plants.some(p => p.healthScore < 40) && (
+                      <span className="text-xs bg-warning-100 text-warning-700 px-2 py-0.5 rounded-full font-medium">
+                        Necesita atención
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-        </header>
+          </div>
+        </div>
+      </header>
 
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* AI Feature Highlights */}
         {plants.length > 0 && shouldShowHighlight('dashboard-ai-welcome') && (
-          <div className="mb-4">
-            <AIFeatureHighlight
-              type="welcome"
-              title="¡Tu asistente IA está disponible!"
-              message="Haz preguntas sobre el cuidado de tus plantas, identifica problemas o descubre nuevos consejos."
-              onDismiss={() => dismissHighlight('dashboard-ai-welcome')}
-              autoHide
-              duration={10000}
-            />
-          </div>
+          <AIFeatureHighlight
+            type="welcome"
+            title="¡Tu asistente IA está disponible!"
+            message="Haz preguntas sobre el cuidado de tus plantas, identifica problemas o descubre nuevos consejos."
+            onDismiss={() => dismissHighlight('dashboard-ai-welcome')}
+            autoHide
+            duration={10000}
+          />
         )}
 
         {plants.length >= 3 && shouldShowHighlight('dashboard-ai-tips') && (
-          <div className="mb-4">
-            <AIFeatureHighlight
-              type="tip"
-              title="Consejo del jardinero experto"
-              message="Con varias plantas, puedes preguntarme sobre rutinas de cuidado personalizadas para optimizar tu tiempo."
-              onDismiss={() => dismissHighlight('dashboard-ai-tips')}
-              autoHide
-              duration={12000}
-            />
+          <AIFeatureHighlight
+            type="tip"
+            title="Consejo del jardinero experto"
+            message="Con varias plantas, puedes preguntarme sobre rutinas de cuidado personalizadas para optimizar tu tiempo."
+            onDismiss={() => dismissHighlight('dashboard-ai-tips')}
+            autoHide
+            duration={12000}
+          />
+        )}
+
+        {/* Controles de búsqueda y filtros mejorados */}
+        {plants.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <Input
+                  type="text"
+                  placeholder="Buscar plantas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full"
+                  size="default"
+                  variant="default"
+                  data-tour="search-input"
+                />
+              </div>
+              <div className="sm:w-48">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortByType)}
+                  className="w-full h-12 px-4 bg-background border border-border rounded-xl text-foreground font-medium shadow-sm focus:ring-2 focus:ring-ring focus:border-ring transition-all duration-200 appearance-none cursor-pointer"
+                >
+                  <option value="name">Por Nombre</option>
+                  <option value="health">Por Salud</option>
+                  <option value="lastWatered">Por Riego</option>
+                </select>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Buscador y orden: centrados y con margen superior */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6 mb-6">
-            <Input
-                type="text"
-                placeholder="Buscar por nombre o especie..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="max-w-md w-full mx-auto"
-                data-tour="search-input"
-            />
-            <div className="relative w-full max-w-xs">
-              <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortByType)}
-                  className="appearance-none bg-white border border-green-300 rounded-[8px] px-4 py-2 h-10 text-green-700 font-medium shadow-sm focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-colors duration-150 w-full pr-8"
-                  style={{ borderWidth: '1px' }}
-              >
-                  <option value="name">Ordenar por Nombre</option>
-                  <option value="health">Ordenar por Salud</option>
-                  <option value="lastWatered">Ordenar por Riego</option>
-              </select>
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-green-400 text-base">
-                ▼
-              </span>
-            </div>
-        </div>
-
-        <AnimatePresence>
-            {filteredAndSortedPlants.length > 0 ? (
+        {/* Grid de plantas con mejor responsividad */}
+        <AnimatePresence mode="wait">
+          {filteredAndSortedPlants.length > 0 ? (
+            <motion.div
+              key="plants-grid"
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {filteredAndSortedPlants.map((plant: PlantSummary, index: number) => (
                 <motion.div
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 element-spacing"
-                    initial="hidden"
-                    animate="visible"
-                    variants={{
-                        visible: {
-                            transition: {
-                                staggerChildren: 0.01, // Reducido aún más para mejor rendimiento
-                                delayChildren: 0,       // Sin delay inicial
-                            },
-                        },
-                    }}
+                  key={plant.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.3,
+                    delay: Math.min(index * 0.05, 0.3)
+                  }}
                 >
-                    {filteredAndSortedPlants.map((plant: PlantSummary, index: number) => (
-                        <PlantCard key={plant.id} plant={plant} index={Math.min(index, 8)} />
-                    ))}
+                  <PlantCard plant={plant} index={index} />
                 </motion.div>
-            ) : (
-                <EmptyState />
-            )}
+              ))}
+            </motion.div>
+          ) : plants.length === 0 ? (
+            <motion.div
+              key="empty-state"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+            >
+              <EmptyState />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="no-results"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-12"
+            >
+              <div className="text-muted-foreground">
+                <p className="text-lg font-medium mb-2">No se encontraron plantas</p>
+                <p className="text-sm">Intenta con otros términos de búsqueda</p>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Onboarding Tour */}
@@ -253,6 +291,7 @@ const Dashboard: React.FC = () => {
           onSkip={completeTour}
           steps={getTourSteps()}
         />
+      </div>
     </div>
   );
 };

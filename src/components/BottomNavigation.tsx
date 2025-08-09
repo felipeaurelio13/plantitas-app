@@ -36,12 +36,12 @@ const BottomNavigation: React.FC = () => {
 
   return (
     <>
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation moderna y limpia */}
       <nav 
-        className="safe-bottom fixed bottom-0 left-0 right-0 z-50 glass-enhanced border-t border-contrast"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/50 shadow-lg pb-safe-bottom"
         data-tour="bottom-navigation"
       >
-        <div className="flex justify-around items-center h-20 max-w-lg mx-auto px-2">
+        <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-safe">
           {navItems.map((item) => {
             const isActive = isActiveRoute(location.pathname, item.path);
 
@@ -49,82 +49,81 @@ const BottomNavigation: React.FC = () => {
               <motion.div
                 key={item.path}
                 className="relative flex-1 h-full"
-                whileTap={{ scale: 0.92 }}
-                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.1 }}
               >
                 <Link
                   to={item.path}
                   className={cn(
-                    'touch-target relative flex flex-col items-center justify-center w-full h-full rounded-2xl transition-all duration-200',
-                    'focus-contrast',
+                    'touch-target relative flex flex-col items-center justify-center w-full h-full rounded-xl transition-all duration-200 group',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                     isActive 
-                      ? 'text-primary-700 dark:text-primary-400' 
-                      : 'text-neutral-700 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
+                      ? 'text-primary' 
+                      : 'text-muted-foreground hover:text-foreground active:text-primary'
                   )}
                   aria-label={`${item.label} - ${item.description}`}
                   {...(isActive ? { 'aria-current': 'page' } : {})}
                   {...(item.path === routes.gardenChat ? { 'data-tour': 'chat-tab' } : {})}
                 >
-                  {/* Background indicator */}
+                  {/* Background indicator con mejor animación */}
                   <AnimatePresence>
                     {isActive && (
                       <motion.div
-                        layoutId="nav-background"
+                        layoutId="nav-active-bg"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ 
                           type: 'spring', 
-                          stiffness: 400, 
-                          damping: 30 
+                          stiffness: 500, 
+                          damping: 30,
+                          duration: 0.3
                         }}
-                        className="absolute inset-1 bg-primary-500/10 dark:bg-primary-400/10 rounded-xl"
+                        className="absolute inset-2 bg-primary/10 rounded-lg"
                       />
                     )}
                   </AnimatePresence>
 
-                  {/* Icon */}
+                  {/* Icon con mejor feedback visual */}
                   <motion.div
                     animate={{ 
                       scale: isActive ? 1.1 : 1,
-                      y: isActive ? -2 : 0
+                      y: isActive ? -1 : 0
                     }}
-                    transition={{ duration: 0.2 }}
-                    className={cn(
-                      "relative z-10",
-                      isActive
-                        ? "text-[#2A7F3E]"
-                        : "text-[#888]"
-                    )}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    className="relative z-10 mb-1"
                   >
                     <item.icon 
-                      size={24} 
+                      size={22} 
                       strokeWidth={isActive ? 2.5 : 2}
-                      className="drop-shadow-sm"
+                      className={cn(
+                        "transition-all duration-200",
+                        isActive ? "drop-shadow-sm" : "group-hover:scale-105"
+                      )}
                     />
                   </motion.div>
 
-                  {/* Label */}
+                  {/* Label con tipografía optimizada */}
                   <motion.span 
                     animate={{ 
                       scale: isActive ? 1.05 : 1,
                       fontWeight: isActive ? 600 : 500
                     }}
                     transition={{ duration: 0.2 }}
-                    className="text-xs mt-1 relative z-10"
+                    className="text-xs relative z-10 leading-none"
                   >
                     {item.label}
                   </motion.span>
 
-                  {/* Active dot indicator */}
+                  {/* Active indicator dot más sutil */}
                   <AnimatePresence>
                     {isActive && (
                       <motion.div
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="absolute left-1/2 -translate-x-1/2 w-1 h-1 bg-primary-500 dark:bg-primary-400 rounded-full mt-1.5" // 4px debajo del icono
+                        transition={{ delay: 0.1, duration: 0.2 }}
+                        className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full"
                       />
                     )}
                   </AnimatePresence>
@@ -135,14 +134,22 @@ const BottomNavigation: React.FC = () => {
         </div>
       </nav>
 
-      {/* Floating Action Button: solo mostrar si no es detalle de planta */}
+      {/* Floating Action Button mejorado */}
       {!isPlantDetail && (
-        <div 
-          className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-40"
+        <motion.div 
+          className="fixed bottom-20 right-4 z-40"
           data-tour="add-plant-fab"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ 
+            type: 'spring',
+            stiffness: 400,
+            damping: 25,
+            delay: 0.2
+          }}
         >
           <AddPlantMenu />
-        </div>
+        </motion.div>
       )}
     </>
   );

@@ -206,98 +206,108 @@ const PlantDetail = () => {
 
   return (
     <Suspense fallback={<PlantDetailFallback />}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <PlantDetailHeader plant={plant} />
-          <main className="p-3 sm:p-4 space-y-3 sm:space-y-4" style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom))' }}>
-            {/* Overview Card - Main info at a glance */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.2 }}
-            >
-              <PlantOverviewCard plant={plant} />
-            </motion.div>
-            
-            {/* Expandable Detailed Information */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.2 }}
-            >
-              <ExpandableInfoSection 
-                plant={plant} 
-                onAddPhoto={() => setIsAddPhotoModalOpen(true)}
-              />
-            </motion.div>
+      <div className="min-h-screen bg-background">
+        {/* Header con imagen de fondo */}
+        <PlantDetailHeader plant={plant} />
+        
+        {/* Contenido principal con mejor spacing mobile-first */}
+        <main className="relative -mt-16 z-10">
+          {/* Contenedor con borde redondeado superior */}
+          <div className="bg-background rounded-t-3xl min-h-[calc(100vh-16rem)] pb-safe-bottom">
+            <div className="px-4 py-6 space-y-6 max-w-4xl mx-auto">
+              
+              {/* Sección de información principal */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-4"
+              >
+                <PlantOverviewCard plant={plant} />
+              </motion.div>
 
-            {/* Gallery - Always visible for quick photo access */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.2 }}
-            >
-              <ImageGallery images={plant.images} />
-            </motion.div>
-          </main>
+              {/* Tabs de contenido organizados */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+                  <ExpandableInfoSection 
+                    plant={plant} 
+                    onAddPhoto={() => setIsAddPhotoModalOpen(true)}
+                  />
+                </div>
+              </motion.div>
 
-          {/* Floating Action Buttons - Simplified for PlantDetail */}
-          <motion.div
-            className="fixed bottom-24 right-4 z-40 flex flex-col-reverse gap-3"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.25, duration: 0.2 }}
-          >
-            {/* Add Photo Button */}
-            <motion.button
-              onClick={() => setIsAddPhotoModalOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground p-2.5 sm:p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group flex items-center"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              title="Agregar nueva foto"
-            >
-              <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
-              {/* Label fijo en mobile, tooltip en desktop */}
-              <span className="ml-2 text-xs font-medium block sm:hidden">
-                Agregar foto
-              </span>
-              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 tooltip-contrast text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg hidden sm:block">
-                Agregar foto
-              </span>
-            </motion.button>
-            
-            {/* Chat Button */}
-            <motion.button
-              onClick={() => navigate(navigation.toPlantChat(plant.id))}
-              className="bg-blue-500 hover:bg-blue-600 text-white p-2.5 sm:p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 group flex items-center"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              title="Chat con la planta"
-            >
-              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-              {/* Label fijo en mobile, tooltip en desktop */}
-              <span className="ml-2 text-xs font-medium block sm:hidden">
-                Chat
-              </span>
-              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 tooltip-contrast text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg hidden sm:block">
-                Chat
-              </span>
-            </motion.button>
-          </motion.div>
-          
-          {/* Modal para agregar fotos */}
-          <AddPhotoModal
-            isOpen={isAddPhotoModalOpen}
-            onClose={() => setIsAddPhotoModalOpen(false)}
-            onPhotoAdded={handleAddPhoto}
-            plantName={plant.nickname || plant.name}
-          />
-        </motion.div>
-      </Suspense>
-    );
+              {/* Galería de imágenes */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      Galería de Fotos
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsAddPhotoModalOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Camera size={16} />
+                      Agregar
+                    </Button>
+                  </div>
+                  <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+                    <ImageGallery images={plant.images} />
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Acciones principales */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4"
+              >
+                <Button
+                  onClick={() => navigate(navigation.toPlantChat(plant.id))}
+                  className="flex items-center justify-center gap-3 h-14 bg-primary text-primary-foreground hover:bg-primary/90"
+                  size="lg"
+                >
+                  <MessageCircle size={20} />
+                  <span className="font-medium">Chatear con {plant.nickname || plant.name}</span>
+                </Button>
+                
+                <Button
+                  onClick={() => setIsAddPhotoModalOpen(true)}
+                  variant="outline"
+                  className="flex items-center justify-center gap-3 h-14"
+                  size="lg"
+                >
+                  <Camera size={20} />
+                  <span className="font-medium">Documenta Progreso</span>
+                </Button>
+              </motion.div>
+
+            </div>
+          </div>
+        </main>
+        
+        {/* Modal para agregar fotos */}
+        <AddPhotoModal
+          isOpen={isAddPhotoModalOpen}
+          onClose={() => setIsAddPhotoModalOpen(false)}
+          onPhotoAdded={handleAddPhoto}
+          plantName={plant.nickname || plant.name}
+        />
+      </div>
+    </Suspense>
+  );
 };
 
 export default PlantDetail;
