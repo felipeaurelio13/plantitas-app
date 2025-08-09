@@ -9,7 +9,7 @@ export const useChat = () => {
 
   const plant = usePlantStore((state) => state.getPlantById(plantId || ''));
   const addChatMessage = usePlantStore((state) => state.addChatMessage);
-  const isLoading = usePlantStore((state) => state.isLoading);
+  const isLoading = usePlantStore((state) => state.operationStates.chat.isLoading);
 
   if (import.meta.env.DEV) {
     console.log('--- DEBUG CHAT ---');

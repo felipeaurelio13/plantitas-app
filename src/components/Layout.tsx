@@ -66,7 +66,7 @@ const Layout: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background text-text-primary">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Skip Link for accessibility */}
       <SkipLink />
       

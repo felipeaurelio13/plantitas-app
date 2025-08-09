@@ -116,26 +116,28 @@ export const useHealthStatus = (
 ) => {
   return React.useMemo(() => {
     // Base status from health score
-    let baseStatus = {
-      color: 'bg-green-400',
-      textColor: 'text-green-600 dark:text-green-400',
-      status: 'Excelente',
-      priority: 'low' as const,
-    };
+    let baseStatus: { color: string; textColor: string; status: string; priority: 'low' | 'medium' | 'high' };
 
     if (score < 60) {
       baseStatus = {
         color: 'bg-red-300',
         textColor: 'text-red-600 dark:text-red-400',
         status: 'Atención',
-        priority: 'high' as const,
+        priority: 'high',
       };
     } else if (score < 80) {
       baseStatus = {
         color: 'bg-yellow-300',
         textColor: 'text-yellow-600 dark:text-yellow-400',
         status: 'Buena',
-        priority: 'medium' as const,
+        priority: 'medium',
+      };
+    } else {
+      baseStatus = {
+        color: 'bg-green-400',
+        textColor: 'text-green-600 dark:text-green-400',
+        status: 'Excelente',
+        priority: 'low',
       };
     }
 
@@ -147,7 +149,7 @@ export const useHealthStatus = (
           color: 'bg-red-400',
           textColor: 'text-red-700 dark:text-red-300',
           status: 'Necesita agua urgente',
-          priority: 'high' as const,
+          priority: 'high',
         };
       } else if (daysSinceWatered && daysSinceWatered > 3) {
         return {
@@ -155,7 +157,7 @@ export const useHealthStatus = (
           color: 'bg-orange-400',
           textColor: 'text-orange-700 dark:text-orange-300',
           status: 'Necesita agua',
-          priority: 'medium' as const,
+          priority: 'medium',
         };
       }
     }

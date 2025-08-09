@@ -29,6 +29,9 @@ export interface ErrorContext {
   metadata?: Record<string, any>;
   stack?: string;
   retryCount?: number;
+  totalAttempts?: number;
+  component?: string;
+  errorInfo?: any;
 }
 
 // Custom error classes
@@ -153,9 +156,9 @@ export class ErrorLogger {
     return levels.indexOf(level) <= levels.indexOf(this.logLevel);
   }
 
-  private sendToExternalLogger(logEntry: any): void {
-    // Implementation for external logging service (e.g., Sentry, LogRocket)
-    // This is a placeholder for production logging
+  private sendToExternalLogger(_logEntry: any): void {
+    // no-op in development; wire to an external service in production
+    return;
   }
 }
 

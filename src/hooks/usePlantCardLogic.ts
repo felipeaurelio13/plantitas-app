@@ -11,7 +11,6 @@ interface PlantCardLogicState {
   healthStatus: {
     color: string;
     textColor: string;
-    icon: React.ReactNode;
     status: string;
     priority: 'low' | 'medium' | 'high';
   };
@@ -25,7 +24,7 @@ interface PlantCardLogicActions {
   navigateToChat: () => void;
 }
 
-export const usePlantCardLogic = (plant: PlantSummary, index: number) => {
+export const usePlantCardLogic = (plant: PlantSummary) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -89,11 +88,11 @@ export const usePlantCardLogic = (plant: PlantSummary, index: number) => {
 
   // Navigation actions
   const navigateToPlant = useCallback(() => {
-    navigate(navigation.plantDetail(plant.id));
+    navigate(navigation.toPlantDetail(plant.id));
   }, [navigate, plant.id]);
 
   const navigateToChat = useCallback(() => {
-    navigate(navigation.plantChat(plant.id));
+    navigate(navigation.toPlantChat(plant.id));
   }, [navigate, plant.id]);
 
   // Event handlers
@@ -178,7 +177,7 @@ function calculateHealthStatus(
 
 // Utility functions that can be used by components
 export const getPlantCardImageProps = (plant: PlantSummary) => {
-  const primaryImage = plant.profileImageUrl || plant.images?.[0]?.url;
+  const primaryImage = plant.profileImageUrl;
   
   return {
     src: primaryImage || '/placeholder-plant.jpg',

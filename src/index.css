@@ -32,31 +32,58 @@
   --color-neutral-900: #171717;
   --color-neutral-950: #0a0a0a;
 
-  /* Tipografía */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue', sans-serif;
-  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace;
+  /* Estados (semantic palettes) */
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-200: #a7f3d0;
+  --color-success-300: #6ee7b7;
+  --color-success-400: #34d399;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+  --color-success-800: #065f46;
+  --color-success-900: #064e3b;
 
-  /* Tamaños de Fuente */
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
 
-  /* Radios de Borde */
-  --radius-sm: 0.125rem;
-  --radius-base: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
-  
-  /* Sombras */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-base: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --color-error-50: #fef2f2;
+  --color-error-100: #fee2e2;
+  --color-error-200: #fecaca;
+  --color-error-300: #fca5a5;
+  --color-error-400: #f87171;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  --color-error-800: #991b1b;
+  --color-error-900: #7f1d1d;
+
+  /* Tokens semánticos para utilidades como bg-*, text-*, border-*, ring-*, etc. */
+  --color-background: var(--color-neutral-50);
+  --color-surface: var(--color-neutral-0);
+  --color-foreground: var(--color-neutral-900);
+  --color-muted: var(--color-neutral-100);
+  --color-muted-foreground: var(--color-neutral-600);
+  --color-border: var(--color-neutral-200);
+  --color-input: var(--color-neutral-200);
+  --color-ring: var(--color-primary-500);
+
+  /* Contraste y superficies elevadas */
+  --color-contrast: var(--color-neutral-300);
+  --color-contrast-surface: var(--color-neutral-100);
+  --color-contrast-high: #111111;
+  --color-contrast-medium: #444444;
+
+  /* Primary foreground (texto sobre fondos primary) */
+  --color-primary-foreground: #ffffff;
 }
 
 /* 
@@ -92,6 +119,12 @@
     --color-text-muted: var(--color-neutral-500);
     --color-border: var(--color-neutral-700);
     --color-border-subtle: var(--color-neutral-800);
+
+    /* Ajustes de contraste en dark */
+    --color-contrast: var(--color-neutral-600);
+    --color-contrast-surface: var(--color-neutral-800);
+    --color-contrast-high: #f5f5f5;
+    --color-contrast-medium: #c7c7c7;
   }
 
   body {
@@ -115,6 +148,24 @@
     outline-color: var(--color-primary-500);
   }
 
+  /* Enfoque de alto contraste utilizado en navegación inferior */
+  .focus-contrast:focus-visible {
+    outline: 3px solid var(--color-contrast);
+    outline-offset: 2px;
+  }
+
+  /* Superficies glass genéricas (ligeras) */
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  [data-theme="dark"] .glass {
+    background: rgba(17, 24, 39, 0.6);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
   /* Scrollbar styles */
   ::-webkit-scrollbar {
     width: 8px;
@@ -131,7 +182,7 @@
     background: var(--color-border-subtle);
   }
 
-  /* Glass effect styles */
+  /* Glass effect styles avanzados */
   .glass-enhanced {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
@@ -163,6 +214,12 @@
   .btn-glow:hover {
     box-shadow: 0 0 30px rgba(34, 197, 94, 0.5);
   }
+
+  /* Mayor área táctil en elementos interactivos */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 /* Mobile viewport and safe area utilities */
@@ -190,6 +247,11 @@
 .pr-safe {
   padding-right: var(--safe-area-right);
 }
+
+/* Alias usados en componentes existentes */
+.pb-safe-bottom { padding-bottom: var(--safe-area-bottom); }
+.pt-safe-top { padding-top: var(--safe-area-top); }
+.safe-bottom { padding-bottom: var(--safe-area-bottom); }
 
 /* iOS Safari viewport height fixes */
 .h-screen-safe {

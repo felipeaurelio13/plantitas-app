@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Droplets, Sun, Sparkles, AlertTriangle } from 'lucide-react';
+import { Heart, Droplets, Sun, AlertTriangle } from 'lucide-react';
 import { PlantSummary } from '../schemas';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import LazyImage from './LazyImage';
@@ -20,7 +20,7 @@ interface PlantCardProps {
 
 const PlantCard: React.FC<PlantCardProps> = memo(({ plant, index }) => {
   // Use custom hook for logic
-  const { state, actions } = usePlantCardLogic(plant, index);
+  const { state, actions } = usePlantCardLogic(plant);
   const { needsWatering, isFavorite, healthStatus } = state;
   const { handleClick, handleMouseEnter } = actions;
 
