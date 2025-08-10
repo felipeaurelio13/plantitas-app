@@ -142,20 +142,7 @@
     <script>
       console.log('[HTML] Emergency load started');
       
-      // Emergency loading management - forzar remoción después de 2 segundos
-      setTimeout(function() {
-        console.log('[HTML] Emergency: removing loading class');
-        if (document.documentElement.classList) {
-          document.documentElement.classList.remove('js-loading');
-        }
-        // También remover el loading screen directamente si aún existe
-        var loadingDiv = document.querySelector('.critical-loading');
-        if (loadingDiv && loadingDiv.parentNode) {
-          console.log('[HTML] Removing critical loading div');
-          loadingDiv.style.display = 'none';
-        }
-      }, 2000);
-      
+      // Mantener la pantalla de carga hasta que la app monte correctamente
       window.addEventListener('load', function() {
         console.log('[HTML] Window loaded');
         setTimeout(function() {
@@ -165,7 +152,6 @@
         }, 100);
       });
       
-      // Remover error handling que está causando problemas
       // NO interceptar errores - dejar que React los maneje
     </script>
     
