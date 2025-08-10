@@ -20,14 +20,14 @@ import { routes } from './lib/navigation';
 import { PERFORMANCE_CONFIG } from './lib/performance';
 import { Leaf } from 'lucide-react';
 
-// Importaciones directas para páginas core (mejor UX)
-import Dashboard from './pages/Dashboard';
-import PlantDetail from './pages/PlantDetail';
-import CameraPage from './pages/Camera';
-import ChatPage from './pages/Chat';
-import GardenChatPage from './pages/GardenChat';
+// Importaciones con lazy para evitar cargar páginas que usan Supabase en el arranque
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const PlantDetail = lazy(() => import('./pages/PlantDetail'));
+const CameraPage = lazy(() => import('./pages/Camera'));
+const ChatPage = lazy(() => import('./pages/Chat'));
+const GardenChatPage = lazy(() => import('./pages/GardenChat'));
 
-// Lazy loading solo para páginas secundarias
+// Lazy loading para páginas secundarias
 const Settings = lazy(() => import('./pages/Settings'));
 const AuthPage = lazy(() => import('./pages/Auth'));
 
