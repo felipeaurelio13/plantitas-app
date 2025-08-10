@@ -5,7 +5,6 @@ import './index.css';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useAuthStore from './stores/useAuthStore';
-import { plantService } from './services/plantService';
 import { initAdvancedMobileDebug, logCriticalError } from './utils/mobileDebugAdvanced';
 
 // 🚨 CRITICAL: iOS Safari compatibility check
@@ -52,11 +51,18 @@ function PrefetchOnLogin() {
   const { user } = useAuthStore();
   React.useEffect(() => {
     if (user?.id) {
-      queryClient.prefetchQuery({
-        queryKey: ['plants', user.id],
-        queryFn: () => plantService.getUserPlantSummaries(user.id),
-        staleTime: 1000 * 60 * 5,
-      });
+      (async () => {
+        try {
+          const { plantService } = await import('./services/plantService');
+          await queryClient.prefetchQuery({
+            queryKey: ['plants', user.id],
+            queryFn: () => plantService.getUserPlantSummaries(user.id),
+            staleTime: 1000 * 60 * 5,
+          });
+        } catch (error) {
+          console.warn('[Prefetch] Skipping plant prefetch due to error or missing envs:', error);
+        }
+      })();
     }
   }, [user?.id]);
   return null;

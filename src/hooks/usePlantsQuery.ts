@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import useAuthStore from '../stores/useAuthStore';
-import { plantService } from '../services/plantService';
 import { PERFORMANCE_CONFIG } from '../lib/performance';
 
 export const usePlantsQuery = () => {
@@ -12,15 +11,20 @@ export const usePlantsQuery = () => {
       if (!user) {
         return Promise.resolve([]);
       }
-      // Agregar timing para debug en desarrollo
-      if (import.meta.env.DEV) {
-        const start = performance.now();
-        const result = await plantService.getUserPlantSummaries(user.id);
-        const end = performance.now();
-        console.log(`[usePlantsQuery] Loaded ${result.length} plants in ${(end - start).toFixed(2)}ms`);
-        return result;
+      try {
+        const { plantService } = await import('../services/plantService');
+        if (import.meta.env.DEV) {
+          const start = performance.now();
+          const result = await plantService.getUserPlantSummaries(user.id);
+          const end = performance.now();
+          console.log(`[usePlantsQuery] Loaded ${result.length} plants in ${(end - start).toFixed(2)}ms`);
+          return result;
+        }
+        return plantService.getUserPlantSummaries(user.id);
+      } catch (error) {
+        console.warn('[usePlantsQuery] Skipping plant fetch due to error or missing envs:', error);
+        return [];
       }
-      return plantService.getUserPlantSummaries(user.id);
     },
     enabled: !!user,
     staleTime: PERFORMANCE_CONFIG.QUERY.STALE_TIME.MEDIUM,
