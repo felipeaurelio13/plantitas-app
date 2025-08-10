@@ -2,7 +2,7 @@
   "name": "PlantCare - Tu Compañero de Plantas con IA",
   "short_name": "PlantCare",
   "description": "Cuida tus plantas con la ayuda de inteligencia artificial",
-  "start_url": "/plantitas-app/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#22c55e",
@@ -37,7 +37,7 @@
       "name": "Tomar foto",
       "short_name": "Cámara",
       "description": "Captura una foto de tu planta",
-      "url": "/plantitas-app/camera",
+      "url": "/camera",
       "icons": [
         {
           "src": "/plant-icon.svg",
@@ -49,7 +49,7 @@
       "name": "Mis plantas",
       "short_name": "Plantas",
       "description": "Ver todas mis plantas",
-      "url": "/plantitas-app/",
+      "url": "/",
       "icons": [
         {
           "src": "/plant-icon.svg",
