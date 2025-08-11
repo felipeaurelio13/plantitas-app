@@ -2,13 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/plant-icon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <link rel="icon" type="image/svg+xml" href="/plantitas-app/plant-icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="PlantCare" />
+    <meta name="color-scheme" content="light dark" />
     <title>PlantCare - Your AI Plant Companion</title>
+    <script type="speculationrules">
+      {
+        "prefetch": [
+          { "source": "list", "urls": ["/plantitas-app/", "/plantitas-app/garden-chat", "/plantitas-app/camera", "/plantitas-app/settings"] }
+        ],
+        "prerender": [
+          { "source": "list", "urls": ["/plantitas-app/garden-chat"] }
+        ]
+      }
+    </script>
     
     <!-- Critical CSS for mobile compatibility -->
     <style>
@@ -69,8 +80,9 @@
         animation: spin 1s ease-in-out infinite;
       }
       
-      @keyframes spin {
-        to { transform: rotate(360deg); }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) {
+        .critical-loading-spinner { animation: none; }
       }
       
       .critical-loading-text {
@@ -119,15 +131,42 @@
       // Add loading class
       document.documentElement.classList.add('js-loading');
       console.log('[HTML] Loading class added');
+
+      // Install view-transition friendly navigation for same-origin anchor clicks
+      document.addEventListener('click', (event) => {
+        var target = event.target;
+        // Cross-shadow-root: prefer composedPath when available
+        if (event.composedPath) {
+          var path = event.composedPath();
+          for (var i = 0; i < path.length; i++) {
+            var el = path[i];
+            if (el && el.tagName === 'A') { target = el; break; }
+          }
+        }
+        var anchor = target && target.closest ? target.closest('a') : null;
+        if (!anchor) return;
+        const href = anchor.getAttribute('href');
+        if (!href || href.startsWith('http')) return;
+        var startViewTransition = (document && (document)['startViewTransition'])
+          ? (document)['startViewTransition'].bind(document)
+          : null;
+        if (startViewTransition) {
+          event.preventDefault();
+          startViewTransition(() => {
+            window.history.pushState({}, '', href);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          });
+        }
+      }, { capture: true });
     </script>
-    <script type="module" crossorigin src="/assets/js/index-C3y44iME.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/js/vendor-ohv-86MT.js">
-    <link rel="modulepreload" crossorigin href="/assets/js/query-D9cK7eLy.js">
-    <link rel="modulepreload" crossorigin href="/assets/js/supabase-ChG5PfJU.js">
-    <link rel="modulepreload" crossorigin href="/assets/js/router-Lz5I7iQY.js">
-    <link rel="modulepreload" crossorigin href="/assets/js/ui-BW4tJjqg.js">
-    <link rel="stylesheet" crossorigin href="/assets/css/index-BwFoBeRo.css">
-  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+    <script type="module" crossorigin src="/plantitas-app/assets/js/index-Co06fysT.js"></script>
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/vendor-DZ-WnDgw.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/query-DbrUQU2d.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/supabase-pWErzozG.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/router-8pqLaH9a.js">
+    <link rel="modulepreload" crossorigin href="/plantitas-app/assets/js/ui-DPEBMuFB.js">
+    <link rel="stylesheet" crossorigin href="/plantitas-app/assets/css/index-BGJUK6HN.css">
+  <link rel="manifest" href="/plantitas-app/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/plantitas-app/registerSW.js"></script></head>
   <body>
     <div id="root">
       <!-- Fallback loading screen visible before JS loads -->
@@ -142,7 +181,20 @@
     <script>
       console.log('[HTML] Emergency load started');
       
-      // Mantener la pantalla de carga hasta que la app monte correctamente
+      // Emergency loading management - forzar remoción después de 2 segundos
+      setTimeout(function() {
+        console.log('[HTML] Emergency: removing loading class');
+        if (document.documentElement.classList) {
+          document.documentElement.classList.remove('js-loading');
+        }
+        // También remover el loading screen directamente si aún existe
+        var loadingDiv = document.querySelector('.critical-loading');
+        if (loadingDiv && loadingDiv.parentNode) {
+          console.log('[HTML] Removing critical loading div');
+          loadingDiv.style.display = 'none';
+        }
+      }, 2000);
+      
       window.addEventListener('load', function() {
         console.log('[HTML] Window loaded');
         setTimeout(function() {
@@ -152,8 +204,20 @@
         }, 100);
       });
       
+      // Remover error handling que está causando problemas
       // NO interceptar errores - dejar que React los maneje
     </script>
     
+    <script>
+      // Fallback Firebase config for static hosting (GH Pages)
+      window.__FIREBASE_CONFIG__ = {
+        apiKey: 'AIzaSyAXe23KlB86uzbcPZ4yNmvPJTcT_217S3I',
+        authDomain: 'plantitas-app.firebaseapp.com',
+        projectId: 'plantitas-app',
+        storageBucket: 'plantitas-app.firebasestorage.app',
+        messagingSenderId: '1043760234213',
+        appId: '1:1043760234213:web:e65079358482d71c545e0c'
+      };
+    </script>
   </body>
 </html>
