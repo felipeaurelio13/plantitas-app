@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { getFullVersion, APP_INFO } from '../config/version';
 
 interface FooterProps {
@@ -7,34 +8,28 @@ interface FooterProps {
   showBuildInfo?: boolean;
 }
 
-const Footer: React.FC<FooterProps> = ({ 
-  className = '', 
-  showVersion = true, 
-  showBuildInfo = false 
+const Footer: React.FC<FooterProps> = ({
+  className = '',
+  showVersion = true,
+  showBuildInfo = false,
 }) => {
   return (
-    <footer className={`text-center py-4 text-sm text-muted-foreground ${className}`}>
+    <footer className={`text-center text-xs text-emerald-700/80 ${className}`}>
       {showVersion && (
         <div className="space-y-1">
-          <p className="font-medium text-foreground">
-            {APP_INFO.name}
-          </p>
-          <p className="text-xs opacity-75">
-            {getFullVersion()}
-          </p>
+          <p className="text-sm font-semibold text-emerald-800">{APP_INFO.name}</p>
+          <p className="font-medium">{getFullVersion()}</p>
         </div>
       )}
-      
+
       {showBuildInfo && (
-        <div className="mt-2 text-xs opacity-50">
+        <div className="mt-2 space-y-1 text-emerald-600">
           <p>Build: {APP_INFO.buildTimestamp}</p>
           <p>Repo: {APP_INFO.repository}</p>
         </div>
       )}
-      
-      <div className="mt-2 text-xs opacity-60">
-        <p>© 2024 {APP_INFO.author}. Todos los derechos reservados.</p>
-      </div>
+
+      <p className="mt-3 text-emerald-600/80">© 2024 {APP_INFO.author}. Con cariño para tus plantas.</p>
     </footer>
   );
 };
