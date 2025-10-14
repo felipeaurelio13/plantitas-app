@@ -1,9 +1,9 @@
 // Configuración de versión de la aplicación
 // Este archivo se actualiza automáticamente en cada build
 
-export const APP_VERSION = '1.0.0';
-export const BUILD_TIMESTAMP = '2025-08-10T20:13:18.583Z';
-export const BUILD_DATE = '10 de agosto de 2025, 20:13';
+export const APP_VERSION = '1.1.0';
+export const BUILD_TIMESTAMP = '2025-10-13T23:11:44Z';
+export const BUILD_DATE = '13 de octubre de 2025, 23:11 UTC';
 
 // Información adicional de la aplicación
 export const APP_INFO = {
